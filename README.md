@@ -20,11 +20,13 @@ https://aps.bctools.cn/， 无需账号，扫码即可登录查看
 
 #### 软件逻辑架构
 APS是连接企业资源计划（ERP）系统和制造执行系统（MES）的核心枢纽，为整个生产流程提供了智能化的计划与排程解决方案
-![输入图片说明](pic/pic%E9%80%BB%E8%BE%91%E6%8B%93%E6%89%91.png)
+![image](https://github.com/user-attachments/assets/ea17d53f-e0c4-4cab-8ec6-0a2b29eaca3c)
 整个系统的核心功能：
-![输入图片说明](pic/pic%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%9B%BE.png)  
+![image](https://github.com/user-attachments/assets/efa83ef7-7712-4cfa-b3da-576676d72fd3)
 
-![输入图片说明](pic/picgantt.png)
+
+![image](https://github.com/user-attachments/assets/ede42a85-25f9-4836-a384-7840ce47280f)
+
 
 
 #### 项目特点：
