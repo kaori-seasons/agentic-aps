@@ -127,6 +127,35 @@ APS是连接企业资源计划（ERP）系统和制造执行系统（MES）的�
 └─sql  数据库脚本
 ```
 
+#### 部署步骤
+项目下载
+
+```
+git clone https://gitee.com/software-minister/jvs-aps.git
+```
+
+初始化数据库  
+
+```
+cd jvs-aps/jvs-docker-compose && chmod -R 777 data && chmod -R 777 mysql && chmod -R 644 data/mysqlcnf
+docker-compose -f docker-compose-db.yml  up -d
+```
+
+修改配置文件  
+![image](https://github.com/user-attachments/assets/0e3f5b47-8443-49f1-adbf-517751a224dc)
+
+
+启动服务  
+a、先启动后端服务
+启动后端服务文件：aps/jvs-aps-mgr/src/main/java/cn/bctools/aps/JvsApsApplication.java  
+b、前端启动命令  
+```
+npm inatall
+npm run dev
+```
+
+访问系统：  
+http://服务器ip:9998
 
 
 #### 其他JVS推荐项目
