@@ -172,7 +172,10 @@ http://服务器ip:9998
 ### 技术交流与商务支持
 ![小微信图片_20250227142830](https://github.com/user-attachments/assets/cdb93bc0-6161-493e-8dd8-6ba58cb86a74)
 
-商务微信
+
+如因人数限制无法加群时，可加运营同学拉入技术交流群
+
+
 
 ![谭京](https://github.com/user-attachments/assets/f53afb8d-fe2e-412b-aee9-457802c03c71)
 
@@ -183,7 +186,3 @@ http://服务器ip:9998
 
 
 
-
-如因人数限制无法加群时，可加运营同学拉入技术交流群
-
-![输入图片说明](https://foruda.gitee.com/images/1693376631879434922/54ec140e_10006021.png "屏幕截图")
