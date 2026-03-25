@@ -83,19 +83,19 @@ OptaPlanner 求解 NP-hard 问题耗时较长（分钟级或更长），调度�
 
 ```mermaid
 graph TB
-    subgraph Data Preparation
+    subgraph Data_Preparation [Data Preparation]
         A[Master Data: BOM/Routing/Resources] --> C[Order Parsing & Task Generation]
         B[Production Orders] --> C
         C --> D[Construct PlanningSolution]
     end
-    subgraph Solving Engine (OptaPlanner)
+    subgraph Solving_Engine [Solving Engine OptaPlanner]
         D --> E[Construction Heuristic]
         E --> F[Local Search Algorithm]
         F --> G[ConstraintProvider: Hard/Soft Scoring]
         G -.->|Iterative Optimization| F
         F --> H[Best Solution Output]
     end
-    subgraph Frontend Interaction
+    subgraph Frontend_Interaction [Frontend Interaction]
         H --> I[Vue.js Gantt Rendering]
         I --> J[Manual Adjustments]
         J --> K[Pinning & Partial Re-solve]
