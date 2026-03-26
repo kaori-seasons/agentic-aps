@@ -79,6 +79,11 @@ public class SolveManageConfigurator {
                 .withTerminationConfig(terminationConfig)
                 .withMoveThreadCount("AUTO");
 
+        // 固定随机种子以支持复现
+        if (config.getRandomSeed() != null) {
+            solverConfig.withRandomSeed(config.getRandomSeed());
+        }
+
         // 根据策略配置设置算法 Phase
         if (cn.bctools.aps.entity.enums.SolverProfileEnum.FFD_TABU.equals(config.getSolverProfile())) {
             org.optaplanner.core.config.heuristic.selector.common.SelectionCacheType cacheType = org.optaplanner.core.config.heuristic.selector.common.SelectionCacheType.PHASE;
