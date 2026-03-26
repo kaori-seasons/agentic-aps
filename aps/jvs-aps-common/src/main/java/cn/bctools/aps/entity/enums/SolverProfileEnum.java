@@ -18,7 +18,12 @@ public enum SolverProfileEnum {
     /**
      * FFD (First Fit Decreasing) + Tabu Search
      */
-    FFD_TABU("降序首次适应 + 禁忌搜索");
+    FFD_TABU("降序首次适应 + 禁忌搜索"),
+
+    /**
+     * FFD (First Fit Decreasing) + Late Acceptance
+     */
+    FFD_LATE_ACCEPTANCE("降序首次适应 + 晚期接受");
 
     private final String desc;
 }

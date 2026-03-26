@@ -86,13 +86,21 @@ public class SolveManageConfigurator {
 
         // 根据策略配置设置算法 Phase
         if (cn.bctools.aps.entity.enums.SolverProfileEnum.FFD_TABU.equals(config.getSolverProfile())) {
-            org.optaplanner.core.config.heuristic.selector.common.SelectionCacheType cacheType = org.optaplanner.core.config.heuristic.selector.common.SelectionCacheType.PHASE;
             org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig chPhaseConfig = new org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig()
                     .withConstructionHeuristicType(org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicType.FIRST_FIT_DECREASING);
 
             org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig lsPhaseConfig = new org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig()
                     .withLocalSearchType(org.optaplanner.core.config.localsearch.LocalSearchType.TABU_SEARCH)
                     .withAcceptorConfig(new org.optaplanner.core.config.localsearch.decider.acceptor.LocalSearchAcceptorConfig().withEntityTabuSize(config.getEntityTabuSize() != null ? config.getEntityTabuSize() : 7))
+                    .withForagerConfig(new org.optaplanner.core.config.localsearch.decider.forager.LocalSearchForagerConfig().withAcceptedCountLimit(config.getAcceptedCountLimit() != null ? config.getAcceptedCountLimit() : 1000));
+
+            solverConfig.withPhases(chPhaseConfig, lsPhaseConfig);
+        } else if (cn.bctools.aps.entity.enums.SolverProfileEnum.FFD_LATE_ACCEPTANCE.equals(config.getSolverProfile())) {
+            org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig chPhaseConfig = new org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig()
+                    .withConstructionHeuristicType(org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicType.FIRST_FIT_DECREASING);
+
+            org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig lsPhaseConfig = new org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig()
+                    .withAcceptorConfig(new org.optaplanner.core.config.localsearch.decider.acceptor.LocalSearchAcceptorConfig().withLateAcceptanceSize(config.getLateAcceptanceSize() != null ? config.getLateAcceptanceSize() : 400))
                     .withForagerConfig(new org.optaplanner.core.config.localsearch.decider.forager.LocalSearchForagerConfig().withAcceptedCountLimit(config.getAcceptedCountLimit() != null ? config.getAcceptedCountLimit() : 1000));
 
             solverConfig.withPhases(chPhaseConfig, lsPhaseConfig);
