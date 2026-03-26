@@ -36,4 +36,7 @@ public class StrategyConfigDTO {
 
     @ApiModelProperty(value = "约束权重配置")
     private ConstraintWeightConfigDTO constraintWeightConfig = new ConstraintWeightConfigDTO();
+
+    @ApiModelProperty(value = "随机种子", notes = "用于保证排产结果的可复现性，固定种子则排产结果一致")
+    private Long randomSeed;
 }
