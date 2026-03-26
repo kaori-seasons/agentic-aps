@@ -33,7 +33,7 @@ import java.util.Set;
 @Data
 @Accessors(chain = true)
 @NoArgsConstructor
-@PlanningEntity
+@PlanningEntity(difficultyComparatorClass = TaskDifficultyComparator.class)
 public class ProductionTask {
 
     @Comment(value = "id", notes = "排程计算时使用，不入库。排程计算过程中id与任务编码同等作用（都能唯一标识一个任务），但业务逻辑使用时，应使用任务编码")
