@@ -4,6 +4,7 @@ import cn.bctools.aps.dto.schedule.TaskDTO;
 import cn.bctools.aps.entity.PlanTaskAdjustPO;
 import cn.bctools.aps.entity.dto.planning.StrategyOrderSchedulingRuleDTO;
 import cn.bctools.aps.entity.enums.OrderSchedulingStatusEnum;
+import cn.bctools.aps.entity.enums.PlanningDirectionEnum;
 import cn.bctools.aps.entity.enums.ResourceStatusEnum;
 import cn.bctools.aps.entity.enums.SortRuleEnum;
 import cn.bctools.aps.graph.Graph;
@@ -63,6 +64,11 @@ public class SolveServiceImpl implements SolveService {
     @Override
     public void solve(UUID planId, PlanningStrategy strategy, BasicData basicData) {
         try {
+            // 初始化当前线程的动态权重配置
+            if (strategy != null && strategy.getConfig() != null && strategy.getConfig().getConstraintWeightConfig() != null) {
+                cn.bctools.aps.solve.score.DynamicConstraintWeightContext.setWeightConfig(strategy.getConfig().getConstraintWeightConfig());
+            }
+
             // 缓存求解任务id
             String planKey = getPlanCacheKey();
             redisUtils.set(getPlanCacheKey(), planId);
@@ -83,6 +89,9 @@ public class SolveServiceImpl implements SolveService {
             solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, msg);
             // 设置排产求解开始时间
             solveProgressService.setProgressSolveStartTime(LocalDateTime.now());
+            // 记录使用策略
+            String profileMsg = "使用的排产算法策略: " + (strategy.getConfig().getSolverProfile() != null ? strategy.getConfig().getSolverProfile().getDesc() : "默认");
+            solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, profileMsg);
             // 排产求解
             SchedulingSolution apsSolutionResult = solveExecute(planId, solution);
             if (ObjectNull.isNull(apsSolutionResult)) {
@@ -104,6 +113,7 @@ public class SolveServiceImpl implements SolveService {
             solveProgressService.addProgressLog(SolveProgressStatusEnum.FAILURE,"排程失败：" + e.getMessage());
             throw new BusinessException(e.getMessage());
         } finally {
+            cn.bctools.aps.solve.score.DynamicConstraintWeightContext.clear();
             redisUtils.del(getPlanCacheKey());
         }
     }
@@ -170,8 +180,8 @@ public class SolveServiceImpl implements SolveService {
                 .setStrategy(strategy)
                 .setProductionOrders(basicData.getProductionOrders());
 
-        // 计算计划开始时间
-        solution.setPlanTime(calculatePlanTime(strategy));
+        // 计算计划时间
+        solution.setPlanTime(calculatePlanTime(strategy, basicData.getProductionOrders()));
 
         // 主资源
         fillMainProductionResources(solution, basicData.getProductionResources(), basicData.getWorkCalendarMap());
@@ -193,12 +203,24 @@ public class SolveServiceImpl implements SolveService {
     }
 
     /**
-     * 计算计划开始时间
+     * 计算计划时间
      *
      * @param strategy 策略
-     * @return 计划开始时间
+     * @param productionOrders 订单
+     * @return 计划时间
      */
-    private LocalDateTime calculatePlanTime(PlanningStrategy strategy) {
+    private LocalDateTime calculatePlanTime(PlanningStrategy strategy, List<ProductionOrder> productionOrders) {
+        if (PlanningDirectionEnum.BACKWARD.equals(strategy.getConfig().getDirection())) {
+            Optional<LocalDateTime> latestDeliveryTime = Optional.ofNullable(productionOrders)
+                    .orElseGet(Collections::emptyList)
+                    .stream()
+                    .map(ProductionOrder::getDeliveryTime)
+                    .filter(ObjectNull::isNotNull)
+                    .max(Comparator.naturalOrder());
+            if (latestDeliveryTime.isPresent()) {
+                return latestDeliveryTime.get();
+            }
+        }
         // 若计划开始时间在当前时间之前，则以当前时间作为计划开始时间
         if (strategy.getBeginTime().isBefore(LocalDateTime.now())) {
             return LocalDateTime.now();
