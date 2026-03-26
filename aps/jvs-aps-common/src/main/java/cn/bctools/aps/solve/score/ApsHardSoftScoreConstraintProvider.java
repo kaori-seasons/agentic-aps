@@ -22,12 +22,15 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
     @Override
     public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
         return new Constraint[] {
-          arrangeByPriority(constraintFactory),
-          equipmentCanOnlyHandleMatchingProcesses(constraintFactory),
+                arrangeByPriority(constraintFactory),
+                equipmentCanOnlyHandleMatchingProcesses(constraintFactory),
                 finishEarly(constraintFactory),
+                minimizeTardiness(constraintFactory),
+                balanceResourceLoad(constraintFactory),
                 minimizeGapBetweenDependentTasks(constraintFactory),
                 noResourceTimeOverlapping(constraintFactory),
                 theEquipmentCanOnlyProcessOneProcessAtTheSameTime(constraintFactory),
+                minimizeSetupTime(constraintFactory)
         };
     }
 
@@ -37,11 +40,14 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                         Joiners.equal(ProductionTask::getResource),
                         Joiners.lessThan(ProductionTask::getPriority)
                 )
-                .filter((task1, task2) -> !task1.getPinned() && !task2.getPinned())
+                .filter((task1, task2) -> !Boolean.TRUE.equals(task1.getPinned()) && !Boolean.TRUE.equals(task2.getPinned()))
                 .filter((task1, task2) -> ObjectNull.isNotNull(task1.getStartTime()) && ObjectNull.isNotNull(task2.getStartTime()))
                 .filter((task1, task2) -> ObjectNull.isNull(task1.getMergeTaskCode()) && ObjectNull.isNull(task2.getMergeTaskCode()))
                 .filter((task1, task2) -> task1.getStartTime().isAfter(task2.getStartTime()))
-                .penalizeLong(HardSoftLongScore.ONE_SOFT, (task1, task2) -> (long) (task2.getPriority() - task1.getPriority()) * 50)
+                .penalizeLong(HardSoftLongScore.ONE_SOFT, (task1, task2) -> {
+                    long weight = DynamicConstraintWeightContext.getWeightConfig().getPriorityWeight();
+                    return (long) (task2.getPriority() - task1.getPriority()) * weight;
+                })
                 .asConstraint("尽量按优先级安排");
     }
 
@@ -59,8 +65,37 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
         return factory.forEach(ProductionTask.class)
                 .filter(task -> task.getStartTime() != null && task.getEndTime() != null && ObjectNull.isNull(task.getMergeTaskCode()))
                 .groupBy(ConstraintCollectors.max(ProductionTask::getEndTime))
-                .penalizeLong(HardSoftLongScore.ONE_SOFT, maxEndTime -> maxEndTime.toEpochSecond(ZoneOffset.UTC))
+                .penalizeLong(HardSoftLongScore.ONE_SOFT, maxEndTime -> {
+                    long weight = DynamicConstraintWeightContext.getWeightConfig().getFinishEarlyWeight();
+                    return maxEndTime.toEpochSecond(ZoneOffset.UTC) * weight;
+                })
                 .asConstraint("尽早完成任务");
+    }
+
+    public Constraint minimizeTardiness(ConstraintFactory factory) {
+        return factory.forEach(ProductionTask.class)
+                .filter(task -> ObjectNull.isNull(task.getMergeTaskCode()))
+                .filter(task -> ObjectNull.isNotNull(task.getEndTime()))
+                .filter(task -> ObjectNull.isNotNull(task.getOrder()))
+                .filter(task -> ObjectNull.isNotNull(task.getOrder().getDeliveryTime()))
+                .penalizeLong(HardSoftLongScore.ONE_SOFT, task -> {
+                    long delayMinutes = Duration.between(task.getOrder().getDeliveryTime(), task.getEndTime()).toMinutes();
+                    long weight = DynamicConstraintWeightContext.getWeightConfig().getMinimizeTardinessWeight();
+                    return Math.max(delayMinutes, 0L) * weight;
+                })
+                .asConstraint("最小化逾期");
+    }
+
+    public Constraint balanceResourceLoad(ConstraintFactory factory) {
+        return factory.forEach(ProductionTask.class)
+                .filter(task -> ObjectNull.isNull(task.getMergeTaskCode()))
+                .filter(task -> ObjectNull.isNotNull(task.getResource()))
+                .groupBy(ProductionTask::getResource, ConstraintCollectors.sumLong(this::taskDurationInMinutes))
+                .penalizeLong(HardSoftLongScore.ONE_SOFT, (resource, load) -> {
+                    long weight = DynamicConstraintWeightContext.getWeightConfig().getBalanceResourceLoadWeight();
+                    return load * load * weight;
+                })
+                .asConstraint("资源负载均衡");
     }
 
     public Constraint minimizeGapBetweenDependentTasks(ConstraintFactory factory) {
@@ -75,7 +110,8 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                 .penalizeLong(HardSoftLongScore.ONE_SOFT, (task) -> {
                     LocalDateTime frontTaskMaxEndTime = task.getFrontTasks().stream().map(ProductionTask::getEndTime).max(Comparator.naturalOrder()).get();
                     Duration duration = Duration.between(frontTaskMaxEndTime, task.getStartTime());
-                    return duration.toMinutes() > 0 ? duration.toMinutes() : 0;
+                    long weight = DynamicConstraintWeightContext.getWeightConfig().getMinimizeGapBetweenDependentTasksWeight();
+                    return (duration.toMinutes() > 0 ? duration.toMinutes() : 0) * weight;
                 })
                 .asConstraint("优化任务调度的连续性");
     }
@@ -98,6 +134,27 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                 .asConstraint("资源没有任务时间重叠");
     }
 
+    public Constraint minimizeSetupTime(ConstraintFactory factory) {
+        return factory.forEach(ProductionTask.class)
+                .filter(task -> ObjectNull.isNotNull(task.getStartTime()) && ObjectNull.isNotNull(task.getResource()))
+                .join(ProductionTask.class,
+                        Joiners.equal(ProductionTask::getResource),
+                        Joiners.lessThan(ProductionTask::getEndTime, ProductionTask::getStartTime)
+                )
+                .filter((task1, task2) -> {
+                    // 只计算相邻的两个任务：假设如果它们在同一个资源上，且没有第三个任务插在中间
+                    // 由于没有显式的 nextTask 关联，只能近似惩罚物料不同带来的切换
+                    return ObjectNull.isNotNull(task1.getMaterial()) && ObjectNull.isNotNull(task2.getMaterial())
+                            && !task1.getMaterial().getId().equals(task2.getMaterial().getId());
+                })
+                .penalizeLong(HardSoftLongScore.ONE_SOFT, (task1, task2) -> {
+                    // 动态获取针对换型时间的惩罚权重
+                    long weight = DynamicConstraintWeightContext.getWeightConfig().getMinimizeSetupTimeWeight();
+                    return weight;
+                })
+                .asConstraint("最小化换型时间");
+    }
+
     /**
      * 获取冲突分钟数
      *
@@ -113,6 +170,14 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
         LocalDateTime start = leftStart.compareTo(rightStart) > 0 ? leftStart : rightStart;
         LocalDateTime end = leftEnd.compareTo(rightEnd) < 0 ? leftEnd : rightEnd;
         return (int) Duration.between(start, end).toMillis();
+    }
+
+    private long taskDurationInMinutes(ProductionTask task) {
+        Duration duration = task.calculateTaskDuration();
+        if (ObjectNull.isNull(duration)) {
+            return 0L;
+        }
+        return Math.max(duration.toMinutes(), 0L);
     }
 
     public Constraint theEquipmentCanOnlyProcessOneProcessAtTheSameTime(ConstraintFactory factory) {

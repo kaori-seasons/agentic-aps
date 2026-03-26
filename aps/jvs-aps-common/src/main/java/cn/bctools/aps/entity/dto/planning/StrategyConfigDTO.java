@@ -33,4 +33,7 @@ public class StrategyConfigDTO {
 
     @ApiModelProperty(value = "局部搜索评估步数限制", notes = "仅当 solverProfile=FFD_TABU 时生效，每一次Move选择时评估周边邻域解的数量，推荐值:1000")
     private Integer acceptedCountLimit = 1000;
+
+    @ApiModelProperty(value = "约束权重配置")
+    private ConstraintWeightConfigDTO constraintWeightConfig = new ConstraintWeightConfigDTO();
 }
