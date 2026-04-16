@@ -158,32 +158,3 @@ http://服务器ip:9998
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-如因人数限制无法加群时，可加运营同学拉入技术交流群
-
-
-
-![谭京](https://github.com/user-attachments/assets/f53afb8d-fe2e-412b-aee9-457802c03c71)
-
-
-
-
-
-
-
