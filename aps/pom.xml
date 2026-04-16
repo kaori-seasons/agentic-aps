@@ -10,7 +10,7 @@
         <version>2.7.12</version>
     </parent>
 
-    <groupId>cn.bctools</groupId>
+    <groupId>cn.windwheel</groupId>
     <artifactId>jvs-aps</artifactId>
     <version>1.0</version>
     <packaging>pom</packaging>

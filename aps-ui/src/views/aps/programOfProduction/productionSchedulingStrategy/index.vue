@@ -156,7 +156,8 @@ const tableOption = ref({
       slot: true,
       type: 'select',
       dicData: [
-        {label: '正排', value: 'FORWARD'}
+        {label: '正排', value: 'FORWARD'},
+        {label: '逆排', value: 'BACKWARD'}
       ],
     },
     {
@@ -208,7 +209,8 @@ const formOption = ref({
       placeholder: '请选择排产方向',
       type: 'select',
       dicData: [
-        {label: '正排', value: 'FORWARD'}
+        {label: '正排', value: 'FORWARD'},
+        {label: '逆排', value: 'BACKWARD'}
       ],
       span: 12,
       rules: [{ required: true, message: '请选择排产方向', trigger: 'change' }],

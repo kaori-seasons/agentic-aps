@@ -8,8 +8,14 @@ class jvsRouter {
   routerList = []
   group = ''
   setTitle (title) {
-    //TODO 设置标题
-    console.log('setTitle...', title)
+    const commonStore = useCommonStore()
+    const websiteTitle = commonStore.tenantInfo?.systemName || this.$website?.title || this.$defaultTitle
+    const pageTitle = (title || '').trim()
+    if (!pageTitle) {
+      document.title = websiteTitle
+      return
+    }
+    document.title = pageTitle.includes(websiteTitle) ? pageTitle : `${pageTitle} - ${websiteTitle}`
   }
   closeTag (value) {
     let commonStore = useCommonStore()
@@ -20,9 +26,9 @@ class jvsRouter {
   getPath (params) {
     let { src } = params
     let result = src || '/'
-    if(src.includes('http') || src.includes('https')) {
+    if(src && (src.includes('http') || src.includes('https'))) {
       result = `/myiframe/urlPath`
-    }else{
+    }else if (src) {
       // 无http/https的路由加当前地址前缀
       // 系统自带路由不处理
       let sysList = systemRouter

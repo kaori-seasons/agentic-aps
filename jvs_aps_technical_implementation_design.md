@@ -209,6 +209,29 @@ graph TB
   - 前端甘特图性能调优（虚拟DOM、Canvas渲染重构等）。
   - 根据试点用户的实际排产结果，微调 Score 权重公式，消除 Score Traps。
 
+### 7.5 求解流程总体生命周期图 (Solver Lifecycle)
+
+```mermaid
+graph TB
+    subgraph config_phase ["配置阶段 (Compile/Config Time)"]
+        A["租户/行业配置"] --> B["StrategyConfigDTO"]
+        B --> C["解析生成 SolverConfig"]
+        C --> D["加载 Constraint Weights"]
+    end
+    subgraph solving_phase ["求解运行阶段 (Runtime Phase)"]
+        E["未排程任务/锁定任务"] --> F["SolverManager 启动"]
+        F --> G["Phase 1: FFD (First Fit Decreasing)"]
+        G --> H["Initial Solution"]
+        H --> I["Phase 2: Tabu Search"]
+        I --> J["Best Solution 迭代"]
+        J --> K["满足终止条件"]
+    end
+    subgraph feedback_phase ["反馈与监控 (Feedback)"]
+        K --> L["落库与指标收集"]
+        L --> M["A/B 对比大盘"]
+    end
+```
+
 ---
 
 > **结语**: JVS-APS 的核心在于算法算力与业务经验的平衡。通过 OptaPlanner 提供强大的全局寻优能力，结合 Pinning 和交互式甘特图赋予计划员柔性调整的权利，是该架构走向成功的关键。
