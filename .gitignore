@@ -1,0 +1,7 @@
+/.qoder/
+/log/
+/aps/.m2/
+/aps-ui/node_modules/
+/aps-ui/docker/dist/
+/aps/jvs-aps-common/target/
+/aps/jvs-aps-mgr/target/

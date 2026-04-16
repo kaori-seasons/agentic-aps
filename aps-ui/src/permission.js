@@ -34,6 +34,7 @@ function routerAddTags (to, meta, next, from) {
   const value = to.query.src || to.fullPath
   const label = to.query.name || to.name
   let $jvsRouter = new jvsRouter()
+  $jvsRouter.setTitle(to.query.name || meta.title || to.name)
   let tagsStore = useTagsStore()
   if(meta.isTab !== false && !validatenull(value) && !validatenull(label)) {
     tagsStore.ADD_TAG({
