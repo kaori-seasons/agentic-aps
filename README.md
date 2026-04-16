@@ -1,3 +1,5 @@
+# agentic-aps
+
 # jvs-aps（智能排产）
 
 
@@ -197,7 +199,6 @@ http://服务器ip:9998
 
 
 ![谭京](https://github.com/user-attachments/assets/f53afb8d-fe2e-412b-aee9-457802c03c71)
-
 
 
 
