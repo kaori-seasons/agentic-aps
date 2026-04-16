@@ -1,11 +1,5 @@
 # agentic-aps
 
-# jvs-aps（智能排产）
-
-
-#### 在线体验地址：
-https://aps.bctools.cn/   无需账号，扫码即可登录查看
-
 
 #### 介绍
 智能排产是针对工业企业提供的便捷的排产工具，目标：
@@ -160,19 +154,6 @@ npm run dev
 http://服务器ip:9998
 
 
-#### 其他JVS推荐项目
-管理平台（含管理平台、低代码）：https://frame.bctools.cn/  
-数据智仓（数据分析平台）：http://bi.bctools.cn/  
-企业文档：http://knowledge.bctools.cn/  
-企业计划（项目管理）：http://teamwork.bctools.cn/  
-规则引擎：http://rules.bctools.cn/  
-逻辑引擎：http://logic.bctools.cn/  
-视频会议：http://meeting.bctools.cn/  
-智能排产(APS)：https://aps.bctools.cn/  
-企业邮筒（Web邮箱客户端）：http://mailbox.bctools.cn/  
-
-### 技术交流与商务支持
-<img width="261" height="424" alt="0b3c772279ce09b82231b8bae7812a24" src="https://github.com/user-attachments/assets/f4bae6ce-7ff5-40ae-ac82-a2ed69c60fb0" />
 
 
 
