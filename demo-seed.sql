@@ -108,9 +108,9 @@ SET @proc_test := JSON_OBJECT(
 
 SET @route_housing := JSON_OBJECT(
   'nodes', JSON_ARRAY(
-    JSON_OBJECT('id','cut','data', @proc_cut),
-    JSON_OBJECT('id','weld','data', @proc_weld),
-    JSON_OBJECT('id','coat','data', @proc_coat)
+    JSON_OBJECT('id','cut','data', JSON_EXTRACT(@proc_cut, '$')),
+    JSON_OBJECT('id','weld','data', JSON_EXTRACT(@proc_weld, '$')),
+    JSON_OBJECT('id','coat','data', JSON_EXTRACT(@proc_coat, '$'))
   ),
   'edges', JSON_ARRAY(
     JSON_OBJECT('source','cut','target','weld'),
@@ -120,15 +120,15 @@ SET @route_housing := JSON_OBJECT(
 
 SET @route_rotor := JSON_OBJECT(
   'nodes', JSON_ARRAY(
-    JSON_OBJECT('id','wind','data', @proc_wind)
+    JSON_OBJECT('id','wind','data', JSON_EXTRACT(@proc_wind, '$'))
   ),
   'edges', JSON_ARRAY()
 );
 
 SET @route_fan := JSON_OBJECT(
   'nodes', JSON_ARRAY(
-    JSON_OBJECT('id','assy','data', @proc_assy),
-    JSON_OBJECT('id','test','data', @proc_test)
+    JSON_OBJECT('id','assy','data', JSON_EXTRACT(@proc_assy, '$')),
+    JSON_OBJECT('id','test','data', JSON_EXTRACT(@proc_test, '$'))
   ),
   'edges', JSON_ARRAY(
     JSON_OBJECT('source','assy','target','test')
