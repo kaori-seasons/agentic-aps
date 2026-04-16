@@ -13,7 +13,7 @@ import com.baomidou.mybatisplus.extension.handlers.AbstractJsonTypeHandler;
 public class ProcessRouteDesignTypeHandler extends AbstractJsonTypeHandler<Graph<ProcessRouteNodePropertiesDTO>> {
     @Override
     protected Graph<ProcessRouteNodePropertiesDTO> parse(String json) {
-        return JSON.parseObject(json, new TypeReference<>() {});
+        return JSON.parseObject(json, new TypeReference<Graph<ProcessRouteNodePropertiesDTO>>() {});
     }
 
     @Override
