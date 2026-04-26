@@ -42,6 +42,14 @@
    面向实施与运维的部署上线版
 11. `11_developer_handover_manual.md`
    面向开发接手的架构与接口版
+12. `12_multitenant_rbac_production_plan.md`
+   多租户与角色权限落地方案
+13. `13_plan_manager_foolproof_manual.md`
+   面向计划主管的端到端傻瓜式操作手册
+14. `14_scheduler_foolproof_manual.md`
+   面向排产员的端到端傻瓜式操作手册
+15. `15_dispatcher_foolproof_manual.md`
+   面向生产调度员的端到端傻瓜式操作手册
 
 ## 写作说明
 
