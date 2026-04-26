@@ -18,7 +18,7 @@ import org.optaplanner.core.api.score.director.ScoreDirector;
 @Slf4j
 public class ApsStartTimeListener implements ListVariableListener<SchedulingSolution, MainProductionResource, ProductionTask> {
 
-    private final PlanningDirectionHandler planningDirectionHandler = SpringContextUtil.getBean(PlanningDirectionHandler.class);
+    private volatile PlanningDirectionHandler planningDirectionHandler;
 
     @Override
     public void afterListVariableElementUnassigned(ScoreDirector<SchedulingSolution> scoreDirector, ProductionTask productionTask) {
@@ -38,7 +38,7 @@ public class ApsStartTimeListener implements ListVariableListener<SchedulingSolu
         PlanningDirectionEnum direction = scoreDirector.getWorkingSolution().getStrategy().getConfig().getDirection();
 
         // 修改开始时间
-        TaskTimeService taskTimeService = planningDirectionHandler.getTaskTimeService(direction);
+        TaskTimeService taskTimeService = getPlanningDirectionHandler().getTaskTimeService(direction);
         taskTimeService.updateTaskStartTime(scoreDirector, resource, fromIndex);
     }
 
@@ -60,5 +60,12 @@ public class ApsStartTimeListener implements ListVariableListener<SchedulingSolu
     @Override
     public void afterEntityRemoved(ScoreDirector<SchedulingSolution> scoreDirector, MainProductionResource productionResource) {
         // 无需重写
+    }
+
+    private PlanningDirectionHandler getPlanningDirectionHandler() {
+        if (planningDirectionHandler == null) {
+            planningDirectionHandler = SpringContextUtil.getBean(PlanningDirectionHandler.class);
+        }
+        return planningDirectionHandler;
     }
 }
