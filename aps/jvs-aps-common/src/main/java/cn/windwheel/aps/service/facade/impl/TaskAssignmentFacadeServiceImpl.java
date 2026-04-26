@@ -13,6 +13,7 @@ import cn.windwheel.aps.service.PlanInfoService;
 import cn.windwheel.aps.service.PlanTaskOrderService;
 import cn.windwheel.aps.service.PlanTaskService;
 import cn.windwheel.aps.service.ProductionResourceService;
+import cn.windwheel.aps.service.ResourceGroupDataScopeService;
 import cn.windwheel.aps.service.facade.TaskAssignmentFacadeService;
 import cn.windwheel.aps.service.facade.WorkCalendarFacadeService;
 import cn.windwheel.aps.service.facade.param.GenerateTaskAssignParam;
@@ -50,6 +51,7 @@ public class TaskAssignmentFacadeServiceImpl implements TaskAssignmentFacadeServ
     private final WorkCalendarFacadeService workCalendarFacadeService;
     private final ProductionResourceService productionResourceService;
     private final PlanInfoService planInfoService;
+    private final ResourceGroupDataScopeService resourceGroupDataScopeService;
 
     @Override
     public List<WorkAssignmentVO> workAssign(WorkAssignmentDTO workAssignment) {
@@ -62,6 +64,7 @@ public class TaskAssignmentFacadeServiceImpl implements TaskAssignmentFacadeServ
                 .ne(PlanTaskPO::getTaskStatus, PlanTaskStatusEnum.COMPLETED)
                 .le(PlanTaskPO::getStartTime, workAssignment.getEndTime())
                 .ge(PlanTaskPO::getEndTime, workAssignment.getBeginTime()));
+        planTasks = resourceGroupDataScopeService.filterPlanTasks(planTasks);
         if (ObjectNull.isNull(planTasks)) {
             return Collections.emptyList();
         }
@@ -87,11 +90,8 @@ public class TaskAssignmentFacadeServiceImpl implements TaskAssignmentFacadeServ
                 .stream()
                 .collect(Collectors.toMap(PlanTaskOrderPO::getOrderId, Function.identity()));
 
-        // 修改任务计划最近派工时间
-        planInfoService.updateAssignmentTime(workAssignment.getEndTime());
-
         // 遍历资源计划任务，生成派工
-        return resourceTaskMap.entrySet()
+        List<WorkAssignmentVO> assignments = resourceTaskMap.entrySet()
                 .stream()
                 .map(e -> {
                     String resourceId = e.getKey();
@@ -101,6 +101,10 @@ public class TaskAssignmentFacadeServiceImpl implements TaskAssignmentFacadeServ
                 })
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
+        if (ObjectNull.isNotNull(assignments)) {
+            planInfoService.updateAssignmentTime(workAssignment.getEndTime());
+        }
+        return assignments;
     }
 
     /**

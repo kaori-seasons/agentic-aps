@@ -7,6 +7,8 @@ import cn.windwheel.aps.dto.UpdateProcessDTO;
 import cn.windwheel.aps.service.ProcessService;
 import cn.windwheel.aps.service.facade.ProcessFacadeService;
 import cn.windwheel.aps.vo.DetailProcessVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
@@ -24,12 +26,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/process")
 @AllArgsConstructor
+@RequirePermission("aps:process:view")
 public class ProcessController {
     private final ProcessService processService;
     private final ProcessFacadeService processFacadeService;
 
     @ApiOperation("新增工序模板")
     @PostMapping
+    @RequirePermission("aps:process:edit")
+    @AuditOperation("新增工序模板")
     public R<String> save(@Validated @RequestBody SaveProcessDTO process) {
         processFacadeService.saveProcess(process);
         return R.ok();
@@ -37,6 +42,8 @@ public class ProcessController {
 
     @ApiOperation("修改工序模板")
     @PutMapping
+    @RequirePermission("aps:process:edit")
+    @AuditOperation("修改工序模板")
     public R<String> update(@Validated @RequestBody UpdateProcessDTO process) {
         processFacadeService.updateProcess(process);
         return R.ok();
@@ -47,6 +54,8 @@ public class ProcessController {
             @ApiImplicitParam(name = "id", value = "工序模板id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:process:edit")
+    @AuditOperation("删除工序模板")
     public R<String> delete(@PathVariable String id) {
         processService.removeById(id);
         return R.ok();

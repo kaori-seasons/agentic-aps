@@ -37,6 +37,7 @@ public class TaskWorkReportFacadeServiceImpl implements TaskWorkReportFacadeServ
     private final PlanTaskOrderService planTaskOrderService;
     private final ProductionResourceService productionResourceService;
     private final ProductionOrderService productionOrderService;
+    private final ResourceGroupDataScopeService resourceGroupDataScopeService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -51,6 +52,10 @@ public class TaskWorkReportFacadeServiceImpl implements TaskWorkReportFacadeServ
         if (ObjectNull.isNull(workReports)) {
             return;
         }
+        resourceGroupDataScopeService.assertCanAccessResourceCodes(workReports.stream()
+                .flatMap(report -> Stream.of(report.getPlanResourceCode(), report.getResourceCode()))
+                .filter(ObjectNull::isNotNull)
+                .collect(Collectors.toSet()));
         // 校验
         Set<String> reportSet = new HashSet<>();
         workReports.forEach(report -> {
@@ -93,6 +98,7 @@ public class TaskWorkReportFacadeServiceImpl implements TaskWorkReportFacadeServ
     @Override
     public void updateTaskProgress(UpdateWorkReportProgress updateReport) {
         PlanTaskPO planTask = planTaskService.getByCode(updateReport.getTaskCode());
+        resourceGroupDataScopeService.assertCanAccessResourceId(planTask.getMainResourceId());
         if (ObjectNull.isNull(planTask)) {
             return;
         }

@@ -3,6 +3,8 @@ package cn.windwheel.aps.controller;
 import cn.windwheel.aps.dto.schedule.WorkAssignmentDTO;
 import cn.windwheel.aps.service.facade.TaskAssignmentFacadeService;
 import cn.windwheel.aps.vo.schedule.WorkAssignmentExcelVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.exception.BusinessException;
 import cn.windwheel.common.utils.BeanCopyUtil;
 import cn.hutool.core.date.DatePattern;
@@ -35,12 +37,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/task-assignment")
 @AllArgsConstructor
+@RequirePermission("aps:task-assignment:export")
 public class TaskAssignmentController {
 
     private final TaskAssignmentFacadeService taskAssignmentFacadeService;
 
     @ApiOperation("导出")
     @PostMapping("/export")
+    @AuditOperation("导出派工计划")
     public void exportWorkAssignments(@Validated @RequestBody WorkAssignmentDTO workAssignment, HttpServletResponse response) {
         String fileName =
                 LocalDateTimeUtil.format(workAssignment.getBeginTime(), DatePattern.PURE_DATETIME_PATTERN)

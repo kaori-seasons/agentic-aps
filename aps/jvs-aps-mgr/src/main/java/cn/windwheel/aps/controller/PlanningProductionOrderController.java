@@ -3,6 +3,7 @@ package cn.windwheel.aps.controller;
 import cn.windwheel.aps.dto.PagePlanningProductionOrderPendingDTO;
 import cn.windwheel.aps.service.facade.PlanningProductionOrderFacadeService;
 import cn.windwheel.aps.vo.DetailProductionOrderVO;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/planning-production-order")
 @AllArgsConstructor
+@RequirePermission("aps:schedule:view")
 public class PlanningProductionOrderController {
 
     private final PlanningProductionOrderFacadeService service;

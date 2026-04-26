@@ -28,11 +28,11 @@
       </div>
     </div>
     <div class="right">
-      <div v-if="tableData && tableData.routeDesign && tableData.routeDesign.nodes" class="map-box">
-        <relationMap :data="mapData" :saveLoading="saveLoading" @save="saveHandle">
+        <div v-if="tableData && tableData.routeDesign && tableData.routeDesign.nodes" class="map-box">
+        <relationMap :data="mapData" :saveLoading="saveLoading" :editable="canEditRoute" @save="saveHandle">
           <template #right>
             <div class="right-slot">
-              <el-button v-if="tableData && tableData.id" plain :loading="enabledLoading" @click="enabledHandle">{{(tableData && tableData.enabled) ? t(`aps.productionEngineering.routing.disable`) : t(`aps.productionEngineering.routing.enable`)}}</el-button>
+              <el-button v-if="tableData && tableData.id" v-permission="'aps:process-route:edit'" plain :loading="enabledLoading" @click="enabledHandle">{{(tableData && tableData.enabled) ? t(`aps.productionEngineering.routing.disable`) : t(`aps.productionEngineering.routing.enable`)}}</el-button>
               <el-popconfirm
                 v-if="tableData && tableData.id"
                 :title="t('common.deleteConfirm')"
@@ -41,7 +41,7 @@
                 @confirm="delHandle"
               >
                 <template #reference>
-                  <el-button plain type="danger" :loading="enabledLoading">{{t(`table.delete`)}}</el-button>
+                  <el-button v-permission="'aps:process-route:edit'" plain type="danger" :loading="enabledLoading">{{t(`table.delete`)}}</el-button>
                 </template>
               </el-popconfirm>
             </div>
@@ -67,6 +67,7 @@ import { Plus, Search, WarningFilled } from '@element-plus/icons-vue'
 
 import useCommonStore from '@/store/common.js'
 import { getStore } from '@/util/store.js'
+import { hasPermission } from '@/util/permission'
 
 import relationMap from './map.vue'
 
@@ -115,6 +116,7 @@ const bomList = ref([])
 const tableData = ref(null)
 const saveLoading = ref(false)
 const enabledLoading = ref(false)
+const canEditRoute = computed(() => hasPermission('aps:process-route:edit'))
 
 getBomList()
 

@@ -44,6 +44,8 @@ const useCommonStore = defineStore('common', {
     showFullScren: getStore({ name: 'showFullScren' }) || true,
     website: getStore({ name: 'website' }) || website,
     tenantId: getStore({ name: 'tenantId' }) || '',
+    authContext: getStore({ name: 'authContext' }) || null,
+    permissions: getStore({ name: 'permissions' }) || [],
     direction: getStore({ name: 'direction' }) || 'forward',
     theme: getStore({ name: 'theme' }) || Object.assign({}, params),
     themeName: getStore({ name: 'themeName' }) || '',
@@ -191,6 +193,41 @@ const useCommonStore = defineStore('common', {
         type: ""
       });
     },
+    SET_AUTH_CONTEXT (authContext) {
+      this.authContext = authContext
+      setStore({
+        name: "authContext",
+        content: this.authContext,
+        type: "session"
+      });
+      setStore({
+        name: "authContext",
+        content: this.authContext,
+        type: ""
+      });
+      if (authContext && authContext.tenantId) {
+        this.SET_TENANTId(authContext.tenantId)
+      }
+    },
+    SET_PERMISSIONS (permissions) {
+      this.permissions = permissions || []
+      setStore({
+        name: "permissions",
+        content: this.permissions,
+        type: "session"
+      });
+      setStore({
+        name: "permissions",
+        content: this.permissions,
+        type: ""
+      });
+    },
+    CLEAR_AUTH_CONTEXT () {
+      this.authContext = null
+      removeStore({
+        name: "authContext"
+      });
+    },
     CLEAR_LOCK () {
       this.isLock = false
       this.lockPasswd = ""
@@ -286,6 +323,8 @@ const useCommonStore = defineStore('common', {
     },
     LogOut () {
       this.CLEAR_LOCK()
+      this.CLEAR_AUTH_CONTEXT()
+      this.SET_PERMISSIONS([])
       this.SET_SYSTEM("")
       this.SET_TENANTId("")
       this.SET_MENU_TYPE("")

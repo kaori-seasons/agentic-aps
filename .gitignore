@@ -1,5 +1,7 @@
 /.qoder/
 /log/
+/.m2/
+.DS_Store
 /aps/.m2/
 /aps-ui/node_modules/
 /aps-ui/docker/dist/

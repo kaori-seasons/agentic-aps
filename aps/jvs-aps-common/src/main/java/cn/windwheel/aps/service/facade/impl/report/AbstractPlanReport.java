@@ -7,6 +7,7 @@ import cn.windwheel.aps.entity.PlanTaskOrderPendingPO;
 import cn.windwheel.aps.service.PlanTaskOrderPendingService;
 import cn.windwheel.aps.service.PlanTaskOrderService;
 import cn.windwheel.aps.service.PlanTaskPendingService;
+import cn.windwheel.aps.service.ResourceGroupDataScopeService;
 import cn.windwheel.aps.service.facade.TaskAdjustFacadeService;
 import cn.windwheel.common.exception.BusinessException;
 import cn.windwheel.common.utils.BeanCopyUtil;
@@ -35,6 +36,8 @@ public abstract class AbstractPlanReport {
     private PlanTaskOrderService planTaskOrderService;
     @Resource
     private PlanTaskOrderPendingService planTaskOrderPendingService;
+    @Resource
+    private ResourceGroupDataScopeService resourceGroupDataScopeService;
 
     /**
      * 查询预览排产计划
@@ -42,14 +45,14 @@ public abstract class AbstractPlanReport {
      * @return 日期范围内的排产计划
      */
     protected List<TaskDTO> listPreviewReportTask() {
-        return planTaskPendingService.list()
+        return resourceGroupDataScopeService.filterTaskDTOs(planTaskPendingService.list()
                 .stream()
                 .map(task -> BeanCopyUtil.copy(task, TaskDTO.class)
                         .setQuantityCompleted(BigDecimal.ZERO)
                         .setDiscard(false)
                         .setCompliant(true))
                 .sorted(Comparator.comparing(TaskDTO::getStartTime))
-                .toList();
+                .toList());
     }
 
 
@@ -87,10 +90,10 @@ public abstract class AbstractPlanReport {
         if (ObjectNull.isNotNull(endDate) && beginDate.isAfter(endDate)) {
             throw new BusinessException("开始日期不能晚于结束日期");
         }
-        List<TaskDTO> tasks = taskAdjustFacadeService.listTasksByDateRange(beginDate, endDate)
+        List<TaskDTO> tasks = resourceGroupDataScopeService.filterTaskDTOs(taskAdjustFacadeService.listTasksByDateRange(beginDate, endDate)
                 .stream()
                 .sorted(Comparator.comparing(TaskDTO::getStartTime))
-                .toList();
+                .toList());
 
         if (ObjectNull.isNull(endDate)) {
             endDate = tasks.stream()

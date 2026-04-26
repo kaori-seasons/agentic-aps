@@ -22,6 +22,16 @@ export default [
     redirect: '/wel'
   },
   {
+    path: '/403',
+    component: () => import ( /* webpackChunkName: "page" */ '@/components/error-page/403.vue'),
+    name: '403',
+    meta: {
+      keepAlive: true,
+      isTab: false,
+      isAuth: false
+    }
+  },
+  {
     path: '/404',
     component: () => import ( /* webpackChunkName: "page" */ '@/components/error-page/404.vue'),
     name: '404',

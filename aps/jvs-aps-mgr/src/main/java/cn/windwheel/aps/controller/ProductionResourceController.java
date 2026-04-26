@@ -6,6 +6,8 @@ import cn.windwheel.aps.dto.SaveProductionResourceDTO;
 import cn.windwheel.aps.dto.UpdateProductionResourceDTO;
 import cn.windwheel.aps.service.ProductionResourceService;
 import cn.windwheel.aps.vo.DetailProductionResourceVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
@@ -25,11 +27,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/production-resource")
 @AllArgsConstructor
+@RequirePermission("aps:resource:view")
 public class ProductionResourceController {
     private final ProductionResourceService service;
 
     @ApiOperation("新增资源")
     @PostMapping
+    @RequirePermission("aps:resource:edit")
+    @AuditOperation("新增生产资源")
     public R<String> save(@Validated @RequestBody SaveProductionResourceDTO productionResource) {
         service.save(productionResource);
         return R.ok();
@@ -37,6 +42,8 @@ public class ProductionResourceController {
 
     @ApiOperation("修改资源")
     @PutMapping
+    @RequirePermission("aps:resource:edit")
+    @AuditOperation("修改生产资源")
     public R<String> update(@Validated @RequestBody UpdateProductionResourceDTO productionResource) {
         service.update(productionResource);
         return R.ok();
@@ -47,6 +54,8 @@ public class ProductionResourceController {
             @ApiImplicitParam(name = "id", value = "资源id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:resource:edit")
+    @AuditOperation("删除生产资源")
     public R<String> delete(@PathVariable String id) {
         service.removeById(id);
         return R.ok();

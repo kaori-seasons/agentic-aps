@@ -11,6 +11,10 @@
   const props = defineProps({
     data: {
       type: Object
+    },
+    editable: {
+      type: Boolean,
+      default: false
     }
   })
 
@@ -214,7 +218,7 @@
               emitHandle('deleteNode', tp)
             }
           },
-          enable: e => (e.target && e.target.data && e.target.data.levelValue === 1)
+          enable: e => props.editable && (e.target && e.target.data && e.target.data.levelValue === 1)
         }
       ],
     })
@@ -223,6 +227,9 @@
   }
 
   function nodeClick (e) {
+    if (!props.editable) {
+      return
+    }
     let tp = JSON.parse(JSON.stringify(e.target.data))
     delete tp.levelValue
     emitHandle('clickNode', tp.id ? tp : {node: tp})

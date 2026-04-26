@@ -7,6 +7,8 @@ import cn.windwheel.aps.dto.UpdateWorkCalendarDTO;
 import cn.windwheel.aps.entity.WorkCalendarPO;
 import cn.windwheel.aps.service.facade.WorkCalendarFacadeService;
 import cn.windwheel.aps.vo.DetailWorkCalendarVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.BeanCopyUtil;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -25,11 +27,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/work-calendar")
 @AllArgsConstructor
+@RequirePermission("aps:work-calendar:view")
 public class WorkCalendarController {
     private final WorkCalendarFacadeService workCalendarFacadeService;
 
     @ApiOperation("新增日历")
     @PostMapping
+    @RequirePermission("aps:work-calendar:edit")
+    @AuditOperation("新增工作日历")
     public R<String> save(@Validated @RequestBody SaveWorkCalendarDTO saveWorkCalendar) {
         WorkCalendarPO workCalendar = BeanCopyUtil.copy(saveWorkCalendar, WorkCalendarPO.class);
         workCalendarFacadeService.insertOrUpdate(workCalendar, saveWorkCalendar.getWorkDaySetting(), saveWorkCalendar.getResourceIds());
@@ -38,6 +43,8 @@ public class WorkCalendarController {
 
     @ApiOperation("修改日历")
     @PutMapping
+    @RequirePermission("aps:work-calendar:edit")
+    @AuditOperation("修改工作日历")
     public R<String> update(@Validated @RequestBody UpdateWorkCalendarDTO updateWorkCalendar) {
         WorkCalendarPO workCalendar = BeanCopyUtil.copy(updateWorkCalendar, WorkCalendarPO.class);
         workCalendarFacadeService.insertOrUpdate(workCalendar, updateWorkCalendar.getWorkDaySetting(), updateWorkCalendar.getResourceIds());
@@ -49,6 +56,8 @@ public class WorkCalendarController {
             @ApiImplicitParam(name = "id", value = "模式id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:work-calendar:edit")
+    @AuditOperation("删除工作日历")
     public R<String> delete(@PathVariable String id) {
         workCalendarFacadeService.delete(id);
         return R.ok();

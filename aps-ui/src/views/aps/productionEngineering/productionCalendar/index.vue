@@ -8,14 +8,14 @@
         <span>工作模式</span>
       </div>
       <div class="mode-tool">
-        <el-button type="primary" :icon="Plus" @click="addEditMode(null)">{{t(`table.add`)}}</el-button>
+        <el-button v-permission="'aps:work-mode:edit'" type="primary" :icon="Plus" @click="addEditMode(null)">{{t(`table.add`)}}</el-button>
       </div>
       <el-scrollbar :class="{'mode-list': true, 'loading': modeLoading}">
         <div v-for="mode in modelList" :key="mode.id" class="mode-list-item">
           <div class="header">
             <span>{{mode.name}}</span>
             <div>
-              <el-icon size="16" color="#1E6FFF" @click="addEditMode(mode)"><Edit /></el-icon>
+              <el-icon v-permission="'aps:work-mode:edit'" size="16" color="#1E6FFF" @click="addEditMode(mode)"><Edit /></el-icon>
               <span class="slide-line"></span>
               <el-popconfirm
                 :title="t('common.deleteConfirm')"
@@ -24,7 +24,7 @@
                 @confirm="deleteMode(mode)"
               >
                 <template #reference>
-                  <el-icon size="16" color="#1E6FFF"><Delete /></el-icon>
+                  <el-icon v-permission="'aps:work-mode:edit'" size="16" color="#1E6FFF"><Delete /></el-icon>
                 </template>
               </el-popconfirm>
             </div>
@@ -39,7 +39,7 @@
     <div class="right">
       <div class="top">
         <div class="left-box">
-          <el-button type="primary" :icon="Plus" @click="addEditRow(null)">{{t(`table.add`)}}</el-button>
+          <el-button v-permission="'aps:work-calendar:edit'" type="primary" :icon="Plus" @click="addEditRow(null)">{{t(`table.add`)}}</el-button>
         </div>
       </div>
       <div class="bottom">
@@ -53,7 +53,7 @@
             @delRow="delHandle"
           >
             <template #menu="scope">
-              <el-button :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
+              <el-button v-permission="'aps:work-calendar:edit'" :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
             </template>
             <template #workModeId="scope">
               <span>{{scope.row.workModeName}}</span>
@@ -144,7 +144,7 @@
                 @setTable="setResource"
               >
                 <template #menuBtn="scope">
-                  <el-button text @click="deleteRow(scope.row, scope.index, 'resourceIds')"><span style="color: #F56C6C;">{{t(`table.delete`)}}</span></el-button>
+                  <el-button v-permission="'aps:work-calendar:edit'" text @click="deleteRow(scope.row, scope.index, 'resourceIds')"><span style="color: #F56C6C;">{{t(`table.delete`)}}</span></el-button>
                 </template>
                 <template #capacityItem="scope">
                   <div>{{(scope.row.capacity ? `${scope.row.capacity}${scope.row.unit || ''}` : '') || '--'}}</div>
@@ -184,7 +184,7 @@
         <!-- 多选底部左侧确认按钮 -->
         <template #menuLeftBottom>
           <div>
-            <el-button type="primary" @click="selectSubmit">确认</el-button>
+            <el-button v-permission="'aps:work-calendar:edit'" type="primary" @click="selectSubmit">确认</el-button>
             <el-button @click="resourceClose">取消</el-button>
           </div>
         </template>

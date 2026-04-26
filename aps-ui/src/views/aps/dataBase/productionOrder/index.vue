@@ -11,10 +11,10 @@
       @delRow="delHandle"
     >
       <template #menuLeft>
-        <el-button type="primary" :icon="Plus" size="small" @click="addEditRow(null)">{{t(`aps.dataBase.productionOrder.add`)}}</el-button>
+        <el-button v-permission="'aps:production-order:edit'" type="primary" :icon="Plus" size="small" @click="addEditRow(null)">{{t(`aps.dataBase.productionOrder.add`)}}</el-button>
       </template>
       <template #menu="scope">
-        <el-button :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
+        <el-button v-permission="'aps:production-order:edit'" :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
         <el-button v-if="scope.row.hasSupplement" :text="true" size="small" @click="supplementHandle(scope.row)">{{t(`aps.dataBase.productionOrder.hasSupplement`)}}</el-button>
       </template>
       <template #priority="scope">
@@ -37,7 +37,7 @@
         </div>
       </template>
       <template #canSchedule="scope">
-        <div :class="{'canSchedule-item': true, 'active': scope.row.canSchedule}" @click="editScheduleHandle(scope.row)" style="cursor: pointer;">
+        <div v-permission="'aps:production-order:edit'" :class="{'canSchedule-item': true, 'active': scope.row.canSchedule}" @click="editScheduleHandle(scope.row)" style="cursor: pointer;">
           <el-icon v-if="scope.row.canSchedule" size="16" color="#fff"><Select /></el-icon>
         </div>
       </template>

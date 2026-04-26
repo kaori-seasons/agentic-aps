@@ -6,6 +6,7 @@ import cn.windwheel.aps.entity.PlanTaskPO;
 import cn.windwheel.aps.entity.enums.PlanTaskStatusEnum;
 import cn.windwheel.aps.service.PlanTaskAdjustService;
 import cn.windwheel.aps.service.PlanTaskService;
+import cn.windwheel.aps.service.ResourceGroupDataScopeService;
 import cn.windwheel.aps.service.facade.TaskAdjustFacadeService;
 import cn.windwheel.common.utils.BeanCopyUtil;
 import cn.windwheel.common.utils.ObjectNull;
@@ -27,6 +28,8 @@ public class TaskAdjustFacadeServiceImpl implements TaskAdjustFacadeService {
     private PlanTaskService planTaskService;
     @Resource
     private PlanTaskAdjustService planTaskAdjustService;
+    @Resource
+    private ResourceGroupDataScopeService resourceGroupDataScopeService;
 
     @Override
     public void saveAdjustTasks(List<TaskDTO> taskAdjustList) {
@@ -96,9 +99,12 @@ public class TaskAdjustFacadeServiceImpl implements TaskAdjustFacadeService {
         // 优先查询已调整的任务
         PlanTaskAdjustPO taskAdjust = planTaskAdjustService.getByCode(taskCode);
         if (ObjectNull.isNotNull(taskAdjust)) {
+            resourceGroupDataScopeService.assertCanAccessResourceId(taskAdjust.getMainResourceId());
             return BeanCopyUtil.copy(taskAdjust, TaskDTO.class).setAdjusted(true);
         }
-        return BeanCopyUtil.copy(planTaskService.getByCode(taskCode), TaskDTO.class).setDiscard(false).setCompliant(true);
+        PlanTaskPO planTask = planTaskService.getByCode(taskCode);
+        resourceGroupDataScopeService.assertCanAccessResourceId(planTask.getMainResourceId());
+        return BeanCopyUtil.copy(planTask, TaskDTO.class).setDiscard(false).setCompliant(true);
     }
 
     @Override
@@ -235,7 +241,7 @@ public class TaskAdjustFacadeServiceImpl implements TaskAdjustFacadeService {
                 taskList.add(planTask);
             });
         }
-        return taskList;
+        return resourceGroupDataScopeService.filterTaskDTOs(taskList);
     }
 
     /**

@@ -34,6 +34,14 @@
    甘特图、预览、确认、锁定、拆分、移动的人机协同闭环
 7. `07_production_deployment_and_evolution.md`
    生产落地、运行治理与系统演进路线
+8. `08_production_operations_manual.md`
+   面向实施、计划与运维的生产操作手册
+9. `09_business_planner_manual.md`
+   面向业务与计划员的日常操作版
+10. `10_implementation_operations_manual.md`
+   面向实施与运维的部署上线版
+11. `11_developer_handover_manual.md`
+   面向开发接手的架构与接口版
 
 ## 写作说明
 

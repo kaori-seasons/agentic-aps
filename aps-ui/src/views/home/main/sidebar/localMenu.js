@@ -13,7 +13,7 @@ export const localMenuData =  {
             name: "物料",
           },
           name: "物料",
-          permisionFlag: "",
+          permisionFlag: "aps:material:view",
           langKey: 'matter'
         },
         {
@@ -24,7 +24,7 @@ export const localMenuData =  {
             name: "主资源",
           },
           name: "主资源",
-          permisionFlag: "",
+          permisionFlag: "aps:resource:view",
           langKey: 'resource'
         },
         {
@@ -35,7 +35,7 @@ export const localMenuData =  {
             name: "生产订单",
           },
           name: "生产订单",
-          permisionFlag: "",
+          permisionFlag: "aps:production-order:view",
           langKey: 'productionOrder'
         },
         {
@@ -46,7 +46,7 @@ export const localMenuData =  {
             name: "来料计划",
           },
           name: "来料计划",
-          permisionFlag: "",
+          permisionFlag: "aps:incoming-material-order:view",
           langKey: 'materialPlan'
         },
         {
@@ -57,7 +57,7 @@ export const localMenuData =  {
             name: "制造BOM",
           },
           name: "制造BOM",
-          permisionFlag: "",
+          permisionFlag: "aps:bom:view",
           langKey: 'bom'
         },
       ]
@@ -75,7 +75,7 @@ export const localMenuData =  {
             name: "工序模板",
           },
           name: "工序模板",
-          permisionFlag: "",
+          permisionFlag: "aps:process:view",
           langKey: 'technology'
         },
         {
@@ -86,7 +86,7 @@ export const localMenuData =  {
             name: "工艺路线",
           },
           name: "工艺路线",
-          permisionFlag: "",
+          permisionFlag: "aps:process-route:view",
           langKey: 'routing'
         },
         {
@@ -97,7 +97,7 @@ export const localMenuData =  {
             name: "生产日历",
           },
           name: "生产日历",
-          permisionFlag: "",
+          permisionFlag: "aps:work-calendar:view",
           langKey: 'productionCalendar'
         },
       ]
@@ -115,7 +115,7 @@ export const localMenuData =  {
             name: "排产策略",
           },
           name: "排产策略",
-          permisionFlag: "",
+          permisionFlag: "aps:strategy:view",
           langKey: 'productionSchedulingStrategy'
         },
         {
@@ -126,8 +126,26 @@ export const localMenuData =  {
             name: "排产计划",
           },
           name: "排产计划",
-          permisionFlag: "",
+          permisionFlag: "aps:schedule:view",
           langKey: 'productionSchedulingPlan'
+        },
+      ]
+    },
+    {
+      name: '系统治理',
+      icon: 'jvs-aps-icon-jichushuju',
+      langKey: 'systemGovernance',
+      children: [
+        {
+          extend: {
+            newWindow: false,
+            icon: "",
+            url: "/jvs-aps-ui/operationAudit",
+            name: "操作审计",
+          },
+          name: "操作审计",
+          permisionFlag: "aps:audit:view",
+          langKey: 'operationAudit'
         },
       ]
     }

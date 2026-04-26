@@ -2,6 +2,7 @@ package cn.windwheel.aps.controller;
 
 import cn.windwheel.aps.service.facade.WorkCalendarFacadeService;
 import cn.windwheel.aps.vo.DetailProductionResourceVO;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -20,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/resource-calendar")
 @AllArgsConstructor
+@RequirePermission("aps:resource:view")
 public class ResourceCalendarController {
 
     private final WorkCalendarFacadeService workCalendarFacadeService;

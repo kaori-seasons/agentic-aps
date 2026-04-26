@@ -3,13 +3,15 @@ import { Resize } from "./resizeObserver"
 import loadMore from "./loadMore"
 import scrollLoad from "./scrollLoad"
 import lazyload from "./lazyload"
+import permission from "./permission"
 
 // 自定义指令集合
 const directives = {
   Resize,
   loadMore,
   scrollLoad,
-  lazyload
+  lazyload,
+  permission
 }
 
 const registerDirectives = (app: any)=>{

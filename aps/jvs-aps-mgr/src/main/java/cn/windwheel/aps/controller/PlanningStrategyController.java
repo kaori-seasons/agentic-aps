@@ -6,6 +6,8 @@ import cn.windwheel.aps.dto.UpdatePlanningStrategyDTO;
 import cn.windwheel.aps.service.PlanningStrategyService;
 import cn.windwheel.aps.vo.DetailPlanningStrategyVO;
 import cn.windwheel.aps.vo.StrategyOrderSchedulingRuleOptionVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
@@ -25,12 +27,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/planning-strategy")
 @AllArgsConstructor
+@RequirePermission("aps:strategy:view")
 public class PlanningStrategyController {
 
     private final PlanningStrategyService service;
 
     @ApiOperation("新增策略")
     @PostMapping
+    @RequirePermission("aps:strategy:edit")
+    @AuditOperation("新增计划策略")
     public R<String> save(@Validated @RequestBody SavePlanningStrategyDTO planningStrategy) {
         service.save(planningStrategy);
         return R.ok();
@@ -38,6 +43,8 @@ public class PlanningStrategyController {
 
     @ApiOperation("修改策略")
     @PutMapping
+    @RequirePermission("aps:strategy:edit")
+    @AuditOperation("修改计划策略")
     public R<String> update(@Validated @RequestBody UpdatePlanningStrategyDTO planningStrategy) {
         service.update(planningStrategy);
         return R.ok();
@@ -49,6 +56,8 @@ public class PlanningStrategyController {
             @ApiImplicitParam(name = "active", value = "false-无效，true-有效", required = true)
     })
     @PutMapping("/change/{id}/active")
+    @RequirePermission("aps:strategy:edit")
+    @AuditOperation("修改计划策略有效状态")
     public R<String> updateActive(@PathVariable String id, Boolean active) {
         service.updateActive(id, active);
         return R.ok();
@@ -59,6 +68,8 @@ public class PlanningStrategyController {
             @ApiImplicitParam(name = "id", value = "策略id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:strategy:edit")
+    @AuditOperation("删除计划策略")
     public R<String> delete(@PathVariable String id) {
         service.removeById(id);
         return R.ok();
