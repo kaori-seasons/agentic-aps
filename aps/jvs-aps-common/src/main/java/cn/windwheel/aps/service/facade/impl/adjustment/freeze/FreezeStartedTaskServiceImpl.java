@@ -30,12 +30,14 @@ public class FreezeStartedTaskServiceImpl extends AbstractAdjustTaskFreeze<Freez
         List<PlanTaskAdjustPO> taskAdjustList = planTaskAdjustService.list(Wrappers.<PlanTaskAdjustPO>lambdaQuery()
                 .ne(PlanTaskAdjustPO::getTaskStatus, PlanTaskStatusEnum.COMPLETED)
                 .le(PlanTaskAdjustPO::getStartTime, now));
+        taskAdjustList = resourceGroupDataScopeService.filterPlanTaskAdjusts(taskAdjustList);
 
         // 查询已排产任务
         List<String> taskAdjustCodes = taskAdjustList.stream().map(PlanTaskAdjustPO::getCode).toList();
         List<PlanTaskPO> planTaskList = planTaskService.list(Wrappers.<PlanTaskPO>lambdaQuery()
                 .ne(PlanTaskPO::getTaskStatus, PlanTaskStatusEnum.COMPLETED)
                 .le(PlanTaskPO::getStartTime, now));
+        planTaskList = resourceGroupDataScopeService.filterPlanTasks(planTaskList);
         // 移除已存在于调整任务中的任务、合并任务的子任务
         planTaskList.removeIf(task -> ObjectNull.isNotNull(task.getMergeTaskCode()) || taskAdjustCodes.contains(task.getCode()));
         // 移除已丢弃的任务、合并任务的子任务

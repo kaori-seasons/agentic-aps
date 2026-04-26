@@ -221,6 +221,8 @@ const lang_zh_CN = {
     programOfProduction: '生产计划',
     productionSchedulingStrategy: '排产策略',
     productionSchedulingPlan: '排产计划',
+    systemGovernance: '系统治理',
+    operationAudit: '操作审计',
   },
   aps: {
     dataBase: {

@@ -4,6 +4,8 @@ import cn.windwheel.aps.dto.schedule.UpdateWorkReportProgress;
 import cn.windwheel.aps.dto.schedule.WorkReportDTO;
 import cn.windwheel.aps.service.facade.TaskWorkReportFacadeService;
 import cn.windwheel.aps.vo.schedule.WorkAssignmentExcelVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.exception.BusinessException;
 import cn.windwheel.common.utils.BeanCopyUtil;
 import cn.windwheel.common.utils.ObjectNull;
@@ -28,12 +30,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/task-report")
 @AllArgsConstructor
+@RequirePermission("aps:task-report:edit")
 public class TaskReportController {
 
     private final TaskWorkReportFacadeService taskWorkReportFacadeService;
 
     @ApiOperation(value = "导入")
     @PostMapping("/import")
+    @RequirePermission("aps:task-report:import")
+    @AuditOperation("导入报工记录")
     public R<String> treeImport(@RequestParam("file") MultipartFile file) {
         List<WorkReportDTO> workReportList = null;
         try {
@@ -52,6 +57,7 @@ public class TaskReportController {
 
     @ApiOperation(value = "修改指定任务报工进度")
     @PostMapping("/update/progress")
+    @AuditOperation("修改任务报工进度")
     public R<String> updateProgress(@Validated @RequestBody UpdateWorkReportProgress updateWorkReportProgress) {
         taskWorkReportFacadeService.updateTaskProgress(updateWorkReportProgress);
         return R.ok();
@@ -59,6 +65,7 @@ public class TaskReportController {
 
     @ApiOperation(value = "批量修改指定任务报工进度")
     @PostMapping("/update/batch/progress")
+    @AuditOperation("批量修改任务报工进度")
     public R<String> updateProgress(@Validated @RequestBody List<UpdateWorkReportProgress> updateWorkReportProgress) {
         if (ObjectNull.isNull(updateWorkReportProgress)) {
             return R.ok();

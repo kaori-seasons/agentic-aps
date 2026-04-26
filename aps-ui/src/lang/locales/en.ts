@@ -221,6 +221,8 @@ const lang_en = {
     programOfProduction: 'program of production',
     productionSchedulingStrategy: 'Production scheduling strategy',
     productionSchedulingPlan: 'Production scheduling plan',
+    systemGovernance: 'System governance',
+    operationAudit: 'Operation audit',
   },
   aps: {
     dataBase: {

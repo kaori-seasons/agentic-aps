@@ -5,6 +5,7 @@ import cn.windwheel.aps.entity.PlanTaskAdjustPO;
 import cn.windwheel.aps.entity.PlanTaskPO;
 import cn.windwheel.aps.service.PlanTaskAdjustService;
 import cn.windwheel.aps.service.PlanTaskService;
+import cn.windwheel.aps.service.ResourceGroupDataScopeService;
 import cn.windwheel.aps.service.facade.AdjustTaskFreezeFacadeService;
 import cn.windwheel.aps.vo.schedule.GanttTaskFreezeVO;
 import cn.windwheel.aps.vo.schedule.TaskAdjustFreezeVO;
@@ -26,6 +27,8 @@ public abstract class AbstractAdjustTaskFreeze<T extends AdjustTaskFreezeDTO> im
     protected PlanTaskService planTaskService;
     @Resource
     protected PlanTaskAdjustService planTaskAdjustService;
+    @Resource
+    protected ResourceGroupDataScopeService resourceGroupDataScopeService;
 
     @Override
     public TaskAdjustFreezeVO freeze(boolean pinned, T input) {
@@ -59,6 +62,8 @@ public abstract class AbstractAdjustTaskFreeze<T extends AdjustTaskFreezeDTO> im
         if (ObjectNull.isNull(toggleTask)) {
             return;
         }
+        toggleTask.setTaskAdjustList(resourceGroupDataScopeService.filterPlanTaskAdjusts(toggleTask.getTaskAdjustList()));
+        toggleTask.setPlanTaskList(resourceGroupDataScopeService.filterPlanTasks(toggleTask.getPlanTaskList()));
         // 删除已丢弃的任务
         toggleTask.getTaskAdjustList().removeIf(PlanTaskAdjustPO::getDiscard);
 
@@ -75,11 +80,11 @@ public abstract class AbstractAdjustTaskFreeze<T extends AdjustTaskFreezeDTO> im
                 .forEach(mergeTaskCodes::add);
 
         // 查询已调整的任务
-        List<PlanTaskAdjustPO> childTaskAdjustList = planTaskAdjustService.listTaskByMergeTaskCodes(mergeTaskCodes).stream()
+        List<PlanTaskAdjustPO> childTaskAdjustList = resourceGroupDataScopeService.filterPlanTaskAdjusts(planTaskAdjustService.listTaskByMergeTaskCodes(mergeTaskCodes)).stream()
                 .filter(task -> !task.getDiscard())
                 .collect(Collectors.toList());
         // 查询已排产的任务
-        List<PlanTaskPO> childTaskList = planTaskService.listTaskByMergeTaskCodes(mergeTaskCodes);
+        List<PlanTaskPO> childTaskList = resourceGroupDataScopeService.filterPlanTasks(planTaskService.listTaskByMergeTaskCodes(mergeTaskCodes));
         List<String> taskAdjustCodeList = childTaskAdjustList.stream()
                 .map(PlanTaskAdjustPO::getCode)
                 .toList();

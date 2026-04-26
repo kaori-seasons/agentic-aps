@@ -4,6 +4,8 @@ import 'nprogress/nprogress.css' // progress bar style
 import { validatenull } from '@/util/validate'
 import useTagsStore from '@/store/tags'
 import jvsRouter from '@/router/jvs-router'
+import website from '@/const/website'
+import { hasPermission } from '@/util/permission'
 
 // 前一次路由 防止复制链接没有回退路径(针对移动端)
 window.preVueRouter = ''
@@ -11,6 +13,19 @@ window.preVueRouter = ''
 router.beforeEach((to, from, next) => {
   let tagsStore = useTagsStore()
   window.preVueRouter = from.path
+  if (website.whiteList.includes(to.path)) {
+    routerAddTags(to, to.meta || {}, next, from)
+    return
+  }
+  if (to.meta && to.meta.permission && !hasPermission(to.meta.permission)) {
+    next({
+      path: '/403',
+      query: {
+        redirect: to.fullPath
+      }
+    })
+    return
+  }
   // 缓冲设置
   if(to.meta.keepAlive === true && tagsStore.tagList.some(ele => { return ele.value === to.fullPath })) {
     to.meta.$keepAlive = true

@@ -6,6 +6,7 @@ import 'nprogress/nprogress.css'
 import { errorCode, authCode, authErrorCode } from '@/const/errorCode.js'
 import router from '@/router'
 import { ElNotification } from 'element-plus'
+import { getAuthHeaders } from '@/util/authContext'
 
 const instance = axios.create({
 	baseURL: import.meta.env.VITE_BASE_URL,
@@ -33,7 +34,9 @@ const statusCodeEnum = {
 // 请求拦截器
 instance.interceptors.request.use( (config:any) => {
 	// 添加请求头 固定参数
+	config.headers = config.headers || {}
 	config.headers['jvs-rule-ua'] = encodeURI('2.2')
+	Object.assign(config.headers, getAuthHeaders())
 	// headers中配置serialize为true开启序列化 文件
 	if(config.methods === 'post' && config.headers.serialize) {
 		config.data = serialize(config.data)
@@ -76,6 +79,24 @@ instance.interceptors.response.use( (res:any) => {
 			router.push({ path: '/' })
 		}
 		return
+	}
+	if (res.data && Number(res.data.code) === 403) {
+		const authMessage = res.data.msg || '无权限访问'
+		ElNotification.closeAll()
+		ElNotification.error({
+			title: '提示',
+			message: authMessage,
+			position: 'bottom-right',
+		})
+		if (router.currentRoute.value.path !== '/403') {
+			router.push({
+				path: '/403',
+				query: {
+					redirect: router.currentRoute.value.fullPath
+				}
+			})
+		}
+		return Promise.reject(new Error(authMessage))
 	}
 
 	if(status === 404) {

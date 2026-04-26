@@ -8,6 +8,7 @@ import cn.windwheel.aps.dto.schedule.report.PlanTaskReportDTO;
 import cn.windwheel.aps.entity.enums.ReportTypeEnum;
 import cn.windwheel.aps.service.facade.PlanSolutionFacadeService;
 import cn.windwheel.aps.vo.schedule.report.*;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -26,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/schedule-result/report")
 @AllArgsConstructor
+@RequirePermission("aps:schedule-result:view")
 public class ScheduleResultController {
 
     private final ReportHandler reportHandler;

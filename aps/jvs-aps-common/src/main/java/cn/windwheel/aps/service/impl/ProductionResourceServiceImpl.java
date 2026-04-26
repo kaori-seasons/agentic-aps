@@ -7,6 +7,7 @@ import cn.windwheel.aps.entity.ProductionResourcePO;
 import cn.windwheel.aps.entity.enums.ResourceStatusEnum;
 import cn.windwheel.aps.mapper.ProductionResourceMapper;
 import cn.windwheel.aps.service.ProductionResourceService;
+import cn.windwheel.aps.service.ResourceGroupDataScopeService;
 import cn.windwheel.aps.util.BigDecimalUtils;
 import cn.windwheel.aps.vo.DetailProductionResourceVO;
 import cn.windwheel.common.exception.BusinessException;
@@ -16,6 +17,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,14 +33,18 @@ import java.util.stream.Collectors;
  * 资源
  */
 @Service
+@AllArgsConstructor
 public class ProductionResourceServiceImpl extends ServiceImpl<ProductionResourceMapper, ProductionResourcePO> implements ProductionResourceService {
+
+    private final ResourceGroupDataScopeService resourceGroupDataScopeService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void save(SaveProductionResourceDTO saveProductionResource) {
         ProductionResourcePO productionResource = BeanCopyUtil.copy(saveProductionResource, ProductionResourcePO.class);
-        checkCanSave(productionResource);
         setDefault(productionResource);
+        resourceGroupDataScopeService.assertCanAccessResourceGroup(productionResource.getResourceGroup());
+        checkCanSave(productionResource);
         save(productionResource);
     }
 
@@ -46,8 +52,10 @@ public class ProductionResourceServiceImpl extends ServiceImpl<ProductionResourc
     @Override
     public void update(UpdateProductionResourceDTO updateProductionResource) {
         ProductionResourcePO productionResource = BeanCopyUtil.copy(updateProductionResource, ProductionResourcePO.class);
-        checkCanSave(productionResource);
         setDefault(productionResource);
+        resourceGroupDataScopeService.assertCanAccessResourceId(productionResource.getId());
+        resourceGroupDataScopeService.assertCanAccessResourceGroup(productionResource.getResourceGroup());
+        checkCanSave(productionResource);
         updateById(productionResource);
     }
 
@@ -79,7 +87,11 @@ public class ProductionResourceServiceImpl extends ServiceImpl<ProductionResourc
 
     @Override
     public Page<DetailProductionResourceVO> page(PageProductionResourceDTO pageQuery) {
+        if (!resourceGroupDataScopeService.hasFullAccess() && ObjectNull.isNull(resourceGroupDataScopeService.listAuthorizedResourceGroups())) {
+            return new Page<>(pageQuery.getCurrent(), pageQuery.getSize(), 0);
+        }
         LambdaQueryWrapper<ProductionResourcePO> wrapper = Wrappers.<ProductionResourcePO>lambdaQuery()
+                .in(!resourceGroupDataScopeService.hasFullAccess(), ProductionResourcePO::getResourceGroup, resourceGroupDataScopeService.listAuthorizedResourceGroups())
                 .eq(ObjectNull.isNotNull(pageQuery.getResourceGroup()), ProductionResourcePO::getResourceGroup, pageQuery.getResourceGroup())
                 .like(ObjectNull.isNotNull(pageQuery.getCode()), ProductionResourcePO::getCode, pageQuery.getCode())
                 .like(ObjectNull.isNotNull(pageQuery.getName()), ProductionResourcePO::getName, pageQuery.getName())
@@ -103,13 +115,14 @@ public class ProductionResourceServiceImpl extends ServiceImpl<ProductionResourc
         if (ObjectNull.isNull(resource)) {
             return null;
         }
+        resourceGroupDataScopeService.assertCanAccessResourceGroup(resource.getResourceGroup());
         convertData(resource);
         return BeanCopyUtil.copy(resource, DetailProductionResourceVO.class);
     }
 
     @Override
     public List<String> listResourceGroups() {
-        return list().stream()
+        return resourceGroupDataScopeService.filterResources(list()).stream()
                 .map(ProductionResourcePO::getResourceGroup)
                 .distinct()
                 .sorted((o1, o2) -> {

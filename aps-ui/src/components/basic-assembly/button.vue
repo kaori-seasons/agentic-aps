@@ -1,5 +1,6 @@
 <template>
   <el-button
+    v-if="buttonVisible"
     :size="size || defaultSet.size"
     :type="type || defaultSet.type"
     :text="text || defaultSet.text"
@@ -26,6 +27,7 @@ import {
   computed,
   getCurrentInstance,
 } from 'vue'
+import { hasPermission } from '@/util/permission'
 
 const emit = defineEmits(['click'])
 
@@ -97,6 +99,13 @@ const defaultSet = ref({
   autofocus: false, // 是否默认聚焦
   nativeType: 'button',
   permisionFlag: '', // 权限标识
+})
+
+const buttonVisible = computed(() => {
+  if (!props.permisionFlag) {
+    return true
+  }
+  return hasPermission(props.permisionFlag)
 })
 
 function clickHandle () {

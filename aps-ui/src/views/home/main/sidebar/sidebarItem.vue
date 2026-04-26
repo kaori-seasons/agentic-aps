@@ -60,6 +60,7 @@ import { useI18n } from 'vue-i18n'
 
 import useCommonStore from '@/store/common.js'
 import jvsRouter from '@/router/jvs-router'
+import { filterMenuTreeByPermission } from '@/util/permission'
 
 import { localMenuData } from './localMenu.js'
 import configData from './config.js'
@@ -107,7 +108,7 @@ const nowTagValue = computed(() => {
   return $jvsRouter.formatMenuPath(route)
 })
 const localMenu = computed(() => {
-  let temp = localMenuData.defaultMenu
+  let temp = filterMenuTreeByPermission(localMenuData.defaultMenu)
   let list = []
   temp.filter(tp => {
     if(tp.children && tp.children.length > 0) {
@@ -354,4 +355,3 @@ function openClose (item) {
   }
 }
 </style>
-

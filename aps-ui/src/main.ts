@@ -14,6 +14,7 @@ import pinia from '@/store'
 
 import onePrompt from '@/util/onePrompt'
 import { openUrl } from '@/util/common'
+import { initializeRuntimeAuthContext } from '@/util/authContext'
 
 import {registerDirectives,directives} from '@/directives'
 
@@ -39,6 +40,7 @@ app.use(clickOutside)
 
 app.use(pinia)
 app.use(router)
+initializeRuntimeAuthContext()
 app.use(ElementPlus, {
     locale: zhCn,
 })

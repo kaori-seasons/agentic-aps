@@ -8,6 +8,8 @@ import cn.windwheel.aps.service.facade.BomFacadeService;
 import cn.windwheel.aps.tree.Tree;
 import cn.windwheel.aps.vo.DetailManufactureBomVO;
 import cn.windwheel.aps.vo.MaterialBomVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
@@ -25,12 +27,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/manufacture-bom")
 @AllArgsConstructor
+@RequirePermission("aps:bom:view")
 public class ManufactureBomController {
     private BomFacadeService bomFacadeService;
     private ManufactureBomService manufactureBomService;
 
     @ApiOperation("新增BOM")
     @PostMapping
+    @RequirePermission("aps:bom:edit")
+    @AuditOperation("新增制造BOM")
     public R<String> save(@Validated @RequestBody SaveManufactureBomDTO manufactureBom) {
         bomFacadeService.saveManufactureBom(manufactureBom);
         return R.ok();
@@ -38,6 +43,8 @@ public class ManufactureBomController {
 
     @ApiOperation("修改BOM")
     @PutMapping
+    @RequirePermission("aps:bom:edit")
+    @AuditOperation("修改制造BOM")
     public R<String> update(@Validated @RequestBody UpdateManufactureBomDTO manufactureBom) {
         bomFacadeService.updateManufactureBom(manufactureBom);
         return R.ok();
@@ -48,6 +55,8 @@ public class ManufactureBomController {
             @ApiImplicitParam(name = "id", value = "bom id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:bom:edit")
+    @AuditOperation("删除制造BOM")
     public R<String> delete(@PathVariable String id) {
         manufactureBomService.removeById(id);
         return R.ok();

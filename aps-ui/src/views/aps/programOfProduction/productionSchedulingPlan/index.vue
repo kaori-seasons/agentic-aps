@@ -1,6 +1,6 @@
 <template>
   <div class="basic-layout-box aps-programOfProduction-productionSchedulingPlan">
-    <div class="top-box" :style="!(processInfo && processInfo.status != 'NONE') ? 'cursor: pointer;' : ''" @click="generateOpen">
+    <div class="top-box" :style="canScheduleRun && !(processInfo && processInfo.status != 'NONE') ? 'cursor: pointer;' : ''" @click="generateOpen">
       <div class="left">
         <img src="/jvs-ui-public/img/processBack.png" alt="">
       </div>
@@ -52,9 +52,9 @@
           </div>
         </el-scrollbar>
         <div class="footer-box">
-          <el-button v-if="processInfo && ['SUCCESS', 'NO_SCHEDULED'].indexOf(processInfo.status) > -1" type="primary" :loading="confirmLoading" @click="confirmHandle">{{t(`form.submit`)}}</el-button>
-          <el-button :loading="abandonLoading" @click="abandonHandle">{{t(`aps.programOfProduction.productionSchedulingPlan.abandon`)}}</el-button>
-          <el-button v-if="processInfo && ['SUCCESS'].indexOf(processInfo.status) > -1" plain @click="openPreview">预览</el-button>
+          <el-button v-if="processInfo && ['SUCCESS', 'NO_SCHEDULED'].indexOf(processInfo.status) > -1" v-permission="'aps:schedule:confirm'" type="primary" :loading="confirmLoading" @click="confirmHandle">{{t(`form.submit`)}}</el-button>
+          <el-button v-permission="'aps:schedule:cancel'" :loading="abandonLoading" @click="abandonHandle">{{t(`aps.programOfProduction.productionSchedulingPlan.abandon`)}}</el-button>
+          <el-button v-if="processInfo && ['SUCCESS'].indexOf(processInfo.status) > -1" v-permission="'aps:schedule:preview'" plain @click="openPreview">预览</el-button>
         </div>
       </div>
     </el-dialog>
@@ -119,6 +119,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElNotification } from 'element-plus'
+import { hasPermission } from '@/util/permission'
 
 import tabsCom from './component'
 const componentList = shallowRef({
@@ -156,6 +157,7 @@ const confirmVisible = ref(false)
 const chooseRow = ref(null)
 const freshRandom = ref(-1)
 const previewVisible = ref(false)
+const canScheduleRun = computed(() => hasPermission('aps:schedule:run'))
 
 getgetProgressInfo()
 
@@ -261,6 +263,9 @@ function processClose () {
 }
 
 function generateOpen () {
+  if(!canScheduleRun.value) {
+    return
+  }
   if(processInfo && processInfo.value.status != 'NONE') {
     return
   }

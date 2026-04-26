@@ -7,7 +7,7 @@
           <div class="tools-list">
             <el-popconfirm width="360px" title="撤销操作将撤回您对任务的移动、拆分和合并更改，但锁定和解锁状态将不受影响。确认继续吗？" @confirm="cancelAdjustHandle(adjusted)">
               <template #reference>
-                <el-button :loading="adjustLoading" :class="{'tool-item': true, 'enable': adjusted}" :disabled="!(adjusted && !adjustLoading)">
+                <el-button v-permission="'aps:task-adjust:edit'" :loading="adjustLoading" :class="{'tool-item': true, 'enable': adjusted}" :disabled="!(adjusted && !adjustLoading)">
                   <svg>
                     <use xlink:href="#jvs-aps-icon-chexiao"></use>
                   </svg>
@@ -26,7 +26,7 @@
               trigger="click"
             >
               <template #reference>
-                <div :class="{'tool-item': true, 'enable': activeRecord.length == 1}" @click.stop="openSplitPopover">
+                <div v-permission="'aps:task-adjust:edit'" :class="{'tool-item': true, 'enable': activeRecord.length == 1}" @click.stop="openSplitPopover">
                   <svg>
                     <use xlink:href="#jvs-aps-icon-chaifen"></use>
                   </svg>
@@ -42,7 +42,7 @@
             </el-popover>
             <el-popconfirm title="确认合并?" @confirm="mergeHandle(activeRecord.length > 1)">
               <template #reference>
-                <el-button :loading="mergeLoading" :class="{'tool-item': true, 'enable': activeRecord.length > 1}" :disabled="activeRecord.length < 1">
+                <el-button v-permission="'aps:task-adjust:edit'" :loading="mergeLoading" :class="{'tool-item': true, 'enable': activeRecord.length > 1}" :disabled="activeRecord.length < 1">
                 <svg>
                   <use xlink:href="#jvs-aps-icon-icon-hebing"></use>
                 </svg>
@@ -58,7 +58,7 @@
               trigger="click"
             >
               <template #reference>
-                <div :class="{'tool-item': true, 'enable': true}">
+                <div v-permission="'aps:task-adjust:edit'" :class="{'tool-item': true, 'enable': true}">
                 <svg>
                   <use xlink:href="#jvs-aps-icon-yidong"></use>
                 </svg>
@@ -80,7 +80,7 @@
               trigger="click"
             >
               <template #reference>
-                <div :class="{'tool-item': true, 'enable': true}">
+                <div v-permission="'aps:task-adjust:edit'" :class="{'tool-item': true, 'enable': true}">
                   <svg>
                     <use xlink:href="#jvs-aps-icon-suoding"></use>
                   </svg>
@@ -102,7 +102,7 @@
               trigger="click"
             >
               <template #reference>
-                <div :class="{'tool-item': true, 'enable': true}">
+                <div v-permission="'aps:task-adjust:edit'" :class="{'tool-item': true, 'enable': true}">
                   <svg>
                     <use xlink:href="#jvs-aps-icon-jiesuo1"></use>
                   </svg>
@@ -117,13 +117,13 @@
             </el-popover>
           </div>
           <div class="tools-list">
-            <div :class="{'tool-item': true, 'enable': true}" @click="openImport">
+            <div v-permission="'aps:task-report:import'" :class="{'tool-item': true, 'enable': true}" @click="openImport">
               <svg>
                 <use xlink:href="#jvs-aps-icon-piliangbaogong"></use>
               </svg>
               <span>报工</span>
             </div>
-            <div :class="{'tool-item': true, 'enable': true}" @click="openExport">
+            <div v-permission="'aps:task-assignment:export'" :class="{'tool-item': true, 'enable': true}" @click="openExport">
               <svg>
                 <use xlink:href="#jvs-aps-icon-daochu"></use>
               </svg>
@@ -131,7 +131,7 @@
             </div>
           </div>
         </div>
-        <el-button type="primary" @click="openParam">参数设置</el-button>
+        <el-button v-permission="'aps:report-field:edit'" type="primary" @click="openParam">参数设置</el-button>
       </div>
     </div>
     <div :id="ganttId" class="resourceGantt" v-click-outside="hideTooltip">
@@ -233,6 +233,7 @@
           ref="uploadBtn"
           accept=".xlsx"
           :action="`/mgr/jvs-aps/task-report/import`"
+          :headers="uploadHeaders"
           :file-list="tempfileList"
           :show-file-list="false"
           :before-upload="beforeTempUpload"
@@ -276,6 +277,7 @@ import { ElNotification } from 'element-plus'
 import type { UploadInstance } from 'element-plus'
 import { ArrowDownBold, Loading, Search } from '@element-plus/icons-vue'
 import  * as VTableGantt  from '@visactor/vtable-gantt'
+import { getAuthHeaders } from '@/util/authContext'
 
 import taskInfo  from './info.vue'
 import resourceDialog from '../../component/resourceDialog.vue'
@@ -298,6 +300,7 @@ const { proxy } = getCurrentInstance()
 const emit = defineEmits([])
 const { t } = useI18n()
 const uploadBtn = ref<UploadInstance>()
+const uploadHeaders = computed(() => getAuthHeaders())
 const dynamicRefs = ref({})
 const dynamicRefMap = (el, ref) => {
   dynamicRefs.value[ref] = el

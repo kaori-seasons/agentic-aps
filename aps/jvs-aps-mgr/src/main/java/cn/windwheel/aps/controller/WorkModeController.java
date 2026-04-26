@@ -7,6 +7,8 @@ import cn.windwheel.aps.dto.UpdateWorkModeDTO;
 import cn.windwheel.aps.entity.WorkModePO;
 import cn.windwheel.aps.service.WorkModeService;
 import cn.windwheel.aps.vo.DetailWorkModeVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.BeanCopyUtil;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -26,12 +28,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/work-mode")
 @AllArgsConstructor
+@RequirePermission("aps:work-mode:view")
 public class WorkModeController {
     private final WorkModeService service;
 
     @ApiOperation("新增模式")
     @Transactional(rollbackFor = Exception.class)
     @PostMapping
+    @RequirePermission("aps:work-mode:edit")
+    @AuditOperation("新增工作模式")
     public R<String> save(@Validated @RequestBody SaveWorkModeDTO saveWorkMode) {
         WorkModePO workMode = BeanCopyUtil.copy(saveWorkMode, WorkModePO.class);
         service.save(workMode);
@@ -41,6 +46,8 @@ public class WorkModeController {
     @ApiOperation("修改模式")
     @Transactional(rollbackFor = Exception.class)
     @PutMapping
+    @RequirePermission("aps:work-mode:edit")
+    @AuditOperation("修改工作模式")
     public R<String> update(@Validated @RequestBody UpdateWorkModeDTO updateWorkMode) {
         WorkModePO workMode = BeanCopyUtil.copy(updateWorkMode, WorkModePO.class);
         service.updateById(workMode);
@@ -52,6 +59,8 @@ public class WorkModeController {
             @ApiImplicitParam(name = "id", value = "模式id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:work-mode:edit")
+    @AuditOperation("删除工作模式")
     public R<String> delete(@PathVariable String id) {
         service.removeById(id);
         return R.ok();

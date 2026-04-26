@@ -11,10 +11,10 @@
       @delRow="delHandle"
     >
       <template #menuLeft>
-        <el-button type="primary" :icon="Plus" size="small" @click="addEditRow(null)">{{t(`aps.dataBase.matter.add`)}}</el-button>
+        <el-button v-permission="'aps:material:edit'" type="primary" :icon="Plus" size="small" @click="addEditRow(null)">{{t(`aps.dataBase.matter.add`)}}</el-button>
       </template>
       <template #menu="scope">
-        <el-button :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
+        <el-button v-permission="'aps:material:edit'" :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
       </template>
     </jvs-table>
 

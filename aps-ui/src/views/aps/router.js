@@ -6,7 +6,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:material:view'
 		}
 	},
 	{
@@ -16,7 +17,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:resource:view'
 		}
 	},
 	{
@@ -26,7 +28,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:production-order:view'
 		}
 	},
 	{
@@ -36,7 +39,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:incoming-material-order:view'
 		}
 	},
 	{
@@ -46,7 +50,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:bom:view'
 		}
 	},
 	{
@@ -56,7 +61,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:process:view'
 		}
 	},
 	{
@@ -66,7 +72,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:process-route:view'
 		}
 	},
 	{
@@ -76,7 +83,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:work-calendar:view'
 		}
 	},
 	{
@@ -86,7 +94,8 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:strategy:view'
 		}
 	},
 	{
@@ -96,7 +105,19 @@ export default [
 		meta: {
 			keepAlive: true,
 			isTab: false,
-			isAuth: false
+			isAuth: false,
+			permission: 'aps:schedule:view'
+		}
+	},
+	{
+		path: "/operationAudit",
+		name: "操作审计",
+		component: () => import(/* webpackChunkName: "views" */ "./system/operationAudit/index.vue"),
+		meta: {
+			keepAlive: true,
+			isTab: false,
+			isAuth: false,
+			permission: 'aps:audit:view'
 		}
 	}
 ]

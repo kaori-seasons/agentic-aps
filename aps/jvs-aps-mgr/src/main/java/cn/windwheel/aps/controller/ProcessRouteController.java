@@ -6,6 +6,8 @@ import cn.windwheel.aps.dto.UpdateProcessRouteDTO;
 import cn.windwheel.aps.service.ProcessRouteService;
 import cn.windwheel.aps.service.facade.ProcessFacadeService;
 import cn.windwheel.aps.vo.MaterialProcessRouteVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -22,12 +24,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/process-route")
 @AllArgsConstructor
+@RequirePermission("aps:process-route:view")
 public class ProcessRouteController {
     private final ProcessRouteService service;
     private final ProcessFacadeService processFacadeService;
 
     @ApiOperation("新增工艺路线")
     @PostMapping
+    @RequirePermission("aps:process-route:edit")
+    @AuditOperation("新增工艺路线")
     public R<String> save(@Validated @RequestBody SaveProcessRouteDTO processRoute) {
         processFacadeService.saveProcessRoute(processRoute);
         return R.ok();
@@ -35,6 +40,8 @@ public class ProcessRouteController {
 
     @ApiOperation("修改工艺路线")
     @PutMapping
+    @RequirePermission("aps:process-route:edit")
+    @AuditOperation("修改工艺路线")
     public R<String> update(@Validated @RequestBody UpdateProcessRouteDTO processRoute) {
         processFacadeService.updateProcessRoute(processRoute);
         return R.ok();
@@ -45,6 +52,8 @@ public class ProcessRouteController {
             @ApiImplicitParam(name = "id", value = "工艺路线id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:process-route:edit")
+    @AuditOperation("删除工艺路线")
     public R<String> delete(@PathVariable String id) {
         service.removeById(id);
         return R.ok();
@@ -64,6 +73,8 @@ public class ProcessRouteController {
             @ApiImplicitParam(name = "id", value = "工艺路线id", required = true)
     })
     @PutMapping("/{id}/enable")
+    @RequirePermission("aps:process-route:edit")
+    @AuditOperation("启用工艺路线")
     public R<String> enableProcessRoute(@PathVariable String id) {
         service.enableProcessRoute(id);
         return R.ok();
@@ -74,6 +85,8 @@ public class ProcessRouteController {
             @ApiImplicitParam(name = "id", value = "工艺路线id", required = true)
     })
     @PutMapping("/{id}/disable")
+    @RequirePermission("aps:process-route:edit")
+    @AuditOperation("禁用工艺路线")
     public R<String> disableProcessRoute(@PathVariable String id) {
         service.disableProcessRoute(id);
         return R.ok();

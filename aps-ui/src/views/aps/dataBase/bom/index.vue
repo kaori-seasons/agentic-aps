@@ -30,7 +30,7 @@
     <div class="right">
       <div class="top">
         <div class="left-box">
-          <el-button type="primary" :icon="Plus" @click="addEditRow(null)">{{t(`table.add`)}}</el-button>
+          <el-button v-permission="'aps:bom:edit'" type="primary" :icon="Plus" @click="addEditRow(null)">{{t(`table.add`)}}</el-button>
         </div>
         <div class="right-box">
           <div :class="{'svg-icon-box': true, 'active': showType == 'list'}" @click="changeShowType('list')">
@@ -55,10 +55,10 @@
             rowKey="jvsTableKey"
           >
             <template #menu="scope">
-              <el-button :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
+              <el-button v-permission="'aps:bom:edit'" :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
               <el-popconfirm v-if="scope.row.level === 1" :title="t('common.deleteConfirm')" width="200px" :icon="WarningFilled" @confirm="delHandle(scope.row)">
                 <template #reference>
-                  <el-button text size="small"><span style="color: #F56C6C;">{{t('table.delete')}}</span></el-button>
+                  <el-button v-permission="'aps:bom:edit'" text size="small"><span style="color: #F56C6C;">{{t('table.delete')}}</span></el-button>
                 </template>
               </el-popconfirm>
             </template>
@@ -67,7 +67,7 @@
             </template>
           </jvs-table>
           <div v-if="showType == 'map'" class="map-box">
-            <relationMap :data="mapData" @clickNode="addEditRow" @deleteNode="delHandle"></relationMap>
+            <relationMap :data="mapData" :editable="canEditBom" @clickNode="addEditRow" @deleteNode="delHandle"></relationMap>
           </div>
         </div>
       </div>
@@ -173,6 +173,7 @@ import { Plus, Search, WarningFilled } from '@element-plus/icons-vue'
 
 import useCommonStore from '@/store/common.js'
 import { getStore } from '@/util/store.js'
+import { hasPermission } from '@/util/permission'
 
 import tableForm from '@/components/basic-assembly/tableForm.vue'
 import relationMap from './map.vue'
@@ -206,6 +207,7 @@ const bomOption = ref({
 })
 const bomList = ref([])
 const showType = ref('list')
+const canEditBom = computed(() => hasPermission('aps:bom:edit'))
 const tableLoading = ref(false)
 const queryParams = ref({})
 const tableData = ref([])

@@ -7,6 +7,8 @@ import cn.windwheel.aps.entity.enums.ReportTypeEnum;
 import cn.windwheel.aps.service.PlanReportFieldSettingService;
 import cn.windwheel.aps.vo.DetailReportFieldSettingVO;
 import cn.windwheel.aps.vo.ReportFieldSettingOptionVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -26,6 +28,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/plan-report-field-setting")
 @AllArgsConstructor
+@RequirePermission("aps:report-field:view")
 public class PlanReportFieldSettingController {
 
     private final PlanReportFieldSettingService service;
@@ -48,6 +51,8 @@ public class PlanReportFieldSettingController {
 
     @ApiOperation("保存配置")
     @PostMapping
+    @RequirePermission("aps:report-field:edit")
+    @AuditOperation("保存报表字段配置")
     public R<String> save(@Validated @RequestBody SaveReportFieldSettingDTO reportFieldSetting) {
         service.saveSetting(reportFieldSetting);
         return R.ok();

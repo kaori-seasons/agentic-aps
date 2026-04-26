@@ -11,16 +11,16 @@
       @row-click="rowClick"
     >
       <template #menuLeft>
-        <el-button v-if="!props.openOprate" type="primary" :icon="Plus" size="small" @click="addEditRow(null)">{{t(`aps.programOfProduction.productionSchedulingStrategy.add`)}}</el-button>
+        <el-button v-if="!props.openOprate" v-permission="'aps:strategy:edit'" type="primary" :icon="Plus" size="small" @click="addEditRow(null)">{{t(`aps.programOfProduction.productionSchedulingStrategy.add`)}}</el-button>
       </template>
       <template #menu="scope">
-        <el-button :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
+        <el-button v-permission="'aps:strategy:edit'" :text="true" size="small" @click="addEditRow(scope.row)">{{t(`table.edit`)}}</el-button>
       </template>
       <template #direction="scope">
         <span>{{getLabel(scope.row, 'direction')}}</span>
       </template>
       <template #active="scope">
-        <div :class="{'status-box': true, 'active': scope.row.active}" @click="editActiveHandle(scope.row)">
+        <div v-permission="'aps:strategy:edit'" :class="{'status-box': true, 'active': scope.row.active}" @click="editActiveHandle(scope.row)">
           <el-icon v-if="scope.row.active" color="#fff"><Select /></el-icon>
         </div>
       </template>

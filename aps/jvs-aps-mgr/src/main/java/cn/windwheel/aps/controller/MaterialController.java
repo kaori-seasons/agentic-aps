@@ -8,6 +8,8 @@ import cn.windwheel.aps.dto.UpdateMaterialDTO;
 import cn.windwheel.aps.entity.enums.MaterialSourceEnum;
 import cn.windwheel.aps.service.MaterialService;
 import cn.windwheel.aps.vo.DetailMaterialVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.BeanCopyUtil;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -26,11 +28,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/material")
 @AllArgsConstructor
+@RequirePermission("aps:material:view")
 public class MaterialController {
     private final MaterialService service;
 
     @ApiOperation("新增物料")
     @PostMapping
+    @RequirePermission("aps:material:edit")
+    @AuditOperation("新增物料")
     public R<String> save(@Validated @RequestBody SaveMaterialDTO material) {
         service.save(material);
         return R.ok();
@@ -38,6 +43,8 @@ public class MaterialController {
 
     @ApiOperation("修改物料")
     @PutMapping
+    @RequirePermission("aps:material:edit")
+    @AuditOperation("修改物料")
     public R<String> update(@Validated @RequestBody UpdateMaterialDTO material) {
         service.update(material);
         return R.ok();
@@ -48,6 +55,8 @@ public class MaterialController {
             @ApiImplicitParam(name = "id", value = "物料id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:material:edit")
+    @AuditOperation("删除物料")
     public R<String> delete(@PathVariable String id) {
         service.removeById(id);
         return R.ok();

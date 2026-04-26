@@ -7,6 +7,8 @@ import cn.windwheel.aps.dto.UpdateIncomingMaterialOrderDTO;
 import cn.windwheel.aps.service.IncomingMaterialOrderService;
 import cn.windwheel.aps.service.facade.IncomingMaterialOrderFacadeService;
 import cn.windwheel.aps.vo.DetailIncomingMaterialOrderVO;
+import cn.windwheel.common.annotation.AuditOperation;
+import cn.windwheel.common.annotation.RequirePermission;
 import cn.windwheel.common.utils.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
@@ -24,12 +26,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/incoming-material-order")
 @AllArgsConstructor
+@RequirePermission("aps:incoming-material-order:view")
 public class IncomingMaterialOrderController {
     private final IncomingMaterialOrderService incomingMaterialOrderService;
     private final IncomingMaterialOrderFacadeService incomingMaterialOrderFacadeService;
 
     @ApiOperation("新增来料订单")
     @PostMapping
+    @RequirePermission("aps:incoming-material-order:edit")
+    @AuditOperation("新增来料订单")
     public R<String> save(@Validated @RequestBody SaveIncomingMaterialOrderDTO saveIncomingMaterialOrder) {
         incomingMaterialOrderFacadeService.save(saveIncomingMaterialOrder);
         return R.ok();
@@ -37,6 +42,8 @@ public class IncomingMaterialOrderController {
 
     @ApiOperation("修改来料订单")
     @PutMapping
+    @RequirePermission("aps:incoming-material-order:edit")
+    @AuditOperation("修改来料订单")
     public R<String> update(@Validated @RequestBody UpdateIncomingMaterialOrderDTO updateIncomingMaterialOrder) {
         incomingMaterialOrderFacadeService.update(updateIncomingMaterialOrder);
         return R.ok();
@@ -47,6 +54,8 @@ public class IncomingMaterialOrderController {
             @ApiImplicitParam(name = "id", value = "来料订单id", required = true)
     })
     @DeleteMapping("/{id}")
+    @RequirePermission("aps:incoming-material-order:edit")
+    @AuditOperation("删除来料订单")
     public R<String> delete(@PathVariable String id) {
         incomingMaterialOrderService.removeById(id);
         return R.ok();

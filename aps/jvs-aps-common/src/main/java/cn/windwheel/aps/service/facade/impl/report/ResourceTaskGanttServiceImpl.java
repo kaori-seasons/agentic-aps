@@ -11,6 +11,7 @@ import cn.windwheel.aps.entity.enums.ReportTypeEnum;
 import cn.windwheel.aps.service.PlanInfoService;
 import cn.windwheel.aps.service.PlanReportFieldSettingService;
 import cn.windwheel.aps.service.ProductionResourceService;
+import cn.windwheel.aps.service.ResourceGroupDataScopeService;
 import cn.windwheel.aps.service.facade.ReportFacadeService;
 import cn.windwheel.aps.service.facade.WorkCalendarFacadeService;
 import cn.windwheel.aps.solve.model.WorkCalendar;
@@ -46,6 +47,7 @@ public class ResourceTaskGanttServiceImpl extends AbstractPlanReport implements 
     private final PlanReportFieldSettingService planReportFieldSettingService;
     private final WorkCalendarFacadeService workCalendarFacadeService;
     private final PlanInfoService planInfoService;
+    private final ResourceGroupDataScopeService resourceGroupDataScopeService;
 
     /**
      * 甘特图任务条默认显示字段
@@ -97,6 +99,7 @@ public class ResourceTaskGanttServiceImpl extends AbstractPlanReport implements 
         // 获取主资源
         List<ProductionResourcePO> resources = productionResourceService.list(Wrappers.<ProductionResourcePO>lambdaQuery()
                         .eq(ObjectNull.isNotNull(query.getResourceGroup()), ProductionResourcePO::getResourceGroup, query.getResourceGroup()));
+        resources = resourceGroupDataScopeService.filterResources(resources);
         if (ObjectNull.isNull(resources)) {
             return new PlanResourceTaskGanttVO();
         }

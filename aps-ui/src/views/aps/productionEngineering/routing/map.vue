@@ -27,18 +27,18 @@
           </template>
         </el-popover>
         <div class="tool-list">
-          <div class="tool-list-item" @click="addNodeHandle">
+          <div v-if="editable" class="tool-list-item" @click="addNodeHandle">
             <el-icon><CirclePlus /></el-icon>
             <span>新增工序</span>
           </div>
-          <div :class="{'tool-list-item': true, 'active': currentTool == 'create-edge'}" @click="tooClick('create-edge')">
+          <div v-if="editable" :class="{'tool-list-item': true, 'active': currentTool == 'create-edge'}" @click="tooClick('create-edge')">
             <el-icon><Right /></el-icon>
             <span>连线</span>
           </div>
         </div>
       </div>
       <div class="right">
-        <el-button type="primary" :loading="saveLoading" @click="saveHandle">保存</el-button>
+        <el-button v-if="editable" type="primary" :loading="saveLoading" @click="saveHandle">保存</el-button>
         <slot name="right"></slot>
       </div>
     </div>
@@ -74,6 +74,10 @@
     },
     saveLoading: {
       type: Boolean
+    },
+    editable: {
+      type: Boolean,
+      default: true
     }
   })
 
