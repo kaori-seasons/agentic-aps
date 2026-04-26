@@ -11,6 +11,7 @@ import cn.windwheel.common.utils.TenantContextHolder;
 import org.optaplanner.core.api.score.stream.ConstraintStreamImplType;
 import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.api.solver.SolverManager;
+import org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig;
 import org.optaplanner.core.config.solver.SolverConfig;
 import org.optaplanner.core.config.solver.termination.TerminationCompositionStyle;
 import org.optaplanner.core.config.solver.termination.TerminationConfig;
@@ -86,19 +87,14 @@ public class SolveManageConfigurator {
 
         // 根据策略配置设置算法 Phase
         if (cn.windwheel.aps.entity.enums.SolverProfileEnum.FFD_TABU.equals(config.getSolverProfile())) {
-            org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig chPhaseConfig = new org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig()
-                    .withConstructionHeuristicType(org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicType.FIRST_FIT_DECREASING);
-
+            ConstructionHeuristicPhaseConfig chPhaseConfig = buildListVariableCompatibleConstructionHeuristicPhase();
             org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig lsPhaseConfig = new org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig()
-                    .withLocalSearchType(org.optaplanner.core.config.localsearch.LocalSearchType.TABU_SEARCH)
                     .withAcceptorConfig(new org.optaplanner.core.config.localsearch.decider.acceptor.LocalSearchAcceptorConfig().withEntityTabuSize(config.getEntityTabuSize() != null ? config.getEntityTabuSize() : 7))
                     .withForagerConfig(new org.optaplanner.core.config.localsearch.decider.forager.LocalSearchForagerConfig().withAcceptedCountLimit(config.getAcceptedCountLimit() != null ? config.getAcceptedCountLimit() : 1000));
 
             solverConfig.withPhases(chPhaseConfig, lsPhaseConfig);
         } else if (cn.windwheel.aps.entity.enums.SolverProfileEnum.FFD_LATE_ACCEPTANCE.equals(config.getSolverProfile())) {
-            org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig chPhaseConfig = new org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig()
-                    .withConstructionHeuristicType(org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicType.FIRST_FIT_DECREASING);
-
+            ConstructionHeuristicPhaseConfig chPhaseConfig = buildListVariableCompatibleConstructionHeuristicPhase();
             org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig lsPhaseConfig = new org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig()
                     .withAcceptorConfig(new org.optaplanner.core.config.localsearch.decider.acceptor.LocalSearchAcceptorConfig().withLateAcceptanceSize(config.getLateAcceptanceSize() != null ? config.getLateAcceptanceSize() : 400))
                     .withForagerConfig(new org.optaplanner.core.config.localsearch.decider.forager.LocalSearchForagerConfig().withAcceptedCountLimit(config.getAcceptedCountLimit() != null ? config.getAcceptedCountLimit() : 1000));
@@ -111,6 +107,16 @@ public class SolveManageConfigurator {
         SolverManager<SchedulingSolution, UUID> solverManager = SolverManager.create(solverFactory);
         SOLVER_MANAGER_MAP.put(TenantContextHolder.getTenantId(), solverManager);
         return solverManager;
+    }
+
+    /**
+     * 当前解模型使用 PlanningListVariable。
+     * 对这类模型，OptaPlanner 9 不支持在 Construction Heuristic phase 上显式指定
+     * FIRST_FIT_DECREASING 等 constructionHeuristicType，因此仅保留 phase，
+     * 由求解器选择兼容的 list-variable 构造方式。
+     */
+    private ConstructionHeuristicPhaseConfig buildListVariableCompatibleConstructionHeuristicPhase() {
+        return new ConstructionHeuristicPhaseConfig();
     }
 
     /**
