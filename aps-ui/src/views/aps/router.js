@@ -56,7 +56,7 @@ export default [
 	},
 	{
 		path: "/technology",
-		name: "工艺",
+		name: "工序模板",
 		component: () => import(/* webpackChunkName: "views" */ "./productionEngineering/technology/index.vue"),
 		meta: {
 			keepAlive: true,
@@ -89,7 +89,7 @@ export default [
 	},
 	{
 		path: "/productionSchedulingStrategy",
-		name: "生产日历",
+		name: "排产策略",
 		component: () => import(/* webpackChunkName: "views" */ "./programOfProduction/productionSchedulingStrategy/index.vue"),
 		meta: {
 			keepAlive: true,
