@@ -7,6 +7,7 @@ import cn.windwheel.common.utils.SpringContextUtil;
 import cn.windwheel.common.utils.StackTraceElementUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +39,7 @@ public class UnifyExceptionHandler {
     @ResponseBody
     @ExceptionHandler(value = Exception.class)
     public R exceptionHandler(HttpServletRequest request, Exception e) {
+        ensureTraceId();
         String s = StackTraceElementUtils.logThrowableToString(e);
         //直接打印堆栈信息
         log.error("系统严重错误,{},{}", request.getRequestURI(), s);
@@ -71,6 +74,12 @@ public class UnifyExceptionHandler {
         } else {
             //直接做为通用异常处理
             return exceptionHandler(request, e);
+        }
+    }
+
+    private void ensureTraceId() {
+        if (MDC.get("traceId") == null) {
+            MDC.put("traceId", UUID.randomUUID().toString().replace("-", "").substring(0, 16));
         }
     }
 

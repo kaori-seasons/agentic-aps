@@ -108,7 +108,9 @@ const nowTagValue = computed(() => {
   return $jvsRouter.formatMenuPath(route)
 })
 const localMenu = computed(() => {
-  let temp = filterMenuTreeByPermission(localMenuData.defaultMenu)
+  const backendMenus = commonStore.menus
+  const source = (backendMenus && backendMenus.length > 0) ? backendMenus : localMenuData.defaultMenu
+  let temp = filterMenuTreeByPermission(source)
   let list = []
   temp.filter(tp => {
     if(tp.children && tp.children.length > 0) {

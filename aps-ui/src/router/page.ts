@@ -2,6 +2,16 @@ import Layout from '@/views/home/main/index.vue'
 
 export default [
   {
+    path: '/login',
+    component: () => import('@/views/auth/login.vue'),
+    name: '登录',
+    meta: {
+      keepAlive: false,
+      isTab: false,
+      isAuth: false
+    }
+  },
+  {
     path: '/wel',
     component: Layout,
     redirect: '/wel/index',
@@ -32,6 +42,16 @@ export default [
     }
   },
   {
+    path: '/500',
+    component: () => import('@/components/error-page/500.vue'),
+    name: '500',
+    meta: {
+      keepAlive: false,
+      isTab: false,
+      isAuth: false
+    }
+  },
+  {
     path: '/404',
     component: () => import ( /* webpackChunkName: "page" */ '@/components/error-page/404.vue'),
     name: '404',
@@ -54,6 +74,20 @@ export default [
       name: 'iframe',
       component: () => import ( /* webpackChunkName: "views" */ '@/views/layoutPage/index.vue'),
       props: true
+    }]
+  },
+  {
+    path: '/account',
+    component: Layout,
+    children: [{
+      path: 'settings',
+      name: '个人设置',
+      component: () => import('@/views/account/settings.vue'),
+      meta: {
+        keepAlive: false,
+        isTab: false,
+        isAuth: false
+      }
     }]
   },
 ]

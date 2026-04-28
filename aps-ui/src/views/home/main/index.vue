@@ -15,6 +15,9 @@
       <template #left>
         <logo ref="menuLogo" @childMenu="childMenu" @closeOther="closeOther"></logo>
       </template>
+      <template #right>
+        <userPanel />
+      </template>
     </topBar>
     <div :class="{'jvs-layout': true, 'jvs-layout-tempOpen': false}" :style="`height:calc(100% - ${commonStore.theme.logo.height});`">
       <!-- 顶部标签卡 -->
@@ -65,6 +68,7 @@ import { getScreen } from '@/util/admin.js'
 import topBar from '@/views/topBar/index.vue'
 import logo from '@/views/home/main/logo.vue'
 import sidebar from '@/views/home/main/sidebar/index.vue'
+import userPanel from '@/views/topBar/userPanel.vue'
 
 const router = useRouter()
 const route = useRoute()
