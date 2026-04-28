@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue'
 import viteConfitExtend from './vite.config.extend'
 
 const url = 'http://localhost:31010'
+const apiPrefix = '/mgr/jvs-aps'
 const path = "jvs-aps-ui" // fixme 请修改为自己的前端项目名称
 
 export default defineConfig({
@@ -24,12 +25,35 @@ export default defineConfig({
     proxy: {
       '/mgr': {
         target: url,
-        rewrite: (path: any) => path.replace(/^\/mgr/,'/mgr')
+        changeOrigin: true,
+      },
+      '/auth': {
+        target: url,
+        changeOrigin: true,
+        rewrite: (path) => `${apiPrefix}${path}`,
+        cookiePathRewrite: '/',
+      },
+      '/runtime': {
+        target: url,
+        changeOrigin: true,
+        rewrite: (path) => `${apiPrefix}${path}`,
+        cookiePathRewrite: '/',
+      },
+      '/me': {
+        target: url,
+        changeOrigin: true,
+        rewrite: (path) => `${apiPrefix}${path}`,
+        cookiePathRewrite: '/',
+      },
+      '/tenant': {
+        target: url,
+        changeOrigin: true,
+        rewrite: (path) => `${apiPrefix}${path}`,
+        cookiePathRewrite: '/',
       },
       '/jvs-public': {
         target: url,
         changeOrigin: true,
-        rewrite: (path: any) => path.replace(/^\/jvs-public/, '/jvs-public')
       },
     }
   },
