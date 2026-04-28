@@ -180,7 +180,7 @@ instance.interceptors.response.use( (res:any) => {
 			path: '',
 			route: router.currentRoute.value?.fullPath || '',
 			occurredAt: new Date().toISOString(),
-				traceId: res.data?.traceId || '',
+				traceId: '',
 		})
 		if (router.currentRoute.value.path !== '/500') {
 			router.push({ path: '/500' })

@@ -136,12 +136,18 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
 
     public Constraint minimizeSetupTime(ConstraintFactory factory) {
         return factory.forEach(ProductionTask.class)
-                .filter(task -> ObjectNull.isNotNull(task.getStartTime()) && ObjectNull.isNotNull(task.getResource()))
+                .filter(task -> ObjectNull.isNotNull(task.getStartTime()) && ObjectNull.isNotNull(task.getResource()) && ObjectNull.isNotNull(task.getEndTime()))
                 .join(ProductionTask.class,
-                        Joiners.equal(ProductionTask::getResource),
-                        Joiners.lessThan(ProductionTask::getEndTime, ProductionTask::getStartTime)
+                        Joiners.equal(ProductionTask::getResource)
                 )
                 .filter((task1, task2) -> {
+                    if (ObjectNull.isNull(task2.getStartTime()) || ObjectNull.isNull(task2.getEndTime())) {
+                        return false;
+                    }
+                    // task1.endTime < task2.startTime (non-overlapping sequential tasks)
+                    if (!task1.getEndTime().isBefore(task2.getStartTime())) {
+                        return false;
+                    }
                     // 只计算相邻的两个任务：假设如果它们在同一个资源上，且没有第三个任务插在中间
                     // 由于没有显式的 nextTask 关联，只能近似惩罚物料不同带来的切换
                     return ObjectNull.isNotNull(task1.getMaterial()) && ObjectNull.isNotNull(task2.getMaterial())

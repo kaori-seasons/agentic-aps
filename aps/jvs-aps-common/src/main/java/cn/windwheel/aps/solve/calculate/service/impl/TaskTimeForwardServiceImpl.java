@@ -303,7 +303,7 @@ public class TaskTimeForwardServiceImpl implements TaskTimeService {
                     .filter(job -> task.getFrontTaskCodes().contains(job.getCode()))
                     .toList();
             Optional<ProductionTask> optionalProductionTask = frontProductionTasks.stream()
-                    .filter(job -> ObjectNull.isNotNull(job.getStartTime()))
+                    .filter(job -> ObjectNull.isNotNull(job.getStartTime()) && ObjectNull.isNotNull(job.getEndTime()))
                     .max(Comparator.comparing(job -> calculateEarliestStartTimeAfterCompletion(job, job.getEndTime())));
             if (optionalProductionTask.isPresent()) {
                 // 最晚结束时间的前工序任务
@@ -338,7 +338,7 @@ public class TaskTimeForwardServiceImpl implements TaskTimeService {
      * @return 当前任务可能的最早开始时间
      */
     private LocalDateTime calculateEarliestStartTimeAfterCompletion(ProductionTask preTask, LocalDateTime previousEndTime) {
-        if (ObjectNull.isNull(preTask)) {
+        if (ObjectNull.isNull(preTask) || ObjectNull.isNull(previousEndTime)) {
             return previousEndTime;
         }
         LocalDateTime startTime = previousEndTime;
