@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from "vue-router"
 
 import useCommonStore from '@/store/common.js'
-import {simpleStyle, darkblueStyle, darkredStyle} from '@/const/theme'
+import { darkblueStyle } from '@/const/theme'
 import { getStore } from '@/util/store.js'
 
 const commonStore = useCommonStore()
@@ -16,6 +16,10 @@ if(!getStore({name: 'themeName'})) {
   commonStore.SET_THEME(darkblueStyle.params)
 }
 changeTheme()
+
+watch(() => commonStore.themeName, () => {
+  changeTheme()
+})
 
 onMounted(()=>{
   nextTick(()=>{

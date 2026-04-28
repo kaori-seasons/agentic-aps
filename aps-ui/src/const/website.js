@@ -3,8 +3,8 @@ export default {
   logo: '菜单',
   key: 'jvs',   //配置主键,目前用于存储
   indexTitle: '智能APS',
-  whiteList: ['/404', '/403', '/401', '/lock'], // 配置无权限可以访问的页面
-  whiteTagList: ['/404', '/403', '/401', '/lock' ], // 配置不添加tags页面 （'/*'——*为通配符）
+  whiteList: ['/404', '/403', '/401', '/500', '/lock', '/login'], // 配置无权限可以访问的页面
+  whiteTagList: ['/404', '/403', '/401', '/500', '/lock', '/login' ], // 配置不添加tags页面 （'/*'——*为通配符）
   lockPage: '/lock',
   tokenTime: 6000,
   infoTitle: '智能APS',

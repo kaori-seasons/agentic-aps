@@ -5,6 +5,7 @@ import cn.windwheel.aps.dto.schedule.TaskDTO;
 import cn.windwheel.aps.entity.PlanTaskAdjustPO;
 import cn.windwheel.aps.entity.PlanTaskPO;
 import cn.windwheel.aps.entity.ProductionResourcePO;
+import cn.windwheel.aps.mapper.ProductionResourceMapper;
 import cn.windwheel.aps.service.PlanTaskAdjustService;
 import cn.windwheel.aps.service.PlanTaskService;
 import cn.windwheel.aps.service.ProductionResourceService;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class ResourceGroupDataScopeServiceImpl implements ResourceGroupDataScopeService {
 
-    private final ProductionResourceService productionResourceService;
+    private final ProductionResourceMapper productionResourceMapper;
     private final PlanTaskService planTaskService;
     private final PlanTaskAdjustService planTaskAdjustService;
     private final PermissionService permissionService;
@@ -41,7 +42,7 @@ public class ResourceGroupDataScopeServiceImpl implements ResourceGroupDataScope
     @Override
     public List<String> listAuthorizedResourceGroups() {
         if (hasFullAccess()) {
-            return productionResourceService.listResourceGroups();
+            return listAllResourceGroups();
         }
         return AuthContextHolder.getResourceGroupIds().stream()
                 .filter(StrUtil::isNotBlank)
@@ -53,7 +54,7 @@ public class ResourceGroupDataScopeServiceImpl implements ResourceGroupDataScope
     @Override
     public List<String> listAuthorizedResourceIds() {
         if (hasFullAccess()) {
-            return productionResourceService.list().stream()
+            return listResources(null).stream()
                     .map(ProductionResourcePO::getId)
                     .toList();
         }
@@ -61,10 +62,7 @@ public class ResourceGroupDataScopeServiceImpl implements ResourceGroupDataScope
         if (ObjectNull.isNull(resourceGroups)) {
             return Collections.emptyList();
         }
-        return productionResourceService.list(Wrappers.<ProductionResourcePO>lambdaQuery()
-                        .select(ProductionResourcePO::getId)
-                        .in(ProductionResourcePO::getResourceGroup, resourceGroups))
-                .stream()
+        return listResources(resourceGroups).stream()
                 .map(ProductionResourcePO::getId)
                 .toList();
     }
@@ -84,7 +82,7 @@ public class ResourceGroupDataScopeServiceImpl implements ResourceGroupDataScope
         if (hasFullAccess()) {
             return;
         }
-        ProductionResourcePO resource = productionResourceService.getById(resourceId);
+        ProductionResourcePO resource = productionResourceMapper.selectById(resourceId);
         if (resource == null) {
             throw new BusinessException("资源不存在");
         }
@@ -96,7 +94,7 @@ public class ResourceGroupDataScopeServiceImpl implements ResourceGroupDataScope
         if (hasFullAccess() || ObjectNull.isNull(resourceIds)) {
             return;
         }
-        Map<String, ProductionResourcePO> resourceMap = productionResourceService.listByIds(resourceIds)
+        Map<String, ProductionResourcePO> resourceMap = productionResourceMapper.selectBatchIds(resourceIds)
                 .stream()
                 .collect(Collectors.toMap(ProductionResourcePO::getId, Function.identity()));
         for (String resourceId : resourceIds) {
@@ -113,7 +111,8 @@ public class ResourceGroupDataScopeServiceImpl implements ResourceGroupDataScope
         if (hasFullAccess() || ObjectNull.isNull(resourceCodes)) {
             return;
         }
-        Map<String, ProductionResourcePO> resourceMap = productionResourceService.listByCodes(resourceCodes)
+        Map<String, ProductionResourcePO> resourceMap = productionResourceMapper.selectList(Wrappers.<ProductionResourcePO>lambdaQuery()
+                        .in(ProductionResourcePO::getCode, resourceCodes))
                 .stream()
                 .collect(Collectors.toMap(ProductionResourcePO::getCode, Function.identity()));
         for (String resourceCode : resourceCodes) {
@@ -212,5 +211,26 @@ public class ResourceGroupDataScopeServiceImpl implements ResourceGroupDataScope
         return resources.stream()
                 .filter(resource -> allowedResourceGroups.contains(resource.getResourceGroup()))
                 .toList();
+    }
+
+    private List<String> listAllResourceGroups() {
+        return listResources(null).stream()
+                .map(ProductionResourcePO::getResourceGroup)
+                .filter(StrUtil::isNotBlank)
+                .distinct()
+                .sorted((o1, o2) -> {
+                    if (ProductionResourceService.DEFAULT_RESOURCE_GROUP.equals(o1)) {
+                        return -1;
+                    } else if (ProductionResourceService.DEFAULT_RESOURCE_GROUP.equals(o2)) {
+                        return 1;
+                    }
+                    return o1.compareTo(o2);
+                })
+                .toList();
+    }
+
+    private List<ProductionResourcePO> listResources(Collection<String> resourceGroups) {
+        return productionResourceMapper.selectList(Wrappers.<ProductionResourcePO>lambdaQuery()
+                .in(!ObjectNull.isNull(resourceGroups), ProductionResourcePO::getResourceGroup, resourceGroups));
     }
 }

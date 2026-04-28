@@ -6,16 +6,48 @@ import useTagsStore from '@/store/tags'
 import jvsRouter from '@/router/jvs-router'
 import website from '@/const/website'
 import { hasPermission } from '@/util/permission'
+import { ensureRuntimeBootstrap, getDefaultAuthenticatedRoute } from '@/util/runtimeAuth'
 
 // 前一次路由 防止复制链接没有回退路径(针对移动端)
 window.preVueRouter = ''
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   let tagsStore = useTagsStore()
   window.preVueRouter = from.path
+  if (to.path === '/login') {
+    try {
+      await ensureRuntimeBootstrap()
+      next({
+        path: getDefaultAuthenticatedRoute()
+      })
+      return
+    } catch (error) {
+      routerAddTags(to, to.meta || {}, next, from)
+      return
+    }
+  }
   if (website.whiteList.includes(to.path)) {
     routerAddTags(to, to.meta || {}, next, from)
     return
+  }
+  try {
+    await ensureRuntimeBootstrap()
+  } catch (error) {
+    if (error && error.code === 'AUTH_REQUIRED') {
+      next({
+        path: '/login',
+        query: {
+          redirect: to.fullPath
+        }
+      })
+      return
+    }
+    if (error && error.code === 'SERVER_ERROR') {
+      next({
+        path: '/500'
+      })
+      return
+    }
   }
   if (to.meta && to.meta.permission && !hasPermission(to.meta.permission)) {
     next({

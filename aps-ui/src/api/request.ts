@@ -6,7 +6,8 @@ import 'nprogress/nprogress.css'
 import { errorCode, authCode, authErrorCode } from '@/const/errorCode.js'
 import router from '@/router'
 import { ElNotification } from 'element-plus'
-import { getAuthHeaders } from '@/util/authContext'
+import useCommonStore from '@/store/common'
+import { clearAuthContext, getAuthHeaders } from '@/util/authContext'
 
 const instance = axios.create({
 	baseURL: import.meta.env.VITE_BASE_URL,
@@ -67,6 +68,7 @@ instance.interceptors.response.use( (res:any) => {
 	NProgress.done()
 	const status = Number(res.status) || 200
 	const message = res.data.msg || errorCode[res.status] || errorCode['default']
+	const commonStore = useCommonStore()
 	if (router.currentRoute.value.path !== currentRoutePath) {
 		currentRoutePath = router.currentRoute.value.path
 		lastUrl = location.href
@@ -74,11 +76,15 @@ instance.interceptors.response.use( (res:any) => {
 	}
 	// 401为没有权限的情况
 	if(status === 401) {
-		sessionStorage.setItem('lastUrl', lastUrl)
-		if (router.currentRoute.value && router.currentRoute.value.path != '/') {
-			router.push({ path: '/' })
+		if (res.config.skipAuthRedirect) {
+			return res
 		}
-		return
+		clearAuthContext()
+		sessionStorage.setItem('lastUrl', lastUrl)
+		if (router.currentRoute.value && router.currentRoute.value.path != '/login') {
+			router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
+		}
+		return Promise.reject(new Error(message))
 	}
 	if (res.data && Number(res.data.code) === 403) {
 		const authMessage = res.data.msg || '无权限访问'
@@ -97,6 +103,25 @@ instance.interceptors.response.use( (res:any) => {
 			})
 		}
 		return Promise.reject(new Error(authMessage))
+	}
+
+	if(status >= 500) {
+		commonStore.SET_RUNTIME_ERROR({
+			status,
+			code: status,
+			message,
+			path: res.config?.url || '',
+			route: router.currentRoute.value?.fullPath || '',
+			occurredAt: new Date().toISOString(),
+				traceId: res.data?.traceId || '',
+		})
+		if (!res.config.skipServerErrorRedirect && router.currentRoute.value.path !== '/500') {
+			router.push({ path: '/500' })
+		}
+		if (res.config.skipServerErrorRedirect) {
+			return res
+		}
+		return Promise.reject(new Error(message))
 	}
 
 	if(status === 404) {
@@ -144,6 +169,22 @@ instance.interceptors.response.use( (res:any) => {
 	if(err.code == 'ERR_CANCELED' || axios.isCancel(err) || new Error(err) == new Error('Error: Cancel')) {
 		return new Promise( () => {})
 	}else {
+		if (err?.config?.skipServerErrorRedirect) {
+			return Promise.reject(err)
+		}
+		const commonStore = useCommonStore()
+		commonStore.SET_RUNTIME_ERROR({
+			status: 500,
+			code: 500,
+			message: err?.message || '网络请求失败',
+			path: '',
+			route: router.currentRoute.value?.fullPath || '',
+			occurredAt: new Date().toISOString(),
+				traceId: res.data?.traceId || '',
+		})
+		if (router.currentRoute.value.path !== '/500') {
+			router.push({ path: '/500' })
+		}
 		return Promise.reject(new Error(err))
 	}
 })

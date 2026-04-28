@@ -46,6 +46,10 @@ const useCommonStore = defineStore('common', {
     tenantId: getStore({ name: 'tenantId' }) || '',
     authContext: getStore({ name: 'authContext' }) || null,
     permissions: getStore({ name: 'permissions' }) || [],
+    userProfile: getStore({ name: 'userProfile' }) || null,
+    preferences: getStore({ name: 'preferences' }) || null,
+    runtimeError: getStore({ name: 'runtimeError' }) || null,
+    bootstrapReady: getStore({ name: 'bootstrapReady' }) || false,
     direction: getStore({ name: 'direction' }) || 'forward',
     theme: getStore({ name: 'theme' }) || Object.assign({}, params),
     themeName: getStore({ name: 'themeName' }) || '',
@@ -64,6 +68,7 @@ const useCommonStore = defineStore('common', {
     lib: getStore({ name: 'lib' }) || [], // 图标库
     allType: getStore({ name: 'allType' }) || [], // 所有分类
     iconList: getStore({ name: 'iconList' }) || [], // 所有图标
+    menus: [], // 后端返回的菜单树
   }),
   actions: {
     SET_LabelValue (labelValue) {
@@ -222,6 +227,59 @@ const useCommonStore = defineStore('common', {
         type: ""
       });
     },
+    SET_USER_PROFILE (userProfile) {
+      this.userProfile = userProfile
+      setStore({
+        name: "userProfile",
+        content: this.userProfile,
+        type: "session"
+      });
+      setStore({
+        name: "userProfile",
+        content: this.userProfile,
+        type: ""
+      });
+    },
+    SET_PREFERENCES (preferences) {
+      this.preferences = preferences
+      setStore({
+        name: "preferences",
+        content: this.preferences,
+        type: "session"
+      });
+      setStore({
+        name: "preferences",
+        content: this.preferences,
+        type: ""
+      });
+    },
+    SET_RUNTIME_ERROR (runtimeError) {
+      this.runtimeError = runtimeError
+      setStore({
+        name: "runtimeError",
+        content: this.runtimeError,
+        type: "session"
+      });
+    },
+    CLEAR_RUNTIME_ERROR () {
+      this.runtimeError = null
+      removeStore({
+        name: "runtimeError"
+      });
+    },
+    SET_BOOTSTRAP_READY (ready) {
+      this.bootstrapReady = !!ready
+      setStore({
+        name: "bootstrapReady",
+        content: this.bootstrapReady,
+        type: "session"
+      });
+      setStore({
+        name: "bootstrapReady",
+        content: this.bootstrapReady,
+        type: ""
+      });
+    },
     CLEAR_AUTH_CONTEXT () {
       this.authContext = null
       removeStore({
@@ -261,7 +319,7 @@ const useCommonStore = defineStore('common', {
         content: this.tenantInfo,
         type: "session"
       });
-      if (info.systemName) {
+      if (info && info.systemName) {
         document.title = info.systemName
       }
     },
@@ -325,11 +383,20 @@ const useCommonStore = defineStore('common', {
       this.CLEAR_LOCK()
       this.CLEAR_AUTH_CONTEXT()
       this.SET_PERMISSIONS([])
+      this.SET_USER_PROFILE(null)
+      this.SET_PREFERENCES(null)
+      this.CLEAR_RUNTIME_ERROR()
+      this.SET_BOOTSTRAP_READY(false)
       this.SET_SYSTEM("")
       this.SET_TENANTId("")
+      this.SET_TENANTINFO(null)
       this.SET_MENU_TYPE("")
       this.SET_APP_SETTING_OPEN(false)
       this.SET_FUNCTIONS_OBJ({})
+      this.menus = []
+    },
+    SET_MENUS (menus) {
+      this.menus = menus || []
     },
     setLib (val) {
       this.lib = val

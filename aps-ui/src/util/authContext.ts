@@ -162,7 +162,17 @@ export function setAuthContext(authContext: AuthContextPayload) {
 export function clearAuthContext() {
   const commonStore = useCommonStore()
   commonStore.CLEAR_AUTH_CONTEXT()
+  commonStore.SET_USER_PROFILE(null)
+  commonStore.SET_PREFERENCES(null)
+  commonStore.SET_BOOTSTRAP_READY(false)
+  commonStore.CLEAR_RUNTIME_ERROR()
   commonStore.SET_PERMISSIONS([])
+  commonStore.SET_TENANTId('')
+  commonStore.SET_TENANTINFO(null)
   removeStore({ name: 'tenantInfo' })
+  removeStore({ name: 'tenantId' })
+  removeStore({ name: 'userProfile' })
+  removeStore({ name: 'preferences' })
+  removeStore({ name: 'bootstrapReady' })
   clearTenantScopedCache()
 }

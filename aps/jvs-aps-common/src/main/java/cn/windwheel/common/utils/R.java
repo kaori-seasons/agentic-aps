@@ -5,10 +5,12 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.slf4j.MDC;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * 标准的结果返回对象
@@ -44,6 +46,11 @@ public class R<T> implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss SSS")
     @JSONField(format = "yyyy-MM-dd HH:mm:ss SSS")
     private LocalDateTime timestamp = LocalDateTime.now();
+
+    @Getter
+    @Setter
+    @ApiModelProperty("链路追踪ID，便于定位线上问题")
+    private String traceId = resolveTraceId();
 
     public static <T> R<T> ok() {
         return restResult(null, 0, "success");
@@ -121,5 +128,10 @@ public class R<T> implements Serializable {
      */
     public boolean is() {
         return this.code == 0;
+    }
+
+    private static String resolveTraceId() {
+        String traceId = MDC.get("traceId");
+        return traceId != null ? traceId : UUID.randomUUID().toString().replace("-", "").substring(0, 16);
     }
 }
