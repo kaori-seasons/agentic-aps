@@ -31,7 +31,8 @@
               "form-item-no-label-nopadding": (!item.label && ["childrenForm","connectForm"].indexOf(item.type) > -1),
               "slot-label-item": item.labelSlot
             }'
-            :label='item.type == "tableForm" ? (item.editable ? item.label : "") : item.label'
+            :label="resolveFormItemLabel(item)"
+            :label-width="resolveFormItemLabel(item) ? undefined : '0px'"
             :prop="item.prop"
             v-if="(item.prop !== freshDom) && (item.type !='title' && (!item.children || item.children.length == 0) || item.type == 'formbox') && (item.permisionFlag ? permissionsList.indexOf(item.permisionFlag) > -1 : true) && (item.display == false ? item.display : true)"
             :rules="requireExpressHandle(item.rules, item)"
@@ -127,7 +128,8 @@
           <!-- 子表单项 -->
           <el-row v-if="item.type != 'formbox' && item.children && item.children.length > 0 && displayExpressHandle(item)" style="display:flex;flex-wrap:wrap;">
             <el-form-item
-              :label="item.label"
+              :label="resolveFormItemLabel(item)"
+              :label-width="resolveFormItemLabel(item) ? undefined : '0px'"
               :prop="item.prop"
               :rules="requireExpressHandle(item.rules, item)"
               v-if="(item.prop !== freshDom) && (item.display == false ? item.display : true)"
@@ -192,7 +194,8 @@
                 v-if="linkbindHandle(formDatas[item.prop], it.linkbind) && displayExpressHandle(it)"
               >
                 <el-form-item
-                  :label="it.label"
+                  :label="resolveFormItemLabel(it)"
+                  :label-width="resolveFormItemLabel(it) ? undefined : '0px'"
                   :prop="it.prop"
                   v-if="(it.prop !== freshDom) && (it.permisionFlag ? permissionsList.indexOf(it.permisionFlag) > -1 : true) && (!option.isSearch || (option.isSearch && it.search == true)) && (it.display == false ? it.display : true)"
                   :rules="requireExpressHandle(it.rules, it)"
@@ -263,7 +266,7 @@
         v-if="option.column.length > 0 && option.btnHide!==true"
         class="form-item-btn"
       >
-        <el-form-item class="form-btn-bar">
+        <el-form-item class="form-btn-bar" label-width="0px">
           <template v-if="isSearch">
             <el-button
               size="small"
@@ -453,6 +456,20 @@ const parentDom = ref(null)
 const dataTriggerFresh = ref(-1)
 const permissionsList = ref([])
 const formLoading = ref(false)
+
+const resolveFormItemLabel = (item) => {
+  if (!item) {
+    return undefined
+  }
+  if (item.type === 'tableForm' && !item.editable) {
+    return undefined
+  }
+  const label = item.label
+  if (label === undefined || label === null || label === '') {
+    return undefined
+  }
+  return label
+}
 
 createHandle()
 
