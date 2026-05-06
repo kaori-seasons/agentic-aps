@@ -13,7 +13,7 @@ services:
       - MYSQL_ROOT_HOST=%
       - TZ=Asia/Shanghai
     ports:
-      - "3306:3306"
+      - "3307:3306"
     restart: always
   jvs-redis:
     container_name: jvs-redis

@@ -50,6 +50,10 @@
    面向排产员的端到端傻瓜式操作手册
 15. `15_dispatcher_foolproof_manual.md`
    面向生产调度员的端到端傻瓜式操作手册
+16. `16_timefold_strategy_migration_plan.md`
+   面向 Timefold 策略扩展与迁移的生产落地方案
+17. `17_frontend_backend_500_root_cause_and_delivery_plan.md`
+   前后端 500 根因、P0 止血与认证闭环落地方案
 
 ## 写作说明
 
