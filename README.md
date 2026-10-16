@@ -24,6 +24,19 @@ APS是连接企业资源计划（ERP）系统和制造执行系统（MES）的�
 ![image](https://github.com/user-attachments/assets/ede42a85-25f9-4836-a384-7840ce47280f)
 
 
+<img width="2539" height="1280" alt="8a65b0a11472eb410f0540e1bf68e1d4" src="https://github.com/user-attachments/assets/b26a9175-44a5-442e-8cbd-7a732da79c35" />
+
+<img width="2414" height="1280" alt="3ab3ada166cabf6b1306464655f3b399" src="https://github.com/user-attachments/assets/2d8e7c7e-6d44-497c-b2a4-56ab7ed71787" />
+
+<img width="2548" height="1280" alt="f71e0b5621a57a0c8dacb530fd568a7f" src="https://github.com/user-attachments/assets/f0bc8a3b-0ff5-4170-af94-dc26eb666561" />
+
+<img width="2816" height="1136" alt="a043940bfe860ea1103d2c5319024363" src="https://github.com/user-attachments/assets/6e59517f-2af1-49e0-8604-829c80c48955" />
+
+
+
+
+
+
 
 #### 项目特点：
 - 智能优化（求解器）  
