@@ -14,6 +14,10 @@
 5.  专业化求解器
 通过专业求解器对排产计划进行调优，得到最好的结果。
 
+<img width="1163" height="645" alt="2874eaee9e27c248edeb8a297d0556a1" src="https://github.com/user-attachments/assets/701f683e-7362-44d9-bcfe-12ca97cd0d4b" />
+
+<img width="1161" height="652" alt="020f2f78e6a4ac4b0a75a73b9bafa632" src="https://github.com/user-attachments/assets/094d76ac-ed18-429f-b2e8-13c81f7a753a" />
+
 #### 软件逻辑架构
 APS是连接企业资源计划（ERP）系统和制造执行系统（MES）的核心枢纽，为整个生产流程提供了智能化的计划与排程解决方案
 ![image](https://github.com/user-attachments/assets/ea17d53f-e0c4-4cab-8ec6-0a2b29eaca3c)
