@@ -29,8 +29,7 @@ import cn.windwheel.common.utils.function.Get;
 import cn.windwheel.redis.utils.RedisUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.optaplanner.core.api.solver.SolverJob;
-import org.optaplanner.core.api.solver.SolverManager;
+import cn.windwheel.aps.solve.engine.ManagedSolverSession;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,12 +62,11 @@ public class SolveServiceImpl implements SolveService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void solve(UUID planId, PlanningStrategy strategy, BasicData basicData) {
+        // Reserve the tenant before changing Redis/progress, so a duplicate request cannot
+        // overwrite or delete the running job's marker. Cancellation can also cover problem building.
+        ManagedSolverSession session = solveManageConfigurator.initSolverManager(strategy);
         try {
-            // 初始化当前线程的动态权重配置
-            if (strategy != null && strategy.getConfig() != null && strategy.getConfig().getConstraintWeightConfig() != null) {
-                cn.windwheel.aps.solve.score.DynamicConstraintWeightContext.setWeightConfig(strategy.getConfig().getConstraintWeightConfig());
-            }
-
+            // Each engine snapshots constraint weights into its own SolverFactory.
             // 缓存求解任务id
             String planKey = getPlanCacheKey();
             redisUtils.set(getPlanCacheKey(), planId);
@@ -93,7 +91,7 @@ public class SolveServiceImpl implements SolveService {
             String profileMsg = "使用的排产算法策略: " + (strategy.getConfig().getSolverProfile() != null ? strategy.getConfig().getSolverProfile().getDesc() : "默认");
             solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, profileMsg);
             // 排产求解
-            SchedulingSolution apsSolutionResult = solveExecute(planId, solution);
+            SchedulingSolution apsSolutionResult = solveExecute(planId, solution, session);
             if (ObjectNull.isNull(apsSolutionResult)) {
                 return;
             }
@@ -113,8 +111,11 @@ public class SolveServiceImpl implements SolveService {
             solveProgressService.addProgressLog(SolveProgressStatusEnum.FAILURE,"排程失败：" + e.getMessage());
             throw new BusinessException(e.getMessage());
         } finally {
-            cn.windwheel.aps.solve.score.DynamicConstraintWeightContext.clear();
-            redisUtils.del(getPlanCacheKey());
+            try {
+                redisUtils.del(getPlanCacheKey());
+            } finally {
+                solveManageConfigurator.release(session);
+            }
         }
     }
 
@@ -130,13 +131,11 @@ public class SolveServiceImpl implements SolveService {
             return;
         }
         UUID planId = UUID.fromString(value);
-        SolverManager<SchedulingSolution, UUID> solverManager = solveManageConfigurator.getSolverManager();
-        if (ObjectNull.isNull(solverManager)) {
-            return;
+        ManagedSolverSession solverSession = solveManageConfigurator.getSolverManager();
+        if (solverSession != null) {
+            solverSession.terminateEarly(planId);
         }
-        solverManager.terminateEarly(planId);
-        // 删除求解任务缓存
-        redisUtils.del(getPlanCacheKey());
+        // Keep the tenant's running marker until the solve thread releases its engine session.
     }
 
     /**
@@ -146,25 +145,20 @@ public class SolveServiceImpl implements SolveService {
      * @param problem 规划解决方案
      * @return 排产结果
      */
-    private SchedulingSolution solveExecute(UUID planId, SchedulingSolution problem) {
-        SolverManager<SchedulingSolution, UUID> solverManager = solveManageConfigurator.initSolverManager(problem.getStrategy());
+    private SchedulingSolution solveExecute(UUID planId, SchedulingSolution problem, ManagedSolverSession session) {
         log.debug("开始计算, 待排任务数量：{}", problem.getTasks().size());
         long t1 = System.currentTimeMillis();
         try {
-            SolverJob<SchedulingSolution, UUID> solver = solverManager.solve(planId, problem);
-            SchedulingSolution apsSolutionResult = solver.getFinalBestSolution();
-            if (solver.isTerminatedEarly()) {
-                return null;
-            }
+            SchedulingSolution result = session.solve(planId, problem);
             log.debug("结束计算耗时：{}, 任务数量：{}", (System.currentTimeMillis() - t1), problem.getTasks().size());
-            return apsSolutionResult;
+            return result;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(e.getMessage());
         } catch (ExecutionException e) {
-            throw new BusinessException(e.getMessage());
+            throw new BusinessException(e.getCause() == null ? e.getMessage() : e.getCause().getMessage());
         } finally {
-            solverManager.terminateEarly(planId);
+            session.terminateEarly(planId);
         }
     }
 

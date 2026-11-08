@@ -3,53 +3,68 @@ package cn.windwheel.aps.solve.config;
 import cn.windwheel.aps.entity.dto.planning.StrategyConfigDTO;
 import cn.windwheel.aps.entity.enums.PlanningDirectionEnum;
 import cn.windwheel.aps.entity.enums.SolverProfileEnum;
+import cn.windwheel.aps.solve.engine.ManagedSolverSession;
 import cn.windwheel.aps.solve.model.PlanningStrategy;
+import cn.windwheel.common.exception.BusinessException;
 import cn.windwheel.common.utils.TenantContextHolder;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.optaplanner.core.api.solver.SolverManager;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.UUID;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SolveManageConfiguratorTest {
-
     private final SolveManageConfigurator configurator = new SolveManageConfigurator();
 
     @AfterEach
     void tearDown() {
+        configurator.close();
         TenantContextHolder.clear();
     }
 
-    @Test
-    void initSolverManager_allowsFfdTabuProfileWithPlanningListVariable() {
-        TenantContextHolder.setTenantId("test-tenant-ffd-tabu");
-        PlanningStrategy strategy = buildStrategy(SolverProfileEnum.FFD_TABU);
-
-        SolverManager<?, UUID> solverManager = configurator.initSolverManager(strategy);
-
-        Assertions.assertNotNull(solverManager);
+    @ParameterizedTest
+    @EnumSource(SolverProfileEnum.class)
+    void everyPresetCreatesARealSolverManager(SolverProfileEnum profile) {
+        TenantContextHolder.setTenantId("tenant-" + profile);
+        ManagedSolverSession session = configurator.initSolverManager(strategy(profile));
+        assertSame(session, configurator.getSolverManager());
+        configurator.release(session);
+        assertNull(configurator.getSolverManager());
     }
 
     @Test
-    void initSolverManager_allowsFfdLateAcceptanceProfileWithPlanningListVariable() {
-        TenantContextHolder.setTenantId("test-tenant-ffd-late-acceptance");
-        PlanningStrategy strategy = buildStrategy(SolverProfileEnum.FFD_LATE_ACCEPTANCE);
-
-        SolverManager<?, UUID> solverManager = configurator.initSolverManager(strategy);
-
-        Assertions.assertNotNull(solverManager);
+    void oldAndNewEnginesCoexistAcrossTenants() {
+        TenantContextHolder.setTenantId("legacy");
+        ManagedSolverSession legacy = configurator.initSolverManager(strategy(SolverProfileEnum.FFD_TABU));
+        TenantContextHolder.setTenantId("timefold");
+        ManagedSolverSession timefold = configurator.initSolverManager(strategy(SolverProfileEnum.TF_TABU));
+        assertNotSame(legacy, timefold);
+        assertSame(timefold, configurator.getSolverManager());
+        configurator.release(timefold);
+        TenantContextHolder.setTenantId("legacy");
+        assertSame(legacy, configurator.getSolverManager());
     }
 
-    private PlanningStrategy buildStrategy(SolverProfileEnum solverProfile) {
-        StrategyConfigDTO config = new StrategyConfigDTO()
-                .setDirection(PlanningDirectionEnum.FORWARD)
-                .setMaterialConstrained(Boolean.TRUE)
-                .setSolverProfile(solverProfile)
-                .setRandomSeed(1L);
+    @Test
+    void aSecondSolveCannotCloseAnActiveSession() {
+        TenantContextHolder.setTenantId("same-tenant");
+        ManagedSolverSession active = configurator.initSolverManager(strategy(SolverProfileEnum.DEFAULT));
+        assertThrows(BusinessException.class,
+                () -> configurator.initSolverManager(strategy(SolverProfileEnum.TF_TABU)));
+        assertSame(active, configurator.getSolverManager());
+    }
 
+    @Test
+    void missingProfileStillCreatesLegacySession() {
+        TenantContextHolder.setTenantId("old-json");
+        assertNotNull(configurator.initSolverManager(strategy(null)));
+    }
+
+    private PlanningStrategy strategy(SolverProfileEnum profile) {
         PlanningStrategy strategy = new PlanningStrategy();
-        strategy.setConfig(config);
+        strategy.setConfig(new StrategyConfigDTO().setDirection(PlanningDirectionEnum.FORWARD)
+                .setSolverProfile(profile).setRandomSeed(1L));
         return strategy;
     }
 }

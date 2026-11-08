@@ -26,6 +26,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mybatis-plus.version>3.5.3.1</mybatis-plus.version>
         <optaplanner.version>9.44.0.Final</optaplanner.version>
+        <!-- Core only: retain Java 17 / Spring Boot 2.7 and the legacy engine. -->
+        <timefold.version>1.16.0</timefold.version>
         <mysql-connector.version>8.0.27</mysql-connector.version>
         <hutool.version>5.8.24</hutool.version>
         <lombok.version>1.18.36</lombok.version>

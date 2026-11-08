@@ -2,9 +2,8 @@ package cn.windwheel.aps.solve.calculate.service;
 
 import cn.windwheel.aps.solve.model.MainProductionResource;
 import cn.windwheel.aps.solve.model.ProductionTask;
-import cn.windwheel.aps.solve.model.SchedulingSolution;
 import cn.windwheel.aps.solve.model.WorkCalendar;
-import org.optaplanner.core.api.score.director.ScoreDirector;
+import cn.windwheel.aps.solve.calculate.SchedulingScoreDirector;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +21,7 @@ public interface TaskTimeService {
      * @param resource 主资源
      * @param fromIndex 变更任务所在目标资源的下标
      */
-    void updateTaskStartTime(ScoreDirector<SchedulingSolution> scoreDirector, MainProductionResource resource, int fromIndex);
+    void updateTaskStartTime(SchedulingScoreDirector scoreDirector, MainProductionResource resource, int fromIndex);
 
     /**
      * 计算任务开始时间

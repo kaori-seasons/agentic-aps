@@ -8,13 +8,12 @@ import cn.windwheel.aps.solve.calculate.service.TaskTimeService;
 import cn.windwheel.aps.solve.calculate.service.dto.PendingChangeTaskDTO;
 import cn.windwheel.aps.solve.model.MainProductionResource;
 import cn.windwheel.aps.solve.model.ProductionTask;
-import cn.windwheel.aps.solve.model.SchedulingSolution;
 import cn.windwheel.aps.solve.model.WorkCalendar;
 import cn.windwheel.aps.solve.util.DurationUtils;
 import cn.windwheel.aps.solve.util.TaskCalendarUtils;
 import cn.windwheel.common.utils.ObjectNull;
 import lombok.extern.slf4j.Slf4j;
-import org.optaplanner.core.api.score.director.ScoreDirector;
+import cn.windwheel.aps.solve.calculate.SchedulingScoreDirector;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -34,7 +33,7 @@ import java.util.stream.IntStream;
 public class TaskTimeBackwardServiceImpl implements TaskTimeService {
 
     @Override
-    public void updateTaskStartTime(ScoreDirector<SchedulingSolution> scoreDirector, MainProductionResource resource, int fromIndex) {
+    public void updateTaskStartTime(SchedulingScoreDirector scoreDirector, MainProductionResource resource, int fromIndex) {
         LocalDateTime planEndTime = Optional.ofNullable(scoreDirector.getWorkingSolution().getPlanTime())
                 .orElseGet(LocalDateTime::now);
         List<ProductionTask> allTasks = scoreDirector.getWorkingSolution().getTasks();
@@ -146,33 +145,25 @@ public class TaskTimeBackwardServiceImpl implements TaskTimeService {
         if (ObjectNull.isNull(resourcePinnedTasks)) {
             return startTime;
         }
-        task.setStartTime(startTime);
-        Optional<LocalDateTime> minOverlappingStartTime = getMinOverlappingPinnedTaskStartTime(task, resourcePinnedTasks);
+        Optional<LocalDateTime> minOverlappingStartTime = getMinOverlappingPinnedTaskStartTime(
+                startTime, taskDuration, resource, resourcePinnedTasks);
         while (minOverlappingStartTime.isPresent()) {
             startTime = TaskCalendarUtils.calculateBackwardStartTime(minOverlappingStartTime.get(), taskDuration, resource.getWorkCalendars());
             if (ObjectNull.isNull(startTime)) {
                 return null;
             }
-            task.setStartTime(startTime);
-            minOverlappingStartTime = getMinOverlappingPinnedTaskStartTime(task, resourcePinnedTasks);
+            minOverlappingStartTime = getMinOverlappingPinnedTaskStartTime(startTime, taskDuration, resource, resourcePinnedTasks);
         }
         return startTime;
     }
 
-    /**
-     * 获取与当前任务有重叠的锁定任务中，最早开始时间
-     *
-     * @param task                当前任务
-     * @param resourcePinnedTasks 资源上的锁定任务
-     * @return 最早开始时间
-     */
-    private Optional<LocalDateTime> getMinOverlappingPinnedTaskStartTime(ProductionTask task, List<ProductionTask> resourcePinnedTasks) {
-        if (ObjectNull.isNull(task.getStartTime()) || ObjectNull.isNull(task.getEndTime())) {
-            return Optional.empty();
-        }
+    /** Candidate times must remain local until beforeVariableChanged has been emitted. */
+    private Optional<LocalDateTime> getMinOverlappingPinnedTaskStartTime(LocalDateTime startTime,
+            Duration duration, MainProductionResource resource, List<ProductionTask> resourcePinnedTasks) {
+        LocalDateTime endTime = TaskCalendarUtils.calculateEndTime(startTime, duration, resource.getWorkCalendars());
         return resourcePinnedTasks.stream()
                 .filter(t -> ObjectNull.isNotNull(t.getStartTime()) && ObjectNull.isNotNull(t.getEndTime()))
-                .filter(t -> t.getEndTime().isAfter(task.getStartTime()) && t.getStartTime().isBefore(task.getEndTime()))
+                .filter(t -> t.getEndTime().isAfter(startTime) && t.getStartTime().isBefore(endTime))
                 .map(ProductionTask::getStartTime)
                 .min(Comparator.naturalOrder());
     }

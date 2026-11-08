@@ -86,6 +86,20 @@
         <dependency>
             <groupId>org.optaplanner</groupId>
             <artifactId>optaplanner-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.timefold.solver</groupId>
+            <artifactId>timefold-solver-core</artifactId>
+            <version>${timefold.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ai.timefold.solver</groupId>
+            <artifactId>timefold-solver-test</artifactId>
+            <version>${timefold.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

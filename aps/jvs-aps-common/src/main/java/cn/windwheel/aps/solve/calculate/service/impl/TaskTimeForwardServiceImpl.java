@@ -9,7 +9,6 @@ import cn.windwheel.aps.solve.calculate.service.TaskTimeService;
 import cn.windwheel.aps.solve.calculate.service.dto.PendingChangeTaskDTO;
 import cn.windwheel.aps.solve.model.MainProductionResource;
 import cn.windwheel.aps.solve.model.ProductionTask;
-import cn.windwheel.aps.solve.model.SchedulingSolution;
 import cn.windwheel.aps.solve.model.WorkCalendar;
 import cn.windwheel.aps.solve.util.DurationUtils;
 import cn.windwheel.aps.solve.util.TaskCalendarUtils;
@@ -18,7 +17,7 @@ import cn.windwheel.common.utils.ObjectNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.optaplanner.core.api.score.director.ScoreDirector;
+import cn.windwheel.aps.solve.calculate.SchedulingScoreDirector;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -39,7 +38,7 @@ import java.util.stream.IntStream;
 public class TaskTimeForwardServiceImpl implements TaskTimeService {
 
     @Override
-    public void updateTaskStartTime(ScoreDirector<SchedulingSolution> scoreDirector, MainProductionResource resource, int fromIndex) {
+    public void updateTaskStartTime(SchedulingScoreDirector scoreDirector, MainProductionResource resource, int fromIndex) {
         LocalDateTime beginTime = scoreDirector.getWorkingSolution().getPlanTime();
         List<ProductionTask> allTasks = scoreDirector.getWorkingSolution().getTasks();
         Set<String> historyQueueJobIds = new HashSet<>();
@@ -179,10 +178,12 @@ public class TaskTimeForwardServiceImpl implements TaskTimeService {
             return startTime;
         }
 
-        task.setStartTime(startTime);
-
+        // Calculate the candidate interval without mutating a shadow variable before its notification.
+        LocalDateTime candidateEndTime = TaskCalendarUtils.calculateEndTime(startTime,
+                task.calculateTaskDuration(), mainProductionResource.getWorkCalendars());
         Optional<LocalDateTime> maxOverlappingTime = resourcePinnedTasks.stream()
-                .filter(t -> t.getEndTime().isAfter(task.getStartTime()) && t.getStartTime().isBefore(task.getEndTime()))
+                .filter(t -> t.getEndTime() != null && t.getStartTime() != null)
+                .filter(t -> t.getEndTime().isAfter(startTime) && t.getStartTime().isBefore(candidateEndTime))
                 .map(ProductionTask::getEndTime)
                 .max(Comparator.naturalOrder());
         if (maxOverlappingTime.isPresent()) {

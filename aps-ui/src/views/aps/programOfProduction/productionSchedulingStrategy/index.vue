@@ -36,6 +36,7 @@
       :before-close="handleClose"
     >
       <div v-if="dialogVisible" class="dialog-form-box">
+        <solver-profile-fields :form="rowData" />
         <jvs-form :option="formOption" :formData="rowData" @submit="submitHandle" @cancelClick="handleClose">
           <template #orderSchedulingRulesForm>
             <div class="jvs-form-item">
@@ -103,6 +104,8 @@ import useCommonStore from '@/store/common.js'
 import { getStore } from '@/util/store.js'
 
 import { getList, getOptions, add, edit, editActive, del } from './api'
+import SolverProfileFields from './SolverProfileFields.vue'
+import { strategyToForm, formToStrategy, validateSolverConfig } from './solver-config.js'
 
 const { proxy } = getCurrentInstance()
 const emit = defineEmits(['row-click'])
@@ -221,6 +224,7 @@ const formOption = ref({
       type: 'inputNumber',
       precision: 0,
       min: 0,
+      max: 2147483647,
       span: 12,
     },
     {
@@ -318,25 +322,11 @@ function getOptionsHandle () {
 }
 
 function addEditRow (row) {
-  if(row) {
-    rowData.value = JSON.parse(JSON.stringify(row))
-    if(row.config) {
-      for(let k in row.config) {
-        rowData.value[k] = row.config[k]
-      }
-      delete rowData.value['config']
-      if(!row.orderSchedulingRules) {
-        rowData.value['orderSchedulingRules'] = []
-      }
-    }
-    dialogTitle.value = t(`aps.programOfProduction.productionSchedulingStrategy.edit`)
-  }else{
-    rowData.value = {
-      direction: 'FORWARD',
-      orderSchedulingRules: []
-    }
-    dialogTitle.value = t(`aps.programOfProduction.productionSchedulingStrategy.add`)
-  }
+  rowData.value = strategyToForm(row)
+  if (!rowData.value['orderSchedulingRules']) rowData.value['orderSchedulingRules'] = []
+  dialogTitle.value = row
+    ? t(`aps.programOfProduction.productionSchedulingStrategy.edit`)
+    : t(`aps.programOfProduction.productionSchedulingStrategy.add`)
   dialogVisible.value = true
 }
 
@@ -345,17 +335,12 @@ function submitHandle (form) {
   if(rowData.value['id']) {
     fun = edit
   }
-  let temp = JSON.parse(JSON.stringify(rowData.value))
-  temp.config = {
-    direction: rowData.value['direction'],
-    materialConstrained: rowData.value['materialConstrained'] || false,
+  const validationError = validateSolverConfig(rowData.value)
+  if (validationError) {
+    ElNotification({ title: t(`common.tip`), message: validationError, type: 'warning' })
+    return
   }
-  delete temp.direction
-  delete temp.materialConstrained
-  if(rowData.value['maxNoImprovementTime'] !== undefined && rowData.value['maxNoImprovementTime'] !== null) {
-    temp.config['maxNoImprovementTime'] = rowData.value['maxNoImprovementTime']
-    delete temp.maxNoImprovementTime
-  }
+  const temp = formToStrategy(rowData.value)
   formOption.value.submitLoading = true
   fun(temp).then(res => {
     if(res.data && res.data.code == 0) {
@@ -371,6 +356,8 @@ function submitHandle (form) {
       getListHandle()
     }
   }).catch(e => {
+    formOption.value.submitLoading = false
+  }).finally(() => {
     formOption.value.submitLoading = false
   })
 }

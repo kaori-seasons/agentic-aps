@@ -17,7 +17,7 @@ import java.util.Optional;
  * 约束
  */
 @Slf4j
-public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
+public class ApsHardSoftScoreConstraintProvider extends SolverConstraintWeights implements ConstraintProvider {
 
     @Override
     public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
@@ -45,7 +45,7 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                 .filter((task1, task2) -> ObjectNull.isNull(task1.getMergeTaskCode()) && ObjectNull.isNull(task2.getMergeTaskCode()))
                 .filter((task1, task2) -> task1.getStartTime().isAfter(task2.getStartTime()))
                 .penalizeLong(HardSoftLongScore.ONE_SOFT, (task1, task2) -> {
-                    long weight = DynamicConstraintWeightContext.getWeightConfig().getPriorityWeight();
+                    long weight = this.getPriorityWeight();
                     return (long) (task2.getPriority() - task1.getPriority()) * weight;
                 })
                 .asConstraint("尽量按优先级安排");
@@ -66,7 +66,7 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                 .filter(task -> task.getStartTime() != null && task.getEndTime() != null && ObjectNull.isNull(task.getMergeTaskCode()))
                 .groupBy(ConstraintCollectors.max(ProductionTask::getEndTime))
                 .penalizeLong(HardSoftLongScore.ONE_SOFT, maxEndTime -> {
-                    long weight = DynamicConstraintWeightContext.getWeightConfig().getFinishEarlyWeight();
+                    long weight = this.getFinishEarlyWeight();
                     return maxEndTime.toEpochSecond(ZoneOffset.UTC) * weight;
                 })
                 .asConstraint("尽早完成任务");
@@ -80,7 +80,7 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                 .filter(task -> ObjectNull.isNotNull(task.getOrder().getDeliveryTime()))
                 .penalizeLong(HardSoftLongScore.ONE_SOFT, task -> {
                     long delayMinutes = Duration.between(task.getOrder().getDeliveryTime(), task.getEndTime()).toMinutes();
-                    long weight = DynamicConstraintWeightContext.getWeightConfig().getMinimizeTardinessWeight();
+                    long weight = this.getMinimizeTardinessWeight();
                     return Math.max(delayMinutes, 0L) * weight;
                 })
                 .asConstraint("最小化逾期");
@@ -92,7 +92,7 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                 .filter(task -> ObjectNull.isNotNull(task.getResource()))
                 .groupBy(ProductionTask::getResource, ConstraintCollectors.sumLong(this::taskDurationInMinutes))
                 .penalizeLong(HardSoftLongScore.ONE_SOFT, (resource, load) -> {
-                    long weight = DynamicConstraintWeightContext.getWeightConfig().getBalanceResourceLoadWeight();
+                    long weight = this.getBalanceResourceLoadWeight();
                     return load * load * weight;
                 })
                 .asConstraint("资源负载均衡");
@@ -110,7 +110,7 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                 .penalizeLong(HardSoftLongScore.ONE_SOFT, (task) -> {
                     LocalDateTime frontTaskMaxEndTime = task.getFrontTasks().stream().map(ProductionTask::getEndTime).max(Comparator.naturalOrder()).get();
                     Duration duration = Duration.between(frontTaskMaxEndTime, task.getStartTime());
-                    long weight = DynamicConstraintWeightContext.getWeightConfig().getMinimizeGapBetweenDependentTasksWeight();
+                    long weight = this.getMinimizeGapBetweenDependentTasksWeight();
                     return (duration.toMinutes() > 0 ? duration.toMinutes() : 0) * weight;
                 })
                 .asConstraint("优化任务调度的连续性");
@@ -155,7 +155,7 @@ public class ApsHardSoftScoreConstraintProvider implements ConstraintProvider {
                 })
                 .penalizeLong(HardSoftLongScore.ONE_SOFT, (task1, task2) -> {
                     // 动态获取针对换型时间的惩罚权重
-                    long weight = DynamicConstraintWeightContext.getWeightConfig().getMinimizeSetupTimeWeight();
+                    long weight = this.getMinimizeSetupTimeWeight();
                     return weight;
                 })
                 .asConstraint("最小化换型时间");

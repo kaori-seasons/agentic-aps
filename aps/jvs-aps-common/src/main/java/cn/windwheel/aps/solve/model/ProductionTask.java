@@ -34,6 +34,7 @@ import java.util.Set;
 @Accessors(chain = true)
 @NoArgsConstructor
 @PlanningEntity(difficultyComparatorClass = TaskDifficultyComparator.class)
+@ai.timefold.solver.core.api.domain.entity.PlanningEntity
 public class ProductionTask {
 
     @Comment(value = "id", notes = "排程计算时使用，不入库。排程计算过程中id与任务编码同等作用（都能唯一标识一个任务），但业务逻辑使用时，应使用任务编码")
@@ -108,6 +109,23 @@ public class ProductionTask {
 
     @Comment("输入物料")
     private List<PlanTaskInputMaterialDTO> inputMaterials;
+
+    @ai.timefold.solver.core.api.domain.lookup.PlanningId
+    public String getId() {
+        return id;
+    }
+
+    @ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable(sourceVariableName = "taskList")
+    public MainProductionResource getResource() {
+        return resource;
+    }
+
+    @ai.timefold.solver.core.api.domain.variable.ShadowVariable(
+            variableListenerClass = cn.windwheel.aps.solve.calculate.TimefoldStartTimeListener.class,
+            sourceEntityClass = MainProductionResource.class, sourceVariableName = "taskList")
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
 
     /**
      * 添加前置任务
@@ -195,7 +213,7 @@ public class ProductionTask {
      * @return 任务持续时长
      */
     public Duration calculateTaskDuration() {
-        return TaskDurationUtils.calculateTaskDuration(resource.getId(), process, quantity);
+        return resource == null ? null : TaskDurationUtils.calculateTaskDuration(resource.getId(), process, quantity);
     }
 
     @Override

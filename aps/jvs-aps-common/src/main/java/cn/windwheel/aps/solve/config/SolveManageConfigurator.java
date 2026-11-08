@@ -1,153 +1,60 @@
 package cn.windwheel.aps.solve.config;
 
-import cn.windwheel.aps.entity.dto.planning.StrategyConfigDTO;
-import cn.windwheel.aps.solve.model.MainProductionResource;
+import cn.windwheel.aps.solve.engine.ManagedSolverSession;
+import cn.windwheel.aps.solve.engine.OptaPlannerEngine;
+import cn.windwheel.aps.solve.engine.PlanningSolverEngine;
+import cn.windwheel.aps.solve.engine.TimefoldV1Engine;
 import cn.windwheel.aps.solve.model.PlanningStrategy;
-import cn.windwheel.aps.solve.model.ProductionTask;
-import cn.windwheel.aps.solve.model.SchedulingSolution;
-import cn.windwheel.aps.solve.score.ApsHardSoftScoreConstraintProvider;
-import cn.windwheel.common.utils.ObjectNull;
+import cn.windwheel.common.exception.BusinessException;
 import cn.windwheel.common.utils.TenantContextHolder;
-import org.optaplanner.core.api.score.stream.ConstraintStreamImplType;
-import org.optaplanner.core.api.solver.SolverFactory;
-import org.optaplanner.core.api.solver.SolverManager;
-import org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig;
-import org.optaplanner.core.config.solver.SolverConfig;
-import org.optaplanner.core.config.solver.termination.TerminationCompositionStyle;
-import org.optaplanner.core.config.solver.termination.TerminationConfig;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.HashMap;
+import javax.annotation.PreDestroy;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * @author jvs
- * 求解配置
- */
+/** Routes historical profiles to OptaPlanner and TF_* profiles to Timefold, per tenant. */
 @Component
 public class SolveManageConfigurator {
+    private final Map<String, ManagedSolverSession> sessions = new ConcurrentHashMap<>();
+    private final List<PlanningSolverEngine> engines = List.of(new OptaPlannerEngine(), new TimefoldV1Engine());
 
-    /**
-     * 求解器
-     * Map<租户id, 求解器>
-     */
-    private static final Map<String, SolverManager<SchedulingSolution, UUID>> SOLVER_MANAGER_MAP = new HashMap<>();
-
-    /**
-     * 求解运行最大时长默认值
-     */
-    private static final Duration SOLVE_TIME_LIMIT_DEFAULT = Duration.ofHours(1);
-
-    /**
-     * 初始化SolverManager实例
-     *
-     * @param strategy 策略
-     * @return SolverManager实例
-     */
-    public SolverManager<SchedulingSolution, UUID> initSolverManager(PlanningStrategy strategy) {
-        // 移除已存在的SolverManager
-        removeSolverManager();
-        // 创建SolverManager
-        return createSolverManager(strategy.getConfig());
+    public ManagedSolverSession initSolverManager(PlanningStrategy strategy) {
+        SolverSettings.validate(strategy == null ? null : strategy.getConfig());
+        String tenant = tenantId();
+        return sessions.compute(tenant, (key, existing) -> {
+            if (existing != null) {
+                throw new BusinessException("当前租户已有排产任务运行中");
+            }
+            var profile = SolverSettings.profile(strategy.getConfig());
+            return engines.stream().filter(engine -> engine.supports(profile)).findFirst()
+                    .orElseThrow(() -> new BusinessException("不支持的排产算法：" + profile))
+                    .createSession(strategy.getConfig());
+        });
     }
 
-    /**
-     * 获取SolverManager实例
-     *
-     * @return SolverManager实例
-     */
-    public SolverManager<SchedulingSolution, UUID> getSolverManager() {
-        return SOLVER_MANAGER_MAP.get(TenantContextHolder.getTenantId());
+    public ManagedSolverSession getSolverManager() {
+        return sessions.get(tenantId());
     }
 
-    /**
-     * 创建SolverManager实例
-     *
-     * @param config 策略配置
-     * @return SolverManager实例
-     */
-    private SolverManager<SchedulingSolution, UUID> createSolverManager(StrategyConfigDTO config) {
-        // 终止配置
-        TerminationConfig terminationConfig = buildTerminationConfig(config);
-        // 求解配置
-        SolverConfig solverConfig = new SolverConfig()
-                .withSolutionClass(SchedulingSolution.class)
-                .withEntityClasses(ProductionTask.class, MainProductionResource.class)
-                .withConstraintProviderClass(ApsHardSoftScoreConstraintProvider.class)
-                .withConstraintStreamImplType(ConstraintStreamImplType.BAVET)
-                .withTerminationConfig(terminationConfig)
-                .withMoveThreadCount("AUTO");
-
-        // 固定随机种子以支持复现
-        if (config.getRandomSeed() != null) {
-            solverConfig.withRandomSeed(config.getRandomSeed());
+    public void release(ManagedSolverSession session) {
+        if (session != null && sessions.remove(tenantId(), session)) {
+            session.close();
         }
-
-        // 根据策略配置设置算法 Phase
-        if (cn.windwheel.aps.entity.enums.SolverProfileEnum.FFD_TABU.equals(config.getSolverProfile())) {
-            ConstructionHeuristicPhaseConfig chPhaseConfig = buildListVariableCompatibleConstructionHeuristicPhase();
-            org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig lsPhaseConfig = new org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig()
-                    .withAcceptorConfig(new org.optaplanner.core.config.localsearch.decider.acceptor.LocalSearchAcceptorConfig().withEntityTabuSize(config.getEntityTabuSize() != null ? config.getEntityTabuSize() : 7))
-                    .withForagerConfig(new org.optaplanner.core.config.localsearch.decider.forager.LocalSearchForagerConfig().withAcceptedCountLimit(config.getAcceptedCountLimit() != null ? config.getAcceptedCountLimit() : 1000));
-
-            solverConfig.withPhases(chPhaseConfig, lsPhaseConfig);
-        } else if (cn.windwheel.aps.entity.enums.SolverProfileEnum.FFD_LATE_ACCEPTANCE.equals(config.getSolverProfile())) {
-            ConstructionHeuristicPhaseConfig chPhaseConfig = buildListVariableCompatibleConstructionHeuristicPhase();
-            org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig lsPhaseConfig = new org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig()
-                    .withAcceptorConfig(new org.optaplanner.core.config.localsearch.decider.acceptor.LocalSearchAcceptorConfig().withLateAcceptanceSize(config.getLateAcceptanceSize() != null ? config.getLateAcceptanceSize() : 400))
-                    .withForagerConfig(new org.optaplanner.core.config.localsearch.decider.forager.LocalSearchForagerConfig().withAcceptedCountLimit(config.getAcceptedCountLimit() != null ? config.getAcceptedCountLimit() : 1000));
-
-            solverConfig.withPhases(chPhaseConfig, lsPhaseConfig);
-        }
-
-        // 创建SolverManager实例
-        SolverFactory<SchedulingSolution> solverFactory = SolverFactory.create(solverConfig);
-        SolverManager<SchedulingSolution, UUID> solverManager = SolverManager.create(solverFactory);
-        SOLVER_MANAGER_MAP.put(TenantContextHolder.getTenantId(), solverManager);
-        return solverManager;
     }
 
-    /**
-     * 当前解模型使用 PlanningListVariable。
-     * 对这类模型，OptaPlanner 9 不支持在 Construction Heuristic phase 上显式指定
-     * FIRST_FIT_DECREASING 等 constructionHeuristicType，因此仅保留 phase，
-     * 由求解器选择兼容的 list-variable 构造方式。
-     */
-    private ConstructionHeuristicPhaseConfig buildListVariableCompatibleConstructionHeuristicPhase() {
-        return new ConstructionHeuristicPhaseConfig();
+    @PreDestroy
+    public void close() {
+        sessions.values().forEach(ManagedSolverSession::close);
+        sessions.clear();
     }
 
-    /**
-     * 构建终止配置
-     *
-     * @param config 策略配置
-     * @return 终止配置
-     */
-    private TerminationConfig buildTerminationConfig(StrategyConfigDTO config) {
-        TerminationConfig terminationConfig = new TerminationConfig();
-        terminationConfig.setTerminationCompositionStyle(TerminationCompositionStyle.OR);
-        terminationConfig.setSpentLimit(SOLVE_TIME_LIMIT_DEFAULT);
-        Long maxNoImprovementTime = config.getMaxNoImprovementTime();
-        if (ObjectNull.isNull(maxNoImprovementTime) || maxNoImprovementTime <= 0) {
-            terminationConfig.setBestScoreFeasible(true);
-        } else {
-            terminationConfig.setUnimprovedSecondsSpentLimit(maxNoImprovementTime);
+    private String tenantId() {
+        String tenant = TenantContextHolder.getTenantId();
+        if (tenant == null || tenant.isBlank()) {
+            throw new BusinessException("排产请求缺少租户信息");
         }
-        return terminationConfig;
-    }
-
-
-    /**
-     * 移除SolverManager实例
-     */
-    private void removeSolverManager() {
-        SolverManager<SchedulingSolution, UUID> solverManager = getSolverManager();
-        if (ObjectNull.isNull(solverManager)) {
-            return;
-        }
-        solverManager.close();
-        SOLVER_MANAGER_MAP.remove(TenantContextHolder.getTenantId());
+        return tenant;
     }
 }

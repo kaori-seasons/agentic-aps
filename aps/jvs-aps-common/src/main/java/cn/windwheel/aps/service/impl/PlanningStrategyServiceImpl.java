@@ -30,6 +30,7 @@ public class PlanningStrategyServiceImpl extends ServiceImpl<PlanningStrategyMap
     @Override
     public void save(SavePlanningStrategyDTO savePlanningStrategy) {
         PlanningStrategyPO planningStrategy = BeanCopyUtil.copy(savePlanningStrategy, PlanningStrategyPO.class);
+        cn.windwheel.aps.solve.config.SolverSettings.validate(planningStrategy.getConfig());
         save(planningStrategy);
     }
 
@@ -37,6 +38,7 @@ public class PlanningStrategyServiceImpl extends ServiceImpl<PlanningStrategyMap
     @Override
     public void update(UpdatePlanningStrategyDTO updatePlanningStrategy) {
         PlanningStrategyPO planningStrategy = BeanCopyUtil.copy(updatePlanningStrategy, PlanningStrategyPO.class);
+        cn.windwheel.aps.solve.config.SolverSettings.validate(planningStrategy.getConfig());
         updateById(planningStrategy);
     }
 

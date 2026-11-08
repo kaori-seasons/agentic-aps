@@ -39,7 +39,8 @@ public class ApsStartTimeListener implements ListVariableListener<SchedulingSolu
 
         // 修改开始时间
         TaskTimeService taskTimeService = getPlanningDirectionHandler().getTaskTimeService(direction);
-        taskTimeService.updateTaskStartTime(scoreDirector, resource, fromIndex);
+        taskTimeService.updateTaskStartTime(new SchedulingScoreDirector(scoreDirector.getWorkingSolution(),
+                scoreDirector::beforeVariableChanged, scoreDirector::afterVariableChanged), resource, fromIndex);
     }
 
     @Override
