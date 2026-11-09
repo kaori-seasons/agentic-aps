@@ -18,6 +18,12 @@
 
 <img width="1161" height="652" alt="020f2f78e6a4ac4b0a75a73b9bafa632" src="https://github.com/user-attachments/assets/094d76ac-ed18-429f-b2e8-13c81f7a753a" />
 
+#### 机械装配 SOP 排程示意（资源甘特 × 订单甘特）
+
+![叉车机械装配 SOP 的资源甘特与订单甘特联动视图](docs/diagrams/assembly-sop-gantt.svg)
+
+以林德叉车类整机制造为参考场景：上半部分是总装线资源甘特（底盘、门架、液压、电气、属具工位，测试台架与线边齐套，红线为工序前后置）；下半部分是订单甘特（齐套 → 装配 → 测试放行，含承诺交期对比）。完整落地方案见 [APS 林德叉车生产落地开发方案](docs/APS林德叉车生产落地开发方案.md)。
+
 #### 软件逻辑架构
 APS是连接企业资源计划（ERP）系统和制造执行系统（MES）的核心枢纽，为整个生产流程提供了智能化的计划与排程解决方案
 ![image](https://github.com/user-attachments/assets/ea17d53f-e0c4-4cab-8ec6-0a2b29eaca3c)
