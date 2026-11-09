@@ -18,6 +18,9 @@
 
 <img width="1161" height="652" alt="020f2f78e6a4ac4b0a75a73b9bafa632" src="https://github.com/user-attachments/assets/094d76ac-ed18-429f-b2e8-13c81f7a753a" />
 
+<img width="1920" height="1080" alt="林德叉车行业实践SOP" src="https://github.com/user-attachments/assets/0db1fac4-e2c4-4a86-a1a2-4d7e0e3d8e20" />
+
+
 #### 机械装配 SOP 排程示意（资源甘特 × 订单甘特）
 
 ![叉车机械装配 SOP 的资源甘特与订单甘特联动视图](docs/diagrams/assembly-sop-gantt.svg)
