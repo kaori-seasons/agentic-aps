@@ -1,0 +1,299 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1120" viewBox="0 0 1680 1120">
+<defs>
+<marker id="arrow3" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#d03b3b" opacity="0.85"/></marker>
+<pattern id="hatchPractice" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#fdf7f7"/><line x1="0" y1="0" x2="0" y2="6" stroke="#d03b3b" stroke-width="1" opacity="0.55"/></pattern>
+</defs>
+
+<rect x="0" y="0" width="1680" height="1120" fill="#f9f9f7"/>
+
+<!-- header -->
+<text x="32" y="52" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="25" fill="#0b0b0b" font-weight="700">机械装配行业实践 SOP · 从齐套排产到总装放行</text>
+<text x="36" y="78" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12.5" fill="#52514e">每日 06:30–08:00 形成可执行序列，班中执行与回写 ｜ 谁来做 · 几点做 · 按什么规则做 · 做不完找谁</text>
+<text x="1648" y="52" text-anchor="end" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12.5" fill="#52514e" font-weight="600">SOP-APS-PRACTICE · V1.0</text>
+<text x="1648" y="76" text-anchor="end" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11.5" fill="#898781">适用：多品种、小批量、配置接单的混线装配</text>
+
+<!-- timeline -->
+<line x1="44" y1="130" x2="44" y2="950" stroke="#c3c2b7" stroke-width="1.4"/>
+<circle cx="44" cy="176" r="5" fill="#2a78d6"/>
+<circle cx="44" cy="321" r="5" fill="#2a78d6"/>
+<circle cx="44" cy="466" r="5" fill="#2a78d6"/>
+<circle cx="44" cy="611" r="5" fill="#2a78d6"/>
+<circle cx="44" cy="756" r="5" fill="#2a78d6"/>
+<circle cx="44" cy="901" r="5" fill="#0ca30c"/>
+
+<!-- step 1 -->
+<rect x="64" y="110" width="880" height="132" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<rect x="76" y="124" width="24" height="24" rx="6" fill="#eef4fd"/>
+<text x="88" y="141" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11" fill="#2a78d6" font-weight="700">1</text>
+<text x="110" y="142" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="14" fill="#0b0b0b" font-weight="700">订单池与配置校验</text>
+<rect x="748" y="124" width="76" height="22" rx="11" fill="#f4f4f1"/>
+<text x="786" y="139" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#52514e" font-weight="600">06:30</text>
+<rect x="832" y="124" width="96" height="22" rx="11" fill="#f4f4f1"/>
+<text x="880" y="139" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">计划员</text>
+<line x1="76" y1="156" x2="928" y2="156" stroke="#e1e0d9"/>
+<text x="76" y="174" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">输入</text>
+<text x="76" y="190" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">ERP 订单、150% BOM、</text>
+<text x="76" y="204" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">ECN 状态、配置特征</text>
+<text x="340" y="174" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">判定</text>
+<text x="340" y="190" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">配置必填项 100%？</text>
+<text x="340" y="204" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#d03b3b">否：退回销售 / 配置工程</text>
+<text x="586" y="174" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">动作</text>
+<text x="586" y="190" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">抽取 T+0~T+7；标记红单</text>
+<text x="586" y="204" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">（交期余量 &lt; 2 天）</text>
+<text x="76" y="230" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">输出：订单池、红单清单</text>
+
+<!-- step 2 -->
+<rect x="64" y="255" width="880" height="132" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<rect x="76" y="269" width="24" height="24" rx="6" fill="#eef4fd"/>
+<text x="88" y="286" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11" fill="#2a78d6" font-weight="700">2</text>
+<text x="110" y="287" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="14" fill="#0b0b0b" font-weight="700">齐套判定与 CTP</text>
+<rect x="748" y="269" width="76" height="22" rx="11" fill="#f4f4f1"/>
+<text x="786" y="284" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#52514e" font-weight="600">06:45</text>
+<rect x="832" y="269" width="96" height="22" rx="11" fill="#f4f4f1"/>
+<text x="880" y="284" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">物料计划</text>
+<line x1="76" y1="301" x2="928" y2="301" stroke="#e1e0d9"/>
+<text x="76" y="319" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">输入</text>
+<text x="76" y="335" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">库存、在途 ASN、</text>
+<text x="76" y="349" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">替代组、安全库存</text>
+<text x="340" y="319" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">判定</text>
+<text x="340" y="335" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">A 100% / B 98% / C 95%？</text>
+<text x="340" y="349" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#d03b3b">否：进入待齐套池，不上线</text>
+<text x="586" y="319" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">动作</text>
+<text x="586" y="335" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">三态分类；缺口转 SOP-03；</text>
+<text x="586" y="349" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">计算最早可上线日</text>
+<text x="76" y="375" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">输出：齐套快照、待齐套池</text>
+
+<!-- step 3 -->
+<rect x="64" y="400" width="880" height="132" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<rect x="76" y="414" width="24" height="24" rx="6" fill="#eef4fd"/>
+<text x="88" y="431" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11" fill="#2a78d6" font-weight="700">3</text>
+<text x="110" y="432" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="14" fill="#0b0b0b" font-weight="700">设参与有限能力求解</text>
+<rect x="748" y="414" width="76" height="22" rx="11" fill="#f4f4f1"/>
+<text x="786" y="429" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#52514e" font-weight="600">07:15</text>
+<rect x="832" y="414" width="96" height="22" rx="11" fill="#f4f4f1"/>
+<text x="880" y="429" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">计划员</text>
+<line x1="76" y1="446" x2="928" y2="446" stroke="#e1e0d9"/>
+<text x="76" y="464" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">输入</text>
+<text x="76" y="480" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">策略、日历、换型矩阵、</text>
+<text x="76" y="494" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">冻结基线、齐套时点</text>
+<text x="340" y="464" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">判定</text>
+<text x="340" y="480" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">硬违规 = 0 且延误可控？</text>
+<text x="340" y="494" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#d03b3b">否：读冲突原因，不手工硬塞</text>
+<text x="586" y="464" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">动作</text>
+<text x="586" y="480" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">90 s 求解；校验延误台数、</text>
+<text x="586" y="494" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">换型次数、峰值负荷、齐套率</text>
+<text x="76" y="520" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">输出：候选序列、冲突原因</text>
+
+<!-- step 4 -->
+<rect x="64" y="545" width="880" height="132" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<rect x="76" y="559" width="24" height="24" rx="6" fill="#eef4fd"/>
+<text x="88" y="576" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11" fill="#2a78d6" font-weight="700">4</text>
+<text x="110" y="577" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="14" fill="#0b0b0b" font-weight="700">人工干预与主管确认</text>
+<rect x="748" y="559" width="76" height="22" rx="11" fill="#f4f4f1"/>
+<text x="786" y="574" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#52514e" font-weight="600">07:30</text>
+<rect x="828" y="559" width="100" height="22" rx="11" fill="#f4f4f1"/>
+<text x="878" y="574" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">计划+主管</text>
+<line x1="76" y1="591" x2="928" y2="591" stroke="#e1e0d9"/>
+<text x="76" y="609" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">输入</text>
+<text x="76" y="625" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">候选序列、工位/人员/</text>
+<text x="76" y="639" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">工装、线边空间</text>
+<text x="340" y="609" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">判定</text>
+<text x="340" y="625" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">是否动冻结区？</text>
+<text x="340" y="639" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#d03b3b">是：走 SOP-04 例外审批</text>
+<text x="586" y="609" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">动作</text>
+<text x="586" y="625" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">只动 T+2 之后；理由码必填；</text>
+<text x="586" y="639" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">总装主管电子签字</text>
+<text x="76" y="665" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">输出：锁定序列、变更记录</text>
+
+<!-- step 5 -->
+<rect x="64" y="690" width="880" height="132" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<rect x="76" y="704" width="24" height="24" rx="6" fill="#eef4fd"/>
+<text x="88" y="721" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11" fill="#2a78d6" font-weight="700">5</text>
+<text x="110" y="722" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="14" fill="#0b0b0b" font-weight="700">发布冻结与配送</text>
+<rect x="748" y="704" width="76" height="22" rx="11" fill="#f4f4f1"/>
+<text x="786" y="719" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#52514e" font-weight="600">08:00</text>
+<rect x="828" y="704" width="100" height="22" rx="11" fill="#f4f4f1"/>
+<text x="878" y="719" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">计划+仓储</text>
+<line x1="76" y1="736" x2="928" y2="736" stroke="#e1e0d9"/>
+<text x="76" y="754" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">输入</text>
+<text x="76" y="770" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">锁定序列、配置清单、</text>
+<text x="76" y="784" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">线边库位与配送节拍</text>
+<text x="340" y="754" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">判定</text>
+<text x="340" y="770" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">线边库存 ≤ 2 h 用量？</text>
+<text x="340" y="784" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#d03b3b">否：反压 / 停线，不掩盖</text>
+<text x="586" y="754" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">动作</text>
+<text x="586" y="770" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">下发工单、kitting、派工；</text>
+<text x="586" y="784" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">冻结 T+0/T+1，生成版本</text>
+<text x="76" y="810" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">输出：工单、配置清单、kitting 指令</text>
+
+<!-- step 6 -->
+<rect x="64" y="835" width="880" height="132" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<rect x="76" y="849" width="24" height="24" rx="6" fill="#e8f6ee"/>
+<text x="88" y="866" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11" fill="#0ca30c" font-weight="700">6</text>
+<text x="110" y="867" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="14" fill="#0b0b0b" font-weight="700">执行、报工与异常</text>
+<rect x="748" y="849" width="76" height="22" rx="11" fill="#f4f4f1"/>
+<text x="786" y="864" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#52514e" font-weight="600">班中</text>
+<rect x="828" y="849" width="100" height="22" rx="11" fill="#f4f4f1"/>
+<text x="878" y="864" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">班组+质量</text>
+<line x1="76" y1="881" x2="928" y2="881" stroke="#e1e0d9"/>
+<text x="76" y="899" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">输入</text>
+<text x="76" y="915" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">序列、报工、质量记录、</text>
+<text x="76" y="929" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">设备与测试状态</text>
+<text x="340" y="899" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">判定</text>
+<text x="340" y="915" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">测试合格？</text>
+<text x="340" y="929" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#d03b3b">否：HOLD / 返修（SOP-05）</text>
+<text x="586" y="899" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">动作</text>
+<text x="586" y="915" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">15 min 回写；偏差 &gt; 10% 转 IE；</text>
+<text x="586" y="929" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">停线/缺件按 L1-L3 升级</text>
+<text x="76" y="955" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">输出：达成率、FTQ、停线分钟</text>
+
+<!-- right: gantt card -->
+<rect x="1000" y="110" width="648" height="400" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<text x="1016" y="140" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12.5" fill="#0b0b0b" font-weight="700">资源甘特：排产结果的执行视图</text>
+<text x="1016" y="158" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#898781">对应截图：资源泳道 · 彩色任务条 · 前后置箭头 · 任务详情</text>
+
+<!-- gantt grid -->
+<line x1="1120" y1="196" x2="1120" y2="434" stroke="#e1e0d9"/>
+<line x1="1288" y1="196" x2="1288" y2="434" stroke="#e1e0d9" opacity="0.6"/>
+<line x1="1456" y1="196" x2="1456" y2="434" stroke="#e1e0d9" opacity="0.6"/>
+<line x1="1624" y1="196" x2="1624" y2="434" stroke="#e1e0d9"/>
+<text x="1016" y="190" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781" font-weight="600">资源</text>
+<text x="1120" y="190" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781">07:00</text>
+<text x="1288" y="190" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781">09:00</text>
+<text x="1456" y="190" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781">11:00</text>
+<text x="1624" y="190" text-anchor="end" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781">13:00</text>
+
+<text x="1016" y="219" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#0b0b0b">底盘装配</text>
+<text x="1016" y="271" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#0b0b0b">门架合装</text>
+<text x="1016" y="323" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#0b0b0b">液压管路</text>
+<text x="1016" y="375" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#0b0b0b">电气接线</text>
+<text x="1016" y="427" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#0b0b0b">测试台架</text>
+
+<!-- rows -->
+<line x1="1000" y1="200" x2="1648" y2="200" stroke="#e1e0d9"/>
+<line x1="1000" y1="252" x2="1648" y2="252" stroke="#e1e0d9"/>
+<line x1="1000" y1="304" x2="1648" y2="304" stroke="#e1e0d9"/>
+<line x1="1000" y1="356" x2="1648" y2="356" stroke="#e1e0d9"/>
+<line x1="1000" y1="408" x2="1648" y2="408" stroke="#e1e0d9"/>
+<line x1="1000" y1="434" x2="1648" y2="434" stroke="#e1e0d9"/>
+
+<!-- O1 bars -->
+<rect x="1120" y="203" width="49" height="24" rx="4" fill="#2a78d6"/>
+<text x="1125" y="219" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2601</text>
+<rect x="1169" y="255" width="49" height="24" rx="4" fill="#2a78d6"/>
+<text x="1174" y="271" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2601</text>
+<rect x="1218" y="307" width="35" height="24" rx="4" fill="#2a78d6"/>
+<text x="1223" y="323" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD1</text>
+<rect x="1253" y="359" width="42" height="24" rx="4" fill="#2a78d6"/>
+<text x="1258" y="375" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD1</text>
+<rect x="1295" y="411" width="42" height="24" rx="4" fill="#2a78d6"/>
+<text x="1300" y="427" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD1</text>
+
+<!-- O2 bars -->
+<rect x="1169" y="203" width="49" height="24" rx="4" fill="#eb6834"/>
+<text x="1174" y="219" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2602</text>
+<rect x="1218" y="255" width="49" height="24" rx="4" fill="#eb6834"/>
+<text x="1223" y="271" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2602</text>
+<rect x="1267" y="307" width="35" height="24" rx="4" fill="#eb6834"/>
+<text x="1272" y="323" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2</text>
+<rect x="1302" y="359" width="42" height="24" rx="4" fill="#eb6834"/>
+<text x="1307" y="375" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2</text>
+<rect x="1344" y="411" width="42" height="24" rx="4" fill="#eb6834"/>
+<text x="1349" y="427" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2</text>
+
+<!-- O3 bars -->
+<rect x="1218" y="203" width="49" height="24" rx="4" fill="#1baf7a"/>
+<text x="1223" y="219" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2603</text>
+<rect x="1267" y="255" width="49" height="24" rx="4" fill="#1baf7a"/>
+<text x="1272" y="271" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD2603</text>
+<rect x="1316" y="307" width="35" height="24" rx="4" fill="#1baf7a"/>
+<text x="1321" y="323" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD3</text>
+<rect x="1351" y="359" width="42" height="24" rx="4" fill="#1baf7a"/>
+<text x="1356" y="375" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD3</text>
+<rect x="1393" y="411" width="42" height="24" rx="4" fill="#1baf7a"/>
+<text x="1398" y="427" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#ffffff" font-weight="600">OD3</text>
+
+<!-- blocked order -->
+<rect x="1435" y="203" width="49" height="24" rx="4" fill="url(#hatchPractice)" stroke="#d03b3b"/>
+<text x="1440" y="219" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8" fill="#d03b3b" font-weight="600">待齐套</text>
+
+<!-- arrows -->
+<path d="M1169,215 L1169,255" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1218,267 L1218,307" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1253,319 L1253,359" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1295,371 L1295,411" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1218,215 L1218,255" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1267,267 L1267,307" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1302,319 L1302,359" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1344,371 L1344,411" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1267,215 L1267,255" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1316,267 L1316,307" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1351,319 L1351,359" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+<path d="M1393,371 L1393,411" fill="none" stroke="#d03b3b" stroke-width="1" opacity="0.55" marker-end="url(#arrow3)"/>
+
+<!-- task detail -->
+<rect x="1016" y="446" width="616" height="50" rx="6" fill="#f4f4f1"/>
+<text x="1028" y="464" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e" font-weight="600">任务详情：OD2601-电气接线</text>
+<text x="1028" y="482" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781">计划 08:35–09:05 ｜ 数量 8 台 ｜ 状态 已锁定 ｜ 点击“查看详情”追溯齐套与版本</text>
+
+<!-- rules card -->
+<rect x="1000" y="525" width="648" height="215" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<text x="1016" y="552" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12.5" fill="#0b0b0b" font-weight="700">五条运行铁律</text>
+<circle cx="1025" cy="572" r="8" fill="#eef4fd"/>
+<text x="1025" y="576" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9" fill="#2a78d6" font-weight="700">1</text>
+<text x="1044" y="576" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">一个数据源：订单、BOM、库存、报工只认一个系统。</text>
+<circle cx="1025" cy="600" r="8" fill="#eef4fd"/>
+<text x="1025" y="604" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9" fill="#2a78d6" font-weight="700">2</text>
+<text x="1044" y="604" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">冻结不动：T+0/T+1 变更走 SOP-04，留理由码与代价单。</text>
+<circle cx="1025" cy="628" r="8" fill="#eef4fd"/>
+<text x="1025" y="632" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9" fill="#2a78d6" font-weight="700">3</text>
+<text x="1044" y="632" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">齐套上线：A 类缺一件即不上线，不用“先上线再补”。</text>
+<circle cx="1025" cy="656" r="8" fill="#eef4fd"/>
+<text x="1025" y="660" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9" fill="#2a78d6" font-weight="700">4</text>
+<text x="1044" y="660" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">异常回写：缺件、质量、设备、工时偏差 15 分钟内回写。</text>
+<circle cx="1025" cy="684" r="8" fill="#eef4fd"/>
+<text x="1025" y="688" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9" fill="#2a78d6" font-weight="700">5</text>
+<text x="1044" y="688" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#0b0b0b">版本留痕：每次发布生成版本，参数与分数可追溯。</text>
+<text x="1016" y="720" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781">铁律不是口号：每一条都对应系统里的一个阻断或审计点。</text>
+
+<!-- escalation + KPI card -->
+<rect x="1000" y="755" width="648" height="212" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<text x="1016" y="782" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12.5" fill="#0b0b0b" font-weight="700">异常升级与验收</text>
+<rect x="1016" y="796" width="26" height="16" rx="4" fill="#e8f6ee"/>
+<text x="1029" y="808" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8.5" fill="#0ca30c" font-weight="700">L1</text>
+<text x="1052" y="808" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#52514e">15 min · 班组长 · 调序、呼叫物料、临时支援</text>
+<rect x="1016" y="820" width="26" height="16" rx="4" fill="#fff7e6"/>
+<text x="1029" y="832" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8.5" fill="#8a5a00" font-weight="700">L2</text>
+<text x="1052" y="832" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#52514e">2 h · 计划 + 物料经理 · 调序、替代、加班、拆借</text>
+<rect x="1016" y="844" width="26" height="16" rx="4" fill="#fdf0f0"/>
+<text x="1029" y="856" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="8.5" fill="#d03b3b" font-weight="700">L3</text>
+<text x="1052" y="856" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#52514e">4 h · 制造总监 · 加班、外协、延交、通知销售</text>
+
+<text x="1016" y="884" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781">验收 KPI（按日/周统计，按线别拆分）</text>
+<rect x="1016" y="894" width="142" height="34" rx="6" fill="#f4f4f1"/>
+<text x="1087" y="915" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#0b0b0b" font-weight="600">达成率 ≥ 95%</text>
+<rect x="1168" y="894" width="142" height="34" rx="6" fill="#f4f4f1"/>
+<text x="1239" y="915" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#0b0b0b" font-weight="600">齐套上线 ≥ 98%</text>
+<rect x="1320" y="894" width="142" height="34" rx="6" fill="#f4f4f1"/>
+<text x="1391" y="915" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#0b0b0b" font-weight="600">冻结变更 ≤ 3%</text>
+<rect x="1472" y="894" width="142" height="34" rx="6" fill="#f4f4f1"/>
+<text x="1543" y="915" text-anchor="middle" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#0b0b0b" font-weight="600">排程采纳 ≥ 90%</text>
+<text x="1016" y="950" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="9.5" fill="#898781">低于目标：先查数据与冻结纪律，再调参数，不要先改算法。</text>
+
+<!-- bottom strip -->
+<rect x="32" y="985" width="1616" height="70" rx="8" fill="#f4f4f1"/>
+<text x="48" y="1012" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11.5" fill="#0b0b0b" font-weight="700">落地顺序</text>
+<rect x="128" y="996" width="430" height="40" rx="6" fill="#ffffff" stroke="rgba(11,11,11,0.10)"/>
+<text x="144" y="1021" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#2a78d6" font-weight="600">① 先可信</text>
+<text x="206" y="1021" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">硬前置 + 冻结 + 版本</text>
+<rect x="576" y="996" width="430" height="40" rx="6" fill="#ffffff" stroke="rgba(11,11,11,0.10)"/>
+<text x="592" y="1021" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#0ca30c" font-weight="600">② 再协同</text>
+<text x="654" y="1021" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">齐套 + 缺件 + 三段联动</text>
+<rect x="1024" y="996" width="430" height="40" rx="6" fill="#ffffff" stroke="rgba(11,11,11,0.10)"/>
+<text x="1040" y="1021" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#6250d6" font-weight="600">③ 后优化</text>
+<text x="1102" y="1021" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#52514e">换型 + 平准 + 成本</text>
+<text x="1470" y="1021" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10" fill="#898781">不要跳过第①步直接调权重</text>
+
+<text x="32" y="1096" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#898781">实践口径：把资源甘特作为执行底图，排产结果必须可解释、可执行、可追溯；节拍、换型、阈值按本厂 3–12 个月数据标定。</text>
+<text x="1648" y="1096" text-anchor="end" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="10.5" fill="#898781">图 7-3  机械装配行业实践 SOP</text>
+</svg>
