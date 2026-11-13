@@ -2,6 +2,11 @@
 
 本目录存放《APS离散制造机械装配行业生产落地开发方案》使用的图表。
 
+## industry-practice-sop
+
+- `industry-practice-sop.png`：README 用「行业实践 SOP」大图（1920×1080），已脱敏——标题、场景行、权重配置标题、表头列、尾注与脚注中的客户/行业标识字样已替换为「离散制造机械装配」口径，标题采用原字形搬运保证字体一致。
+- 图中节拍、权重与参数为示意值，生产使用前须按本厂数据标定。
+
 ## scheduling-workflow
 
 - `scheduling-workflow.gif`：README 首页顶部动图（约 14 秒循环），演示智能排产的六步工作流程闭环。
