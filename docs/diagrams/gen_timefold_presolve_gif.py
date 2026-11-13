@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 生成 README 用示意动图：Timefold + 小模型前置求解 · 复杂动态约束下的组合优化
-场景：机械装配（叉车类整机）急单插入 → 小模型前置求解 → Timefold 局部重排 → 解释归因与冻结发布
+场景：离散制造机械装配行业急单插入 → 小模型前置求解 → Timefold 局部重排 → 解释归因与冻结发布
 
 依赖：Pillow（pip install pillow）
 用法：python3 gen_timefold_presolve_gif.py
@@ -206,7 +206,7 @@ def draw_header(f):
                      "只重排受影响的任务，分钟级响应，硬约束零违背",
            size=12.5, fill=INK2)
     f.text((W - 32, 30), "APS 智能排产 · 动态重排示意", size=12, fill=MUTED, anchor="ra")
-    f.text((W - 32, 52), "林德叉车类整机制造参考场景", size=11, fill=MUTED, anchor="ra")
+    f.text((W - 32, 52), "离散制造机械装配行业参考场景", size=11, fill=MUTED, anchor="ra")
 
 
 def draw_pipeline(f, frame):

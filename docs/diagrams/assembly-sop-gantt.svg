@@ -4,7 +4,7 @@
 <pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#fdf7f7"/><line x1="0" y1="0" x2="0" y2="6" stroke="#d03b3b" stroke-width="1" opacity="0.55"/></pattern>
 </defs>
 <rect x="0.0" y="0.0" width="1680.0" height="1120.0" rx="0" fill="#f9f9f7" stroke="none" stroke-width="0" />
-<text x="32.0" y="52.0" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="25" fill="#0b0b0b" text-anchor="start" font-weight="700" >叉车整机机械装配（总装）SOP</text>
+<text x="32.0" y="52.0" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="25" fill="#0b0b0b" text-anchor="start" font-weight="700" >离散制造机械装配（总装）SOP</text>
 <text x="36.0" y="78.0" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12.5" fill="#52514e" text-anchor="start" font-weight="400" >配置订单齐套上线 → 底盘 → 门架合装 → 液压管路 → 电气接线 → 属具安装 → 测试放行 ｜ 混线节拍 40 min ｜ A 类件齐套 100%</text>
 <text x="1648.0" y="52.0" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12.5" fill="#52514e" text-anchor="end" font-weight="600" >SOP-APS-01 · 日上线序列</text>
 <text x="1648.0" y="76.0" font-family="'PingFang SC','Hiragino Sans GB',system-ui,-apple-system,'Segoe UI',sans-serif" font-size="11.5" fill="#898781" text-anchor="end" font-weight="400" style="font-variant-numeric:tabular-nums">计划版本 D-20261110-V03 · 冻结 T+0/T+1 · 求解 06:30 · 时限 90 s</text>
