@@ -17,6 +17,10 @@ import java.util.Map;
 @Data
 @Accessors(chain = true)
 public class BasicData {
+    private String sourceSignature;
+    private java.util.List<cn.windwheel.aps.entity.PlanTaskAdjustPO> baselineTasks = new java.util.ArrayList<>();
+    private cn.windwheel.aps.solve.presolve.DynamicSchedulingRequest dynamicRequest;
+
     @Comment(value = "物料", notes = "Map<物料id, 物料信息>")
     private Map<String, Material> materialMap;
 

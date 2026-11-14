@@ -1,0 +1,36 @@
+# 仅供本机隔离端到端测试；勿作为生产配置发布。
+server:
+  address: 127.0.0.1
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/aps_e2e?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+aps:
+  auth:
+    allow-header-auth: false
+    allow-query-fallback: false
+    users:
+      - tenant-id: demo
+        user-id: admin
+        username: admin
+        display-name: 管理员
+        password: admin123
+        role-codes: [APS_ADMIN]
+      - tenant-id: other
+        user-id: other-admin
+        username: other-admin
+        display-name: 隔离测试管理员
+        password: e2e-only
+        role-codes: [APS_ADMIN]
+      - tenant-id: demo
+        user-id: no-permission
+        username: no-permission
+        display-name: 无排产权限测试账号
+        password: e2e-only
+        role-codes: [APS_READ_ONLY]
+  small-model:
+    enabled: ${APS_E2E_SMALL_MODEL_ENABLED:${APS_SMALL_MODEL_ENABLED:false}}
+    endpoint: ${APS_SMALL_MODEL_ENDPOINT:http://127.0.0.1:1235/v1/chat/completions}
+    model: ${APS_SMALL_MODEL_NAME:aps-e2e-small}
+    response-format: ${APS_SMALL_MODEL_RESPONSE_FORMAT:JSON_SCHEMA}
+    timeout-seconds: ${APS_SMALL_MODEL_TIMEOUT_SECONDS:60}
+    max-context-tasks: ${APS_SMALL_MODEL_MAX_CONTEXT_TASKS:200}

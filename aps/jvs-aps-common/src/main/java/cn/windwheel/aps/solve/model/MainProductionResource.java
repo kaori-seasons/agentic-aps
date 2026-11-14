@@ -24,11 +24,15 @@ import java.util.List;
 @Accessors(chain = true)
 @AllArgsConstructor
 @NoArgsConstructor
+@ai.timefold.solver.core.api.domain.entity.PlanningEntity
 @PlanningEntity
 public class MainProductionResource {
     @Comment("资源id")
+    @ai.timefold.solver.core.api.domain.lookup.PlanningId
     @PlanningId
     private String id;
+
+    private List<ResourceDowntime> downtimes = new ArrayList<>();
 
     @Comment("名称")
     private String name;
@@ -51,6 +55,10 @@ public class MainProductionResource {
     @Comment("资源可用日历集合")
     List<WorkCalendar> workCalendars;
 
+    @ai.timefold.solver.core.api.domain.entity.PlanningPinToIndex
+    private int firstUnpinnedIndex;
+
+    @ai.timefold.solver.core.api.domain.variable.PlanningListVariable(valueRangeProviderRefs = "taskRanges")
     @PlanningListVariable(valueRangeProviderRefs = "taskRanges")
     private List<ProductionTask> taskList = new ArrayList<>();
 

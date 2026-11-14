@@ -18,29 +18,44 @@ import java.util.stream.Collectors;
  */
 @Data
 @Accessors(chain = true)
+@ai.timefold.solver.core.api.domain.solution.PlanningSolution
 @PlanningSolution
 public class SchedulingSolution {
 
     @Comment("排程计划执行时间")
+    @ai.timefold.solver.core.api.domain.solution.ProblemFactProperty
     @ProblemFactProperty
     private LocalDateTime planTime;
 
     @Comment("排产策略")
+    @ai.timefold.solver.core.api.domain.solution.ProblemFactProperty
     @ProblemFactProperty
     private PlanningStrategy strategy;
 
     @Comment("生产订单")
+    @ai.timefold.solver.core.api.domain.solution.ProblemFactCollectionProperty
     @ProblemFactCollectionProperty
     private List<ProductionOrder> productionOrders;
 
     @Comment("主资源")
+    @ai.timefold.solver.core.api.domain.solution.PlanningEntityCollectionProperty
     @PlanningEntityCollectionProperty
     private List<MainProductionResource> mainResources;
 
     @Comment("生产任务")
     @ProblemFactCollectionProperty
     @ValueRangeProvider
+    @ai.timefold.solver.core.api.domain.solution.PlanningEntityCollectionProperty
     private List<ProductionTask> tasks;
+
+    @ai.timefold.solver.core.api.domain.solution.PlanningScore
+    private ai.timefold.solver.core.api.score.buildin.hardsoftlong.HardSoftLongScore timefoldScore;
+
+    @ai.timefold.solver.core.api.domain.valuerange.ValueRangeProvider(id = "taskRanges")
+    public List<ProductionTask> timefoldTaskRanges() {
+        return tasks.stream().filter(task -> ObjectNull.isNull(task.getMergeTaskCode()))
+                .collect(Collectors.toList());
+    }
 
     @PlanningScore
     private HardSoftLongScore score;
@@ -52,7 +67,7 @@ public class SchedulingSolution {
     public List<ProductionTask> taskRanges() {
         return tasks.stream()
                 // 未锁定的任务可重排
-                .filter(job -> !job.getPinned())
+                .filter(job -> !Boolean.TRUE.equals(job.getPinned()))
                 // 非合并任务的子任务可重排
                 .filter(job -> ObjectNull.isNull(job.getMergeTaskCode()))
                 .collect(Collectors.toList());

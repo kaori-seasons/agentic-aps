@@ -36,9 +36,18 @@ mybatis-plus:
       logic-delete-field: delFlag
 
 aps:
+  small-model:
+    enabled: ${APS_SMALL_MODEL_ENABLED:false}
+    endpoint: ${APS_SMALL_MODEL_ENDPOINT:http://127.0.0.1:11434/v1/chat/completions}
+    model: ${APS_SMALL_MODEL_NAME:qwen2.5:7b}
+    response-format: ${APS_SMALL_MODEL_RESPONSE_FORMAT:JSON_OBJECT}
+    api-key: ${APS_SMALL_MODEL_API_KEY:}
+    timeout-seconds: ${APS_SMALL_MODEL_TIMEOUT_SECONDS:20}
+    max-context-tasks: ${APS_SMALL_MODEL_MAX_CONTEXT_TASKS:200}
   auth:
     system-name: 智能APS
-    allow-query-fallback: true
+    allow-header-auth: false
+    allow-query-fallback: false
     default-theme: darkblue
     default-language: zh_CN
     default-route: /productionSchedulingPlan

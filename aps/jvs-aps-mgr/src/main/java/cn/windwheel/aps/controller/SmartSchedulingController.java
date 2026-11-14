@@ -32,6 +32,34 @@ public class SmartSchedulingController {
 
     private final PlanningSmartService planningSmartService;
     private final ReportHandler reportHandler;
+    private final cn.windwheel.aps.solve.SolveAuditService solveAuditService;
+    private final cn.windwheel.aps.solve.component.BasicDataComponent basicDataComponent;
+    private final cn.windwheel.aps.solve.presolve.SmallModelService smallModelService;
+
+    @GetMapping("/audit/{planId}")
+    @RequirePermission("aps:schedule:preview")
+    @ApiOperation("查看当前租户求解快照、评分与任务差异")
+    public R<cn.windwheel.aps.entity.SolveAuditPO> audit(@PathVariable String planId) {
+        return R.ok(solveAuditService.get(planId));
+    }
+
+    @lombok.Data
+    public static class PresolveRequest {
+        @javax.validation.constraints.NotBlank
+        @javax.validation.constraints.Size(max = 8000)
+        private String narrative;
+        @javax.validation.constraints.NotNull
+        private java.time.LocalDateTime freezeUntil;
+    }
+
+    @PostMapping("/presolve")
+    @RequirePermission("aps:schedule:run")
+    @ApiOperation("小模型生成结构化候选，审核后通过generate提交")
+    public R<cn.windwheel.aps.solve.presolve.DynamicSchedulingRequest> presolve(
+            @Validated @RequestBody PresolveRequest request) {
+        return R.ok(smallModelService.propose(request.getNarrative(), request.getFreezeUntil(), basicDataComponent.getBasicData()));
+    }
+
 
     @ApiOperation("生成排产计划")
     @PostMapping("/generate")

@@ -13,7 +13,8 @@ import java.util.List;
 public class ApsAuthProperties {
 
     private String systemName = "智能APS";
-    private boolean allowQueryFallback = true;
+    private boolean allowHeaderAuth = false;
+    private boolean allowQueryFallback = false;
     private String defaultTheme = "darkblue";
     private String defaultLanguage = "zh_CN";
     private String defaultRoute = "/productionSchedulingPlan";

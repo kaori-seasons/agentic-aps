@@ -18,6 +18,7 @@ class SolveManageConfiguratorTest {
 
     @AfterEach
     void tearDown() {
+        configurator.release();
         TenantContextHolder.clear();
     }
 

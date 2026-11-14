@@ -81,13 +81,13 @@ public class PlanSolutionFacadeServiceImpl implements PlanSolutionFacadeService 
         if (ObjectNull.isNotNull(tasks)) {
             List<PlanTaskPendingPO> planTaskPendingList = tasks.stream()
                     .map(task ->
-                            BeanCopyUtil.copy(task, PlanTaskPendingPO.class)
+                            BeanCopyUtil.copy(cn.windwheel.aps.solve.util.SchedulingTaskMapper.toDTO(task), PlanTaskPendingPO.class)
                                     .setProductionOrderId(Optional.ofNullable(task.getOrder()).map(ProductionOrder::getId).orElseGet(() -> null))
                                     .setColor(Optional.ofNullable(task.getOrder()).map(ProductionOrder::getColor).orElseGet(() -> null))
                                     .setScheduledQuantity(task.getQuantity())
                                     .setMainResourceId(task.getResource().getId())
                                     .setProcessInfo(task.getProcess())
-                                    .setPinned(false)
+                                    .setPinned(task.getPinned())
                     )
                     .toList();
             planTaskPendingService.saveBatch(planTaskPendingList);
@@ -224,6 +224,7 @@ public class PlanSolutionFacadeServiceImpl implements PlanSolutionFacadeService 
                         PlanTaskOrderPendingPO taskOrderPending = planTaskOrderPendingMap.get(order.getId());
                         if (ObjectNull.isNotNull(taskOrderPending)) {
                             order.setSchedulingStatus(taskOrderPending.getOrderInfo().getSchedulingStatus());
+                            order.setDeliveryTime(taskOrderPending.getOrderInfo().getDeliveryTime());
                         } else {
                             // 修改订单排产状态
                             // 不修改排产状态为已完成的订单信息

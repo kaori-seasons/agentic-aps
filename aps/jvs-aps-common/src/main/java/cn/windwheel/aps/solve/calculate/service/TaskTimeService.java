@@ -22,7 +22,11 @@ public interface TaskTimeService {
      * @param resource 主资源
      * @param fromIndex 变更任务所在目标资源的下标
      */
-    void updateTaskStartTime(ScoreDirector<SchedulingSolution> scoreDirector, MainProductionResource resource, int fromIndex);
+    default void updateTaskStartTime(ScoreDirector<SchedulingSolution> scoreDirector, MainProductionResource resource, int fromIndex) {
+        updateTaskStartTime(cn.windwheel.aps.solve.calculate.TaskTimeDirector.of(scoreDirector), resource, fromIndex);
+    }
+
+    void updateTaskStartTime(cn.windwheel.aps.solve.calculate.TaskTimeDirector scoreDirector, MainProductionResource resource, int fromIndex);
 
     /**
      * 计算任务开始时间

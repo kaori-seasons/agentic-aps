@@ -51,7 +51,34 @@ public class BasicDataComponent {
      *
      * @return 基础数据
      */
+    public BasicData getBasicDataForConfirmation() {
+        if (!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException("计划确认必须在数据库事务内执行");
+        }
+        requireTenant();
+        // 锁定输入范围直至确认事务提交，防止校验后报工或基础数据再次变化。
+        materialService.list(Wrappers.<MaterialPO>query().select("id").last("FOR UPDATE"));
+        manufactureBomService.list(Wrappers.<ManufactureBomPO>query().select("id").last("FOR UPDATE"));
+        processRouteService.list(Wrappers.<ProcessRoutePO>query().select("id").last("FOR UPDATE"));
+        workCalendarService.list(Wrappers.<WorkCalendarPO>query().select("id").last("FOR UPDATE"));
+        workModeService.list(Wrappers.<WorkModePO>query().select("id").last("FOR UPDATE"));
+        productionResourceService.list(Wrappers.<ProductionResourcePO>query().select("id").last("FOR UPDATE"));
+        resourceCalendarService.list(Wrappers.<ResourceCalendarPO>query().select("id").last("FOR UPDATE"));
+        incomingMaterialOrderService.list(Wrappers.<IncomingMaterialOrderPO>query().select("id").last("FOR UPDATE"));
+        productionOrderService.list(Wrappers.<ProductionOrderPO>query().select("id").last("FOR UPDATE"));
+        planTaskService.list(Wrappers.<PlanTaskPO>query().select("id").last("FOR UPDATE"));
+        planTaskAdjustService.list(Wrappers.<PlanTaskAdjustPO>query().select("id").last("FOR UPDATE"));
+        return getBasicData();
+    }
+
+    private void requireTenant() {
+        if (cn.hutool.core.util.StrUtil.isBlank(cn.windwheel.common.utils.TenantContextHolder.getTenantId())) {
+            throw new BusinessException("缺少租户上下文");
+        }
+    }
+
     public BasicData getBasicData() {
+        requireTenant();
         List<Material> materials = listMaterial();
         Map<String, Material> materialMap = materials.stream().collect(Collectors.toMap(Material::getId, Function.identity()));
         Map<String, String> materialCodeMap = materials.stream().collect(Collectors.toMap(Material::getCode, Material::getId));
@@ -64,7 +91,8 @@ public class BasicDataComponent {
                 .setBomMap(getBom())
                 .setIncomingMaterialOrderMap(getIncomingMaterialOrder(materialCodeMap))
                 .setProductionOrders(productionOrders)
-                .setPinnedTasks(listPinnedTasks(productionOrders));
+                .setPinnedTasks(listPinnedTasks(productionOrders))
+                .setBaselineTasks(listBaselineTasks());
     }
 
     /**
@@ -220,6 +248,13 @@ public class BasicDataComponent {
      * @param productionOrders 待排产的生产订单集合
      * @return 已锁定|已完成的生产任务集合
      */
+    private List<PlanTaskAdjustPO> listBaselineTasks() {
+        return planTaskService.list().stream()
+                .filter(task -> task.getStartTime() != null && task.getEndTime() != null)
+                .map(task -> BeanCopyUtil.copy(task, PlanTaskAdjustPO.class).setDiscard(false).setCompliant(true))
+                .collect(Collectors.toList());
+    }
+
     private List<PlanTaskAdjustPO> listPinnedTasks(List<ProductionOrder> productionOrders) {
         if (ObjectNull.isNull(productionOrders)) {
             return Collections.emptyList();
@@ -248,7 +283,7 @@ public class BasicDataComponent {
         List<PlanTaskPO> planTaskList = planTaskService.list(Wrappers.<PlanTaskPO>lambdaQuery()
                         .in(PlanTaskPO::getMainOrderId, orderIds))
                 .stream()
-                .filter(task -> task.getPinned() || PlanTaskStatusEnum.COMPLETED.equals(task.getTaskStatus()))
+                .filter(task -> Boolean.TRUE.equals(task.getPinned()) || PlanTaskStatusEnum.COMPLETED.equals(task.getTaskStatus()) || PlanTaskStatusEnum.PARTIALLY_COMPLETED.equals(task.getTaskStatus()))
                 .collect(Collectors.toList());
         // 查询合并任务
         Set<String> mergeTaskCodes = planTaskList.stream()

@@ -6,10 +6,8 @@ import cn.windwheel.aps.entity.dto.ProcessUseMainResourcesDTO;
 import cn.windwheel.aps.entity.enums.PlanningDirectionEnum;
 import cn.windwheel.aps.entity.enums.ProcessRelationshipEnum;
 import cn.windwheel.aps.solve.calculate.service.TaskTimeService;
-import cn.windwheel.aps.solve.calculate.service.dto.PendingChangeTaskDTO;
 import cn.windwheel.aps.solve.model.MainProductionResource;
 import cn.windwheel.aps.solve.model.ProductionTask;
-import cn.windwheel.aps.solve.model.SchedulingSolution;
 import cn.windwheel.aps.solve.model.WorkCalendar;
 import cn.windwheel.aps.solve.util.DurationUtils;
 import cn.windwheel.aps.solve.util.TaskCalendarUtils;
@@ -18,14 +16,12 @@ import cn.windwheel.common.utils.ObjectNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.optaplanner.core.api.score.director.ScoreDirector;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * @author jvs
@@ -39,125 +35,11 @@ import java.util.stream.IntStream;
 public class TaskTimeForwardServiceImpl implements TaskTimeService {
 
     @Override
-    public void updateTaskStartTime(ScoreDirector<SchedulingSolution> scoreDirector, MainProductionResource resource, int fromIndex) {
-        LocalDateTime beginTime = scoreDirector.getWorkingSolution().getPlanTime();
-        List<ProductionTask> allTasks = scoreDirector.getWorkingSolution().getTasks();
-        Set<String> historyQueueJobIds = new HashSet<>();
-        Queue<PendingChangeTaskDTO> uncheckedSuccessorQueue = new ArrayDeque<>();
-        PendingChangeTaskDTO pendingChangeTask = new PendingChangeTaskDTO()
-                .setResource(resource)
-                .setFromIndex(fromIndex);
-        uncheckedSuccessorQueue.add(pendingChangeTask);
-        while (!uncheckedSuccessorQueue.isEmpty()) {
-            PendingChangeTaskDTO update = uncheckedSuccessorQueue.remove();
-            List<ProductionTask> tasks = update.getResource().getTaskList();
-            int fromIdx = update.getFromIndex();
-            if (ObjectNull.isNull(tasks) || tasks.size() - 1 < fromIdx) {
-                continue;
-            }
-            // 获取当前变更的任务，在当前资源前一个任务的时间
-            ProductionTask sourcePreviousTask = getSourcePreviousTask(tasks, fromIdx);
-            LocalDateTime sourceTaskPreviousEndTime = fromIdx == 0 ? beginTime : Optional.ofNullable(sourcePreviousTask).map(ProductionTask::getEndTime).orElseGet(() -> beginTime);
-            LocalDateTime resourcePreviousEndTime = sourceTaskPreviousEndTime;
-
-            Set<String> notUpdateFrontTaskIds = new HashSet<>();
-            for (int idx = fromIdx; idx < tasks.size(); idx++) {
-                ProductionTask t = tasks.get(idx);
-
-                historyQueueJobIds.add(t.getId());
-                if (t.getPinned()) {
-                    resourcePreviousEndTime = t.getEndTime();
-                    continue;
-                }
-                // 改非前置任务的时间
-                List<ProductionTask> currentResourcePreviousTasks = tasks.subList(0, idx);
-                LocalDateTime startTime = calculateStartTime(update.getResource(), t, sourcePreviousTask, resourcePreviousEndTime, allTasks, currentResourcePreviousTasks);
-                if (!notUpdateFrontTaskIds.contains(t.getId())) {
-                    scoreDirector.beforeVariableChanged(t, "startTime");
-                    t.setStartTime(startTime);
-                    scoreDirector.afterVariableChanged(t, "startTime");
-                    addChangedTaskIds(t, notUpdateFrontTaskIds);
-                    if (ObjectNull.isNotNull(startTime)) {
-                        resourcePreviousEndTime = t.getEndTime();
-                    }
-                    scoreDirector.getWorkingSolution().getTasks()
-                            .stream()
-                            .filter(j -> ObjectNull.isNull(j.getMergeTaskCode()))
-                            .filter(j -> j.getFrontTaskCodes() != null && j.getFrontTaskCodes().contains(t.getCode()))
-                            .filter(j -> j.getResource() != null)
-                            .forEach(nextJob -> {
-                                if (!historyQueueJobIds.contains(nextJob.getId())) {
-                                    List<ProductionTask> nextResourceTasks = nextJob.getResource().getTaskList();
-                                    int optionalIndex = IntStream.range(0, nextResourceTasks.size()).filter(i -> nextResourceTasks.get(i).getId().equals(nextJob.getId())).findFirst().getAsInt();
-                                    PendingChangeTaskDTO updateNextJob = new PendingChangeTaskDTO()
-                                            .setResource(nextJob.getResource())
-                                            .setFromIndex(optionalIndex);
-                                    historyQueueJobIds.add(t.getId());
-                                    uncheckedSuccessorQueue.add(updateNextJob);
-                                }
-                            });
-                }
-            }
-        }
+    public void updateTaskStartTime(cn.windwheel.aps.solve.calculate.TaskTimeDirector scoreDirector, MainProductionResource resource, int fromIndex) {
+        TaskTimeRecalculator.recalculate(scoreDirector, this, null);
     }
 
-    /**
-     * 找到指定下标前面第一个有结束时间的任务
-     *
-     * @param tasks     任务集合
-     * @param fromIndex 下标
-     * @return 下标前第一个有结束时间的任务
-     */
-    private ProductionTask getSourcePreviousTask(List<ProductionTask> tasks, int fromIndex) {
-        if (fromIndex == 0) {
-            return null;
-        }
-        ProductionTask previousTask = null;
-        for (int i = fromIndex - 1; i >= 0; i--) {
-            if (ObjectNull.isNotNull(previousTask)) {
-                break;
-            }
-            ProductionTask task = tasks.get(i);
-            if (ObjectNull.isNull(task.getEndTime())) {
-                continue;
-            }
-            previousTask = task;
-        }
-
-        return previousTask;
-    }
-
-    /**
-     * 记录已变更的任务id
-     *
-     * @param job         任务
-     * @param frontJobIds 前置任务id
-     */
-    private void addChangedTaskIds(ProductionTask job, Set<String> frontJobIds) {
-        if (job.getFrontTasks() == null) {
-            return;
-        }
-        ArrayDeque<ProductionTask> frontJobStack = new ArrayDeque<>();
-        job.getFrontTasks().forEach(frontJobStack::push);
-        while (!frontJobStack.isEmpty()) {
-            ProductionTask frontJob = frontJobStack.pop();
-            frontJobIds.add(frontJob.getId());
-            if (frontJob.getFrontTasks() != null) {
-                frontJob.getFrontTasks().forEach(frontJobStack::push);
-            }
-        }
-    }
-
-    /**
-     * 计算任务开始时间
-     *
-     * @param task                    任务
-     * @param resourcePreviousTask    当前任务所在资源的前一个任务
-     * @param resourcePreviousEndTime 当前任务所在资源的前一个任务的结束时间
-     * @param tasks                   所有排程任务
-     * @return 任务开始时间
-     */
-    private LocalDateTime calculateStartTime(MainProductionResource mainProductionResource, ProductionTask task, ProductionTask resourcePreviousTask, LocalDateTime resourcePreviousEndTime, List<ProductionTask> tasks, List<ProductionTask> currentResourcePreviousTasks) {
+    LocalDateTime calculateStartTime(MainProductionResource mainProductionResource, ProductionTask task, ProductionTask resourcePreviousTask, LocalDateTime resourcePreviousEndTime, List<ProductionTask> tasks, List<ProductionTask> currentResourcePreviousTasks) {
         Optional<ProcessUseMainResourcesDTO> processUseMainResources = task.getProcess().getUseMainResources()
                 .stream()
                 .filter(res -> res.getId().equals(mainProductionResource.getId()))
@@ -172,25 +54,29 @@ public class TaskTimeForwardServiceImpl implements TaskTimeService {
         if (ObjectNull.isNull(startTime)) {
             return startTime;
         }
-        List<ProductionTask> resourcePinnedTasks = mainProductionResource.getTaskList().stream()
-                .filter(ProductionTask::getPinned)
-                .toList();
-        if (ObjectNull.isNull(resourcePinnedTasks)) {
-            return startTime;
+        if (task.getNotBefore() != null && startTime.isBefore(task.getNotBefore())) {
+            startTime = TaskCalendarUtils.calculateStartTime(task.getNotBefore(), mainProductionResource.getWorkCalendars(), PlanningDirectionEnum.FORWARD);
         }
-
-        task.setStartTime(startTime);
-
-        Optional<LocalDateTime> maxOverlappingTime = resourcePinnedTasks.stream()
-                .filter(t -> t.getEndTime().isAfter(task.getStartTime()) && t.getStartTime().isBefore(task.getEndTime()))
-                .map(ProductionTask::getEndTime)
-                .max(Comparator.naturalOrder());
-        if (maxOverlappingTime.isPresent()) {
-            return calculateStartTime(task, resourcePreviousTask, maxOverlappingTime.get(), tasks, currentResourcePreviousTasks);
+        while (startTime != null) {
+            LocalDateTime end = TaskCalendarUtils.calculateEndTime(startTime, task.calculateTaskDuration(), mainProductionResource.getWorkCalendars());
+            if (end == null) { return null; }
+            LocalDateTime nextStart = startTime;
+            for (ProductionTask frozen : mainProductionResource.getTaskList()) {
+                if (frozen != task && Boolean.TRUE.equals(frozen.getPinned())
+                        && cn.windwheel.aps.solve.score.SchedulingRules.overlap(startTime, end, frozen.getStartTime(), frozen.getEndTime())
+                        && frozen.getEndTime().isAfter(nextStart)) {
+                    nextStart = frozen.getEndTime();
+                }
+            }
+            for (var window : mainProductionResource.getDowntimes()) {
+                if (cn.windwheel.aps.solve.score.SchedulingRules.overlap(startTime, end, window.getStart(), window.getEnd())
+                        && window.getEnd().isAfter(nextStart)) { nextStart = window.getEnd(); }
+            }
+            if (nextStart.equals(startTime)) { return startTime; }
+            startTime = TaskCalendarUtils.calculateStartTime(nextStart, mainProductionResource.getWorkCalendars(), PlanningDirectionEnum.FORWARD);
         }
-
-        return startTime;
-     }
+        return null;
+    }
 
     @Override
     public LocalDateTime calculateStartTime(ProductionTask task, ProductionTask resourcePreviousTask, LocalDateTime resourcePreviousEndTime, List<ProductionTask> tasks, List<WorkCalendar> workCalendars, List<ProductionTask> currentResourcePreviousTasks) {

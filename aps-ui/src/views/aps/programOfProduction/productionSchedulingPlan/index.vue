@@ -321,6 +321,8 @@ function previewClose () {
 </script>
 <style lang="scss" scoped>
 .aps-programOfProduction-productionSchedulingPlan{
+  height: 100%;
+  box-sizing: border-box;
   padding: 16px 0!important;
   .top-box{
     margin: 0 24px;
