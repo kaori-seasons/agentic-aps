@@ -40,7 +40,7 @@ public class TaskValidatorUtils {
         if (ObjectNull.isNull(tasks)) {
             return Collections.emptySet();
         }
-        List<TaskDTO> taskList = tasks.stream().filter(task -> ObjectNull.isNotNull(task.getDiscard()) && !task.getDiscard()).toList();
+        List<TaskDTO> taskList = tasks.stream().filter(task -> !Boolean.TRUE.equals(task.getDiscard())).toList();
         // 未成功计划的任务编码（没有计划主资源 或 没有计划开始时间 或 没有计划结束时间）
         Set<String> undistributedCodes = new HashSet<>();
         // 同资源计划时间交叉的任务编码
@@ -116,7 +116,7 @@ public class TaskValidatorUtils {
         }
 
         // 筛选出计划时间有交集的任务
-        List<TaskDTO> resourceTasks = Optional.ofNullable(resourceTaskMap.get(task.getMainResourceId())).orElseGet(ArrayList::new);
+        List<TaskDTO> resourceTasks = resourceTaskMap.computeIfAbsent(task.getMainResourceId(), key -> new ArrayList<>());
         Set<String> timeConflictCodes = resourceTasks.stream()
                 .filter(resourceTask -> DateUtils.hasOverlap(false,
                         task.getStartTime(), task.getEndTime(),
@@ -146,7 +146,7 @@ public class TaskValidatorUtils {
      */
     public static Set<String> validateTaskTimeConflicts(TaskDTO task, List<TaskDTO> tasks) {
         // 不直接校验合并任务
-        if (task.getMergeTask()) {
+        if (Boolean.TRUE.equals(task.getMergeTask())) {
             return Collections.emptySet();
         }
 
@@ -160,11 +160,16 @@ public class TaskValidatorUtils {
                 .filter(t -> task.getFrontTaskCodes().contains(t.getCode()))
                 .toList();
 
+        if (frontTasks.size() != task.getFrontTaskCodes().size()
+                || frontTasks.stream().anyMatch(front -> !validateAllocation(front))) {
+            return Set.of(task.getCode());
+        }
+
         // 根据不同的工序关系校验
         List<TaskDTO> taskTimeConflictTasks = new ArrayList<>();
         // 若是工序任务链的首道任务，则与前置任务的关系一定是ES的
         // ES关系
-        if (task.getStartTask() || ProcessRelationshipEnum.ES.equals(task.getProcessInfo().getProcessRelationship())) {
+        if (Boolean.TRUE.equals(task.getStartTask()) || ProcessRelationshipEnum.ES.equals(task.getProcessInfo().getProcessRelationship())) {
             taskTimeConflictTasks = frontTasks.stream()
                     .filter(t -> t.getEndTime().isAfter(task.getStartTime()))
                     .collect(Collectors.toList());

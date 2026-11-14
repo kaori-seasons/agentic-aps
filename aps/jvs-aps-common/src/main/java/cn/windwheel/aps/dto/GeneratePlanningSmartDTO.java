@@ -14,6 +14,9 @@ import javax.validation.constraints.NotBlank;
 @Accessors(chain = true)
 @ApiModel("生成排产计划")
 public class GeneratePlanningSmartDTO {
+    @javax.validation.Valid
+    private cn.windwheel.aps.solve.presolve.DynamicSchedulingRequest dynamicRequest;
+
     @ApiModelProperty(value = "排产策略id", required = true)
     @NotBlank(message = "未选择排产策略")
     private String planningStrategyId;

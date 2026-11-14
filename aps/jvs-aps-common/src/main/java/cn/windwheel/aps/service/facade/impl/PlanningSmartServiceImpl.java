@@ -46,6 +46,8 @@ public class PlanningSmartServiceImpl implements PlanningSmartService {
     private static final String LOCK_KEY = "smart:planning:generate:lock";
     private static final Integer LOCK_TIME = 7 * 24 * 60 * 60;
 
+    private final cn.windwheel.aps.solve.presolve.DynamicSchedulingService dynamicSchedulingService;
+    private final cn.windwheel.aps.solve.SolveAuditService solveAuditService;
     private final RedisUtils redisUtils;
     private final SolveService solveService;
     private final PlanningStrategyService planningStrategyService;
@@ -79,9 +81,22 @@ public class PlanningSmartServiceImpl implements PlanningSmartService {
             PlanningStrategy strategy = BeanCopyUtil.copy(planningStrategy, PlanningStrategy.class);
             // 初始化排产相关的基础数据
             BasicData basicData = basicDataComponent.getBasicData();
-            // 排产求解
+            cn.windwheel.aps.solve.config.SolveManageConfigurator.validate(strategy.getConfig());
+            basicData.setSourceSignature(solveAuditService.signature(basicData));
+            dynamicSchedulingService.prepare(basicData, strategy, generatePlanningSmart.getDynamicRequest());
             UUID planId = UUID.randomUUID();
-            solveService.solve(planId, strategy, basicData);
+            String planKey = SysConstant.redisKey("smart:planning:generate:planId", tenantId);
+            if (!Boolean.TRUE.equals(redisUtils.set(planKey, planId.toString(), 7200L))) {
+                throw new BusinessException("无法预留排产会话");
+            }
+            try {
+                solveProgressService.initProgress(planKey);
+                solveService.solve(planId, strategy, basicData);
+            } catch (Exception dispatchFailure) {
+                redisUtils.deleteIfValue(planKey, planId.toString());
+                solveProgressService.removeProgress();
+                throw dispatchFailure;
+            }
         } catch (Exception e) {
             log.error("排产异常：", e);
             throw new BusinessException(e.getMessage());
@@ -122,16 +137,32 @@ public class PlanningSmartServiceImpl implements PlanningSmartService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void cancelPlanPending() {
-        solveService.cancel();
-        planSolutionFacadeService.removeSolutionPending();
-        planInfoService.removeUnconfirmedPlan();
-        solveProgressService.removeProgress();
+        String lockKey = SysConstant.redisKey(LOCK_KEY, TenantContextHolder.getTenantId());
+        if (!redisUtils.tryLock(lockKey, 60)) { throw new BusinessException("计划正在被更新，请稍后重试"); }
+        try {
+            solveService.cancel();
+            solveAuditService.markReviewed("CANCELLED");
+            planSolutionFacadeService.removeSolutionPending();
+            planInfoService.removeUnconfirmedPlan();
+            solveProgressService.removeProgress();
+        } finally {
+            redisUtils.unLock(lockKey);
+        }
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     @Override
     public void confirmPlan() {
-        planSolutionFacadeService.saveSolution();
-        solveProgressService.removeProgress();
+        String lockKey = SysConstant.redisKey(LOCK_KEY, TenantContextHolder.getTenantId());
+        if (!redisUtils.tryLock(lockKey, 60)) { throw new BusinessException("计划正在被更新，请稍后重试"); }
+        try {
+            if (solveService.existsSolving()) { throw new BusinessException("求解尚未结束，不能确认计划"); }
+            solveAuditService.validateBeforeConfirm(basicDataComponent.getBasicDataForConfirmation());
+            planSolutionFacadeService.saveSolution();
+            solveAuditService.markReviewed("CONFIRMED");
+            solveProgressService.removeProgress();
+        } finally {
+            redisUtils.unLock(lockKey);
+        }
     }
 }

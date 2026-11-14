@@ -14,7 +14,6 @@ import cn.windwheel.aps.solve.SolveProgressService;
 import cn.windwheel.aps.solve.SolveService;
 import cn.windwheel.aps.solve.component.InitSchedulingRuleDataComponent;
 import cn.windwheel.aps.solve.component.RuleField;
-import cn.windwheel.aps.solve.config.SolveManageConfigurator;
 import cn.windwheel.aps.solve.enums.SolveProgressStatusEnum;
 import cn.windwheel.aps.solve.model.*;
 import cn.windwheel.aps.solve.util.MrpUtils;
@@ -29,15 +28,11 @@ import cn.windwheel.common.utils.function.Get;
 import cn.windwheel.redis.utils.RedisUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.optaplanner.core.api.solver.SolverJob;
-import org.optaplanner.core.api.solver.SolverManager;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -49,10 +44,12 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class SolveServiceImpl implements SolveService {
 
+    private final cn.windwheel.aps.solve.SolveAuditService solveAuditService;
     private final RedisUtils redisUtils;
     private final SolveProgressService solveProgressService;
     private final PlanSolutionFacadeService planSolutionFacadeService;
-    private final SolveManageConfigurator solveManageConfigurator;
+    private final cn.windwheel.aps.solve.config.SchedulingEngineRouter engineRouter;
+    private final cn.windwheel.aps.solve.presolve.DynamicSchedulingService dynamicSchedulingService;
 
     /**
      * 排产任务id缓存
@@ -60,28 +57,26 @@ public class SolveServiceImpl implements SolveService {
     private static final String SOLVE_PLAN_ID_KEY = "smart:planning:generate:planId";
 
     @Async
-    @Transactional(rollbackFor = Exception.class)
     @Override
     public void solve(UUID planId, PlanningStrategy strategy, BasicData basicData) {
+        boolean candidateSaved = false;
         try {
-            // 初始化当前线程的动态权重配置
-            if (strategy != null && strategy.getConfig() != null && strategy.getConfig().getConstraintWeightConfig() != null) {
-                cn.windwheel.aps.solve.score.DynamicConstraintWeightContext.setWeightConfig(strategy.getConfig().getConstraintWeightConfig());
-            }
-
-            // 缓存求解任务id
             String planKey = getPlanCacheKey();
-            redisUtils.set(getPlanCacheKey(), planId);
-            // 初始化排产进度
-            solveProgressService.initProgress(planKey);
+            if (!planId.toString().equals(String.valueOf(redisUtils.get(planKey)))) { return; }
+            solveAuditService.start(planId, strategy, basicData);
+            if (redisUtils.exists(planKey + ":cancel:" + planId)) {
+                solveAuditService.finish(planId,"CANCELLED",Map.of("message","用户已取消求解"));
+                return;
+            }
             // 构造规划解决方案
             SchedulingSolution solution = buildSolution(strategy, basicData);
+            dynamicSchedulingService.apply(solution, basicData);
+            solveAuditService.recordProblem(planId, solution);
             // 执行规划求解计算
             if (ObjectNull.isNull(solution.getTasks())) {
                 // 修改排产进度
                 solveProgressService.addProgressLog(SolveProgressStatusEnum.NO_SCHEDULED, "没有需要排程的任务");
-                // 将排产结果保存到待确认计划
-                planSolutionFacadeService.saveSolutionPending(basicData, new SchedulingSolution());
+                solveAuditService.finish(planId,"NO_SCHEDULED", Map.of("message","没有需要排程的任务"));
                 return;
             }
             // 保存排产进度
@@ -93,28 +88,57 @@ public class SolveServiceImpl implements SolveService {
             String profileMsg = "使用的排产算法策略: " + (strategy.getConfig().getSolverProfile() != null ? strategy.getConfig().getSolverProfile().getDesc() : "默认");
             solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, profileMsg);
             // 排产求解
-            SchedulingSolution apsSolutionResult = solveExecute(planId, solution);
-            if (ObjectNull.isNull(apsSolutionResult)) {
+            String cancelKey = getPlanCacheKey() + ":cancel:" + planId;
+            SchedulingSolution apsSolutionResult = engineRouter.solve(planId, solution, () -> redisUtils.exists(cancelKey));
+            if (ObjectNull.isNull(apsSolutionResult) || redisUtils.exists(getPlanCacheKey() + ":cancel:" + planId)) {
+                solveAuditService.finish(planId,"CANCELLED",Map.of("message","用户已取消求解"));
                 return;
             }
-            if (apsSolutionResult.getScore().initScore() < 0 || apsSolutionResult.getScore().hardScore() < 0) {
+            if (apsSolutionResult.getScore().initScore() != 0 || apsSolutionResult.getScore().hardScore() < 0) {
                 throw new BusinessException("未找到可行的计划");
             }
-            // 置空主资源下的任务集合
-            apsSolutionResult.getMainResources().forEach(mainResource -> mainResource.setTaskList(null));
+
             // 校验排程结果是否合规
             validateSchedulingSolution(apsSolutionResult);
-            // 将排产结果保存到待确认计划
-            planSolutionFacadeService.saveSolutionPending(basicData, apsSolutionResult);
+            Map<String,Object> report = solveAuditService.report(apsSolutionResult,basicData);
+            String lockKey = SysConstant.redisKey("smart:planning:generate:lock", TenantContextHolder.getTenantId());
+            if (!redisUtils.tryLock(lockKey, 60)) { throw new BusinessException("计划正在被确认或取消，请重试"); }
+            try {
+                if (!planId.toString().equals(String.valueOf(redisUtils.get(getPlanCacheKey())))
+                        || redisUtils.exists(getPlanCacheKey() + ":cancel:" + planId)) {
+                    solveAuditService.finish(planId,"CANCELLED",Map.of("message","用户已取消求解"));
+                    return;
+                }
+                solveAuditService.finish(planId,"FEASIBLE",report);
+                planSolutionFacadeService.saveSolutionPending(basicData, apsSolutionResult);
+                candidateSaved = true;
+            } finally {
+                redisUtils.unLock(lockKey);
+            }
+            solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, "求解审计ID：" + planId);
             // 修改排产进度
             solveProgressService.addProgressLog(SolveProgressStatusEnum.SUCCESS,"排程已完成");
-        } catch (Exception e) {
+        } catch (Exception | StackOverflowError e) {
+            if (candidateSaved) {
+                log.error("候选计划已保存，进度通知失败, planId={}",planId,e);
+                return;
+            }
+            if (e instanceof InterruptedException) { Thread.currentThread().interrupt(); }
+            try {
+                solveAuditService.finish(planId,"FAILED",Map.of("message",String.valueOf(e.getMessage())));
+            } catch (Exception auditFailure) {
+                log.error("保存排产失败审计时异常, planId={}",planId,auditFailure);
+            }
             log.error("排产异常：", e);
             solveProgressService.addProgressLog(SolveProgressStatusEnum.FAILURE,"排程失败：" + e.getMessage());
             throw new BusinessException(e.getMessage());
         } finally {
-            cn.windwheel.aps.solve.score.DynamicConstraintWeightContext.clear();
-            redisUtils.del(getPlanCacheKey());
+            if (redisUtils.deleteIfValue(getPlanCacheKey(), planId.toString())) {
+                if (redisUtils.exists(getPlanCacheKey() + ":cancel:" + planId)) {
+                    solveProgressService.removeProgress();
+                    redisUtils.del(getPlanCacheKey() + ":cancel:" + planId);
+                }
+            }
         }
     }
 
@@ -125,47 +149,13 @@ public class SolveServiceImpl implements SolveService {
 
     @Override
     public void cancel() {
-        String value = (String) redisUtils.get(getPlanCacheKey());
+        Object value = redisUtils.get(getPlanCacheKey());
         if (ObjectNull.isNull(value)) {
             return;
         }
-        UUID planId = UUID.fromString(value);
-        SolverManager<SchedulingSolution, UUID> solverManager = solveManageConfigurator.getSolverManager();
-        if (ObjectNull.isNull(solverManager)) {
-            return;
-        }
-        solverManager.terminateEarly(planId);
-        // 删除求解任务缓存
-        redisUtils.del(getPlanCacheKey());
-    }
-
-    /**
-     * 排产求解计算
-     *
-     * @param planId  任务id
-     * @param problem 规划解决方案
-     * @return 排产结果
-     */
-    private SchedulingSolution solveExecute(UUID planId, SchedulingSolution problem) {
-        SolverManager<SchedulingSolution, UUID> solverManager = solveManageConfigurator.initSolverManager(problem.getStrategy());
-        log.debug("开始计算, 待排任务数量：{}", problem.getTasks().size());
-        long t1 = System.currentTimeMillis();
-        try {
-            SolverJob<SchedulingSolution, UUID> solver = solverManager.solve(planId, problem);
-            SchedulingSolution apsSolutionResult = solver.getFinalBestSolution();
-            if (solver.isTerminatedEarly()) {
-                return null;
-            }
-            log.debug("结束计算耗时：{}, 任务数量：{}", (System.currentTimeMillis() - t1), problem.getTasks().size());
-            return apsSolutionResult;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new BusinessException(e.getMessage());
-        } catch (ExecutionException e) {
-            throw new BusinessException(e.getMessage());
-        } finally {
-            solverManager.terminateEarly(planId);
-        }
+        UUID planId = UUID.fromString(value.toString());
+        redisUtils.set(getPlanCacheKey() + ":cancel:" + planId, true, 7200L);
+        engineRouter.cancel(planId);
     }
 
     /**
@@ -270,7 +260,12 @@ public class SolveServiceImpl implements SolveService {
         // 生产任务
         List<ProductionTask> productionTaskList = new ArrayList<>();
         // 生产订单按规则排序
-        List<ProductionOrder> orders = basicData.getProductionOrders();
+        // 补充订单由其主订单的MRP重新生成，不能再次作为独立需求扣减库存。
+        List<ProductionOrder> orders = basicData.getProductionOrders().stream()
+                .filter(order -> !Boolean.TRUE.equals(order.getSupplement()))
+                .collect(Collectors.toCollection(ArrayList::new));
+        basicData.setProductionOrders(orders);
+        solution.setProductionOrders(orders);
         int orderSize = orders.size();
         sortProductionOrders(orders, solution.getStrategy().getOrderSchedulingRules());
         // 是否约束物料
@@ -302,7 +297,9 @@ public class SolveServiceImpl implements SolveService {
             String progressLog = String.format("拆解订单【%s/%s-%s】, %s", step, orderSize, order.getCode(), logStatus);
             solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, progressLog, System.currentTimeMillis() - timeMillis, step);
         }
-        // 待排产的生产任务
+        // 冻结任务同样参与冲突判定，即使本次MRP没有生成它所属的工序。
+        Set<String> generated = productionTaskList.stream().map(ProductionTask::getCode).collect(Collectors.toSet());
+        pinnedProductionTaskList.stream().filter(task -> !generated.contains(task.getCode())).forEach(productionTaskList::add);
         solution.setTasks(productionTaskList);
         // 提取自动创建的补充生产订单，加入生产订单集合
         addSupplementOrders(orders, productionTaskList);
@@ -315,21 +312,7 @@ public class SolveServiceImpl implements SolveService {
      * @param productionTaskList 生产任务
      */
     private void addSupplementOrders(List<ProductionOrder> orders, List<ProductionTask> productionTaskList) {
-        // 从补充制造任务中，提取自动创建的补充生产订单
-        List<ProductionOrder> supplementOrders = productionTaskList.stream()
-                .filter(ProductionTask::getSupplement)
-                .map(ProductionTask::getOrder)
-                .distinct()
-                .toList();
-        if (ObjectNull.isNull(supplementOrders)) {
-           return;
-        }
-        // 若补充订单的订单号已存在，则移除旧的订单，加入新的订单
-        Set<String> supplementOrderCodes = supplementOrders.stream()
-                .map(ProductionOrder::getCode)
-                .collect(Collectors.toSet());
-        orders.removeIf(order -> supplementOrderCodes.contains(order.getCode()));
-        orders.addAll(supplementOrders);
+        cn.windwheel.aps.solve.util.SchedulingOrderNormalizer.appendSupplementOrders(orders, productionTaskList);
     }
 
     /**
@@ -348,7 +331,8 @@ public class SolveServiceImpl implements SolveService {
                 .map(pinnedTask -> {
                     ProductionTask productionTask = BeanCopyUtil.copy(pinnedTask, ProductionTask.class)
                             .setQuantity(pinnedTask.getScheduledQuantity())
-                            .setProcess(pinnedTask.getProcessInfo());
+                            .setProcess(pinnedTask.getProcessInfo())
+                            .setFrozenEndTime(pinnedTask.getEndTime());
                     Optional<MainProductionResource> mainResource = mainResources.stream()
                             .filter(resource -> pinnedTask.getMainResourceId().equals(resource.getId()))
                             .findFirst();
@@ -357,7 +341,7 @@ public class SolveServiceImpl implements SolveService {
                         ProductionOrder productionOrder = productionOrders.stream()
                                 .filter(order -> order.getId().equals(pinnedTask.getProductionOrderId()))
                                 .findFirst()
-                                .get();
+                                .orElse(null);
                         productionTask.setOrder(productionOrder);
                     }
                     return productionTask;
@@ -424,16 +408,25 @@ public class SolveServiceImpl implements SolveService {
      * @param apsSolutionResult 排程结果
      */
     private void validateSchedulingSolution(SchedulingSolution apsSolutionResult) {
+        for (ProductionTask task : apsSolutionResult.getTasks()) {
+            if (cn.windwheel.aps.solve.score.SchedulingRules.active(task)
+                    && (!cn.windwheel.aps.solve.score.SchedulingRules.scheduled(task)
+                    || cn.windwheel.aps.solve.score.SchedulingRules.unavailable(task)
+                    || cn.windwheel.aps.solve.score.SchedulingRules.frozenChanged(task))) {
+                throw new BusinessException("计划包含未分配或违反冻结/不可用时间窗的任务");
+            }
+        }
         // 校验是否有不合规的任务
         List<TaskDTO> tasks = apsSolutionResult.getTasks().stream()
                 .map(task ->
-                        BeanCopyUtil.copy(task, TaskDTO.class)
+                        cn.windwheel.aps.solve.util.SchedulingTaskMapper.toDTO(task)
                                 .setProductionOrderId(Optional.ofNullable(task.getOrder()).map(ProductionOrder::getId).orElseGet(() -> null))
                                 .setColor(Optional.ofNullable(task.getOrder()).map(ProductionOrder::getColor).orElseGet(() -> null))
                                 .setScheduledQuantity(task.getQuantity())
                                 .setMainResourceId(task.getResource().getId())
                                 .setProcessInfo(task.getProcess())
-                                .setPinned(false)
+                                .setPinned(task.getPinned())
+                                .setDiscard(false)
                 )
                 .toList();
         if (ObjectNull.isNotNull(TaskValidatorUtils.checkTaskCompliance(tasks))) {

@@ -24,12 +24,11 @@ public class MybatisPlusConfig {
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
         interceptor.addInnerInterceptor(new BlockAttackInnerInterceptor());
-        // 不指定数据源类型，可兼容多数据源
-        interceptor.addInnerInterceptor(new PaginationInnerInterceptor());
-
         TenantLineInnerInterceptor tenantLineInnerInterceptor = new TenantLineInnerInterceptor();
         tenantLineInnerInterceptor.setTenantLineHandler(new JvsTenantHandler());
         interceptor.addInnerInterceptor(tenantLineInnerInterceptor);
+        // 租户条件先于分页统计，避免总数包含其他租户的数据。
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor());
         return interceptor;
     }
 

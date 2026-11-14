@@ -1,0 +1,23 @@
+{
+  "cases": [
+    {
+      "engine": "OPTAPLANNER",
+      "direction": "FORWARD",
+      "planId": "995a7eab-7502-4b4a-91b2-17e64cb7d586",
+      "score": "0hard/-1796428758soft",
+      "tasks": 36,
+      "seconds": 15.29,
+      "status": "PASS"
+    },
+    {
+      "engine": "TIMEFOLD",
+      "direction": "BACKWARD",
+      "planId": "d3a49a02-4cb7-4865-98bd-1a91a117386c",
+      "score": "0hard/-1796447957soft",
+      "tasks": 36,
+      "seconds": 16.81,
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS"
+}

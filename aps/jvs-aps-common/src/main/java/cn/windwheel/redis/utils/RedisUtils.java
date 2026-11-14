@@ -62,6 +62,13 @@ public class RedisUtils {
      * @author: guojing
      * @return: boolean
      */
+    public boolean deleteIfValue(String key, String token) {
+        org.springframework.data.redis.core.script.DefaultRedisScript<Long> script =
+                new org.springframework.data.redis.core.script.DefaultRedisScript<>(
+                        "if redis.call('get',KEYS[1]) == ARGV[1] then return redis.call('del',KEYS[1]) else return 0 end", Long.class);
+        return Long.valueOf(1).equals(redisTemplate.execute(script, java.util.List.of(prefix + key), token));
+    }
+
     public boolean exists(final String key) {
         return redisTemplate.hasKey(prefix + key);
     }

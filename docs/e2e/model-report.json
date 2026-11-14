@@ -1,0 +1,32 @@
+{
+  "model": "Qwen2.5-0.5B-Instruct Q8_0",
+  "status": "QUALITY_GATE_FAILED",
+  "cases": [
+    {
+      "case": "natural",
+      "seconds": 1.25,
+      "semanticMatch": false,
+      "response": {
+        "code": -1,
+        "msg": "事件类型与时间字段不匹配，请核对事件",
+        "data": null,
+        "timestamp": "2026-11-14 06:34:45 602",
+        "traceId": "feb3c6bc2e09495e"
+      }
+    },
+    {
+      "case": "explicit",
+      "seconds": 0.2,
+      "semanticMatch": false,
+      "response": {
+        "code": -1,
+        "msg": "动态事件、冻结时间或种子无效",
+        "data": null,
+        "timestamp": "2026-11-14 06:34:45 803",
+        "traceId": "eaf5d551549b4ba1"
+      }
+    }
+  ],
+  "submittedToSolver": false,
+  "databaseUnchanged": true
+}

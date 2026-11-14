@@ -18,7 +18,6 @@ import org.optaplanner.core.config.solver.termination.TerminationConfig;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,7 +32,7 @@ public class SolveManageConfigurator {
      * 求解器
      * Map<租户id, 求解器>
      */
-    private static final Map<String, SolverManager<SchedulingSolution, UUID>> SOLVER_MANAGER_MAP = new HashMap<>();
+    private static final Map<String, SolverManager<SchedulingSolution, UUID>> SOLVER_MANAGER_MAP = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * 求解运行最大时长默认值
@@ -78,7 +77,7 @@ public class SolveManageConfigurator {
                 .withConstraintProviderClass(ApsHardSoftScoreConstraintProvider.class)
                 .withConstraintStreamImplType(ConstraintStreamImplType.BAVET)
                 .withTerminationConfig(terminationConfig)
-                .withMoveThreadCount("AUTO");
+                .withMoveThreadCount("NONE");
 
         // 固定随机种子以支持复现
         if (config.getRandomSeed() != null) {
@@ -128,11 +127,15 @@ public class SolveManageConfigurator {
     private TerminationConfig buildTerminationConfig(StrategyConfigDTO config) {
         TerminationConfig terminationConfig = new TerminationConfig();
         terminationConfig.setTerminationCompositionStyle(TerminationCompositionStyle.OR);
-        terminationConfig.setSpentLimit(SOLVE_TIME_LIMIT_DEFAULT);
+        validate(config);
+        if (config.getScoreCalculationCountLimit() != null) {
+            terminationConfig.setSpentLimit(SOLVE_TIME_LIMIT_DEFAULT);
+            terminationConfig.setScoreCalculationCountLimit(config.getScoreCalculationCountLimit());
+            return terminationConfig;
+        }
+        terminationConfig.setSpentLimit(Duration.ofSeconds(config.getSolveTimeSeconds() == null ? 120 : config.getSolveTimeSeconds()));
         Long maxNoImprovementTime = config.getMaxNoImprovementTime();
-        if (ObjectNull.isNull(maxNoImprovementTime) || maxNoImprovementTime <= 0) {
-            terminationConfig.setBestScoreFeasible(true);
-        } else {
+        if (maxNoImprovementTime != null && maxNoImprovementTime > 0) {
             terminationConfig.setUnimprovedSecondsSpentLimit(maxNoImprovementTime);
         }
         return terminationConfig;
@@ -142,12 +145,45 @@ public class SolveManageConfigurator {
     /**
      * 移除SolverManager实例
      */
-    private void removeSolverManager() {
-        SolverManager<SchedulingSolution, UUID> solverManager = getSolverManager();
-        if (ObjectNull.isNull(solverManager)) {
-            return;
+    public static void validate(StrategyConfigDTO config) {
+        if (config == null || config.getDirection() == null) {
+            throw new IllegalArgumentException("必须指定排产方向");
         }
-        solverManager.close();
-        SOLVER_MANAGER_MAP.remove(TenantContextHolder.getTenantId());
+        if (config.getSolveTimeSeconds() != null && (config.getSolveTimeSeconds() < 1 || config.getSolveTimeSeconds() > 3600)
+                || config.getScoreCalculationCountLimit() != null && (config.getScoreCalculationCountLimit() < 1 || config.getScoreCalculationCountLimit() > Integer.MAX_VALUE)
+                || config.getEntityTabuSize() != null && (config.getEntityTabuSize() < 1 || config.getEntityTabuSize() > 10000)
+                || config.getLateAcceptanceSize() != null && (config.getLateAcceptanceSize() < 1 || config.getLateAcceptanceSize() > 100000)
+                || config.getAcceptedCountLimit() != null && (config.getAcceptedCountLimit() < 1 || config.getAcceptedCountLimit() > 100000)) {
+            throw new IllegalArgumentException("求解参数超出允许范围");
+        }
+        cn.windwheel.aps.entity.dto.planning.ConstraintWeightConfigDTO weights = config.getConstraintWeightConfig();
+        if (weights == null) {
+            weights = new cn.windwheel.aps.entity.dto.planning.ConstraintWeightConfigDTO();
+            config.setConstraintWeightConfig(weights);
+        }
+        for (Integer weight : java.util.Arrays.asList(weights.getPriorityWeight(), weights.getFinishEarlyWeight(),
+                weights.getMinimizeTardinessWeight(), weights.getBalanceResourceLoadWeight(),
+                weights.getMinimizeGapBetweenDependentTasksWeight(), weights.getMinimizeSetupTimeWeight())) {
+            if (weight == null || weight < 0 || weight > 1000000) {
+                throw new IllegalArgumentException("约束权重必须在0至1000000之间");
+            }
+        }
+    }
+
+    public void release() {
+        removeSolverManager();
+    }
+
+    @javax.annotation.PreDestroy
+    public void shutdown() {
+        SOLVER_MANAGER_MAP.values().forEach(SolverManager::close);
+        SOLVER_MANAGER_MAP.clear();
+    }
+
+    private void removeSolverManager() {
+        SolverManager<SchedulingSolution, UUID> solverManager = SOLVER_MANAGER_MAP.remove(TenantContextHolder.getTenantId());
+        if (solverManager != null) {
+            solverManager.close();
+        }
     }
 }

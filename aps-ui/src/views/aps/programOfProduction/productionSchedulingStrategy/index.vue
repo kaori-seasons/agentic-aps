@@ -216,6 +216,46 @@ const formOption = ref({
       rules: [{ required: true, message: '请选择排产方向', trigger: 'change' }],
     },
     {
+      label: '求解引擎',
+      prop: 'solverEngine',
+      type: 'select',
+      dicData: [
+        {label: 'OptaPlanner', value: 'OPTAPLANNER'},
+        {label: 'Timefold', value: 'TIMEFOLD'}
+      ],
+      defaultValue: 'OPTAPLANNER',
+      span: 12,
+    },
+    {
+      label: '优化策略',
+      prop: 'solverProfile',
+      type: 'select',
+      dicData: [
+        {label: '默认策略', value: 'DEFAULT'},
+        {label: '构造初排与禁忌搜索', value: 'FFD_TABU'},
+        {label: '构造初排与晚期接受', value: 'FFD_LATE_ACCEPTANCE'}
+      ],
+      defaultValue: 'DEFAULT',
+      span: 12,
+    },
+    {
+      label: '求解上限(秒)',
+      prop: 'solveTimeSeconds',
+      type: 'inputNumber',
+      precision: 0,
+      min: 1,
+      max: 3600,
+      defaultValue: 120,
+      span: 12,
+    },
+    {
+      label: '随机种子',
+      prop: 'randomSeed',
+      type: 'inputNumber',
+      precision: 0,
+      span: 12,
+    },
+    {
       label: '无改进时长(秒)',
       prop: 'maxNoImprovementTime',
       type: 'inputNumber',
@@ -346,16 +386,20 @@ function submitHandle (form) {
     fun = edit
   }
   let temp = JSON.parse(JSON.stringify(rowData.value))
-  temp.config = {
-    direction: rowData.value['direction'],
-    materialConstrained: rowData.value['materialConstrained'] || false,
+  temp.config = {}
+  const configKeys = [
+    'direction', 'materialConstrained', 'maxNoImprovementTime',
+    'solverEngine', 'solverProfile', 'solveTimeSeconds', 'randomSeed',
+    'entityTabuSize', 'lateAcceptanceSize', 'acceptedCountLimit',
+    'scoreCalculationCountLimit', 'constraintWeightConfig'
+  ]
+  for (const key of configKeys) {
+    if (rowData.value[key] !== undefined && rowData.value[key] !== null) {
+      temp.config[key] = rowData.value[key]
+    }
+    delete temp[key]
   }
-  delete temp.direction
-  delete temp.materialConstrained
-  if(rowData.value['maxNoImprovementTime'] !== undefined && rowData.value['maxNoImprovementTime'] !== null) {
-    temp.config['maxNoImprovementTime'] = rowData.value['maxNoImprovementTime']
-    delete temp.maxNoImprovementTime
-  }
+  temp.config.materialConstrained = rowData.value['materialConstrained'] || false
   formOption.value.submitLoading = true
   fun(temp).then(res => {
     if(res.data && res.data.code == 0) {

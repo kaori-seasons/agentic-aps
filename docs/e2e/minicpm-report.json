@@ -1,0 +1,88 @@
+{
+  "model": "MiniCPM5-2B",
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "real MiniCPM event types, IDs and times exactly match reviewed expectations",
+      "status": "PASS",
+      "events": 3,
+      "seconds": 8.76,
+      "databaseUnchanged": true
+    },
+    {
+      "name": "reviewed model proposal produces a fully assigned feasible Timefold plan",
+      "status": "PASS",
+      "planId": "05231bf0-d2ad-4483-be14-1277b218940f",
+      "score": "0hard/-1796517027soft",
+      "tasks": 36,
+      "seconds": 9.14
+    },
+    {
+      "name": "frozen work, resource downtime and material availability remain valid",
+      "status": "PASS",
+      "pinned": 1,
+      "delayedTasks": 6,
+      "changedTasks": 18
+    },
+    {
+      "name": "four candidate preview APIs return real schedule data",
+      "status": "PASS"
+    },
+    {
+      "name": "real MiniCPM post-solve explanation returned with model label",
+      "status": "PASS"
+    },
+    {
+      "name": "reviewed combined optimization confirmed atomically with updated due date",
+      "status": "PASS"
+    }
+  ],
+  "submittedToSolver": true,
+  "stage": "complete",
+  "extractionSeconds": 8.76,
+  "presolveResponse": {
+    "code": 0,
+    "msg": "success",
+    "data": {
+      "events": [
+        {
+          "type": "RESOURCE_UNAVAILABLE",
+          "targetId": "r-assy01",
+          "start": "2026-11-18T08:00:00",
+          "end": "2026-11-18T12:00:00",
+          "availableAt": null,
+          "deliveryTime": null
+        },
+        {
+          "type": "MATERIAL_DELAY",
+          "targetId": "m-rm-copper",
+          "start": null,
+          "end": null,
+          "availableAt": "2026-11-18T08:00:00",
+          "deliveryTime": null
+        },
+        {
+          "type": "DUE_DATE_CHANGE",
+          "targetId": "po-006",
+          "start": null,
+          "end": null,
+          "availableAt": null,
+          "deliveryTime": "2026-11-20T12:00:00"
+        }
+      ],
+      "seeds": [],
+      "recommendedProfile": null,
+      "recommendedWeights": null,
+      "freezeUntil": "2026-11-16T08:00:00"
+    },
+    "timestamp": "2026-11-14 08:40:51 691",
+    "traceId": "b7e142823262403b"
+  },
+  "extractionDatabaseUnchanged": true,
+  "planId": "05231bf0-d2ad-4483-be14-1277b218940f",
+  "score": "0hard/-1796517027soft",
+  "tasks": 36,
+  "changedTaskCount": 18,
+  "solveSeconds": 9.14,
+  "modelExplanation": "解释性建议（模型生成）：该调度报告显示硬约束校验已通过，共36项任务，已有任务中18项位置或时间发生变化。请在甘特图核对后确认。"
+}

@@ -1,0 +1,77 @@
+{
+  "cases": [
+    {
+      "name": "unauthenticated and spoofed identity rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "login, tenant count and Timefold strategy update",
+      "status": "PASS"
+    },
+    {
+      "name": "cross tenant strategy and scheduling isolation",
+      "status": "PASS"
+    },
+    {
+      "name": "low permission account cannot schedule",
+      "status": "PASS"
+    },
+    {
+      "name": "concurrent submissions admit one job and progress is initialized",
+      "status": "PASS"
+    },
+    {
+      "name": "Timefold complete BOM solve and durable audit",
+      "status": "PASS",
+      "planId": "7f4c4a90-b118-48f7-a9fb-1d9b0ec88558",
+      "tasks": 36,
+      "score": "0hard/-1796345419soft",
+      "seconds": 9.69
+    },
+    {
+      "name": "four official preview APIs render candidate data",
+      "status": "PASS"
+    },
+    {
+      "name": "finished product quantities conserve demand after stock allocation",
+      "status": "PASS"
+    },
+    {
+      "name": "audit snapshot is tenant isolated",
+      "status": "PASS"
+    },
+    {
+      "name": "stale candidate confirmation rejected without deleting pending tasks",
+      "status": "PASS"
+    },
+    {
+      "name": "candidate confirmed atomically",
+      "status": "PASS",
+      "persistedTasks": 36
+    },
+    {
+      "name": "work reporting API updates partial completion",
+      "status": "PASS",
+      "task": "PO-260416-001-SF-HOUSING-CUT"
+    },
+    {
+      "name": "dynamic outage, material delay and due date solve preserves in-progress task",
+      "status": "PASS",
+      "planId": "d2722d1e-4df6-432e-9c95-1ddaf59c0994",
+      "tasks": 36,
+      "changed": 18,
+      "seconds": 6.65
+    },
+    {
+      "name": "reviewed due date persists on confirmation",
+      "status": "PASS"
+    },
+    {
+      "name": "cancelled solve cannot recreate pending candidate",
+      "status": "PASS"
+    }
+  ],
+  "database": "aps_e2e",
+  "fixture": "6 primary orders, 8 resources, full BOM manufacturing; simulated 2026-11-16 onward",
+  "status": "PASS"
+}

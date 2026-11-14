@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class ContextHolderFilter extends GenericFilterBean {
 
-    private static final List<String> PUBLIC_PATH_SUFFIXES = List.of(
+    private static final List<String> PUBLIC_PATHS = List.of(
             "/health",
             "/auth/login",
             "/auth/logout"
@@ -75,20 +75,22 @@ public class ContextHolderFilter extends GenericFilterBean {
     }
 
     private boolean isPublicPath(HttpServletRequest request) {
-        String requestUri = request.getRequestURI();
-        return PUBLIC_PATH_SUFFIXES.stream().anyMatch(requestUri::endsWith);
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        return PUBLIC_PATHS.contains(path);
     }
 
     private AuthContext resolveAuthContext(HttpServletRequest request) {
-        AuthContext headerAuthContext = buildHeaderAuthContext(request);
-        if (isValid(headerAuthContext)) {
-            request.setAttribute(AuthSessionKeys.REQUEST_AUTH_CONTEXT_SOURCE, "header");
-            return headerAuthContext;
-        }
         AuthContext sessionAuthContext = authService.resolveSessionAuthContext(request);
         if (isValid(sessionAuthContext)) {
             request.setAttribute(AuthSessionKeys.REQUEST_AUTH_CONTEXT_SOURCE, "session");
             return sessionAuthContext;
+        }
+        if (authProperties.isAllowHeaderAuth()) {
+            AuthContext headerAuthContext = buildHeaderAuthContext(request);
+            if (isValid(headerAuthContext)) {
+                request.setAttribute(AuthSessionKeys.REQUEST_AUTH_CONTEXT_SOURCE, "header");
+                return headerAuthContext;
+            }
         }
         AuthContext queryAuthContext = buildQueryAuthContext(request);
         if (isValid(queryAuthContext)) {

@@ -33,12 +33,22 @@ import java.util.Set;
 @Data
 @Accessors(chain = true)
 @NoArgsConstructor
+@lombok.EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ai.timefold.solver.core.api.domain.entity.PlanningEntity(difficultyComparatorClass = TaskDifficultyComparator.class)
 @PlanningEntity(difficultyComparatorClass = TaskDifficultyComparator.class)
 public class ProductionTask {
 
     @Comment(value = "id", notes = "排程计算时使用，不入库。排程计算过程中id与任务编码同等作用（都能唯一标识一个任务），但业务逻辑使用时，应使用任务编码")
+    @ai.timefold.solver.core.api.domain.lookup.PlanningId
     @PlanningId
+    @lombok.EqualsAndHashCode.Include
     private String id;
+
+    private cn.windwheel.aps.entity.dto.planning.ConstraintWeightConfigDTO weights = new cn.windwheel.aps.entity.dto.planning.ConstraintWeightConfigDTO();
+    private LocalDateTime notBefore;
+    private String frozenResourceId;
+    private LocalDateTime frozenStartTime;
+    private LocalDateTime frozenEndTime;
 
     @Comment(value = "任务编码", notes = "租户级唯一")
     private String code;
@@ -83,6 +93,7 @@ public class ProductionTask {
     private Map<String, Duration> materialDelayMap;
 
     @Comment("分派主资源")
+    @ai.timefold.solver.core.api.domain.variable.InverseRelationShadowVariable(sourceVariableName = "taskList")
     @InverseRelationShadowVariable(sourceVariableName = "taskList")
     private MainProductionResource resource;
 
@@ -91,6 +102,7 @@ public class ProductionTask {
     private Boolean pinned;
 
     @Comment("计划开始时间")
+    @ai.timefold.solver.core.api.domain.variable.ShadowVariable(variableListenerClass = cn.windwheel.aps.solve.timefold.TimefoldStartTimeListener.class, sourceEntityClass = MainProductionResource.class, sourceVariableName = "taskList")
     @ShadowVariable(variableListenerClass = ApsStartTimeListener.class, sourceEntityClass = MainProductionResource.class, sourceVariableName = "taskList")
     private LocalDateTime startTime;
 
@@ -182,6 +194,9 @@ public class ProductionTask {
         if (ObjectNull.isNull(startTime) || ObjectNull.isNull(resource)) {
             return null;
         }
+        if (Boolean.TRUE.equals(pinned) && frozenEndTime != null) {
+            return frozenEndTime;
+        }
         Duration taskDuration = calculateTaskDuration();
         if (taskDuration == null) {
             return null;
@@ -195,6 +210,7 @@ public class ProductionTask {
      * @return 任务持续时长
      */
     public Duration calculateTaskDuration() {
+        if (resource == null) { return null; }
         return TaskDurationUtils.calculateTaskDuration(resource.getId(), process, quantity);
     }
 

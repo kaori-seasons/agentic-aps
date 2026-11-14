@@ -15,6 +15,18 @@ import javax.validation.constraints.NotNull;
 @Accessors(chain = true)
 @ApiModel("排产策略——基本配置")
 public class StrategyConfigDTO {
+    @ApiModelProperty("求解引擎，历史策略默认使用 OptaPlanner")
+    private cn.windwheel.aps.entity.enums.SolverEngineEnum solverEngine = cn.windwheel.aps.entity.enums.SolverEngineEnum.OPTAPLANNER;
+
+    @javax.validation.constraints.Min(1)
+    @javax.validation.constraints.Max(3600)
+    @ApiModelProperty("求解时间上限，秒")
+    private Long solveTimeSeconds = 120L;
+
+    @javax.validation.constraints.Min(1)
+    @ApiModelProperty("固定评分计算次数预算，回放时替代墙钟时间终止")
+    private Long scoreCalculationCountLimit;
+
     @ApiModelProperty(value = "排产方向", required = true)
     @NotNull(message = "排产方向不能为空")
     private PlanningDirectionEnum direction;
