@@ -28,7 +28,7 @@ public class InventoryUtils {
      * @param order                    订单
      * @param material                 物料
      * @param quantity                 物料需求数量
-     * @param incomingMaterialOrderMap 来料订单
+     * @param incomingMaterialOrderMap 按物料id分组的来料订单
      * @return 缺料数量
      */
     public static BigDecimal deductInventory(ProductionOrder order, Material material, BigDecimal quantity,
@@ -64,7 +64,7 @@ public class InventoryUtils {
      * @param requiredQuantity         需要的库存数量
      * @param order                    订单
      * @param material                 物料
-     * @param incomingMaterialOrderMap 在途库存
+     * @param incomingMaterialOrderMap 按物料id分组的在途库存
      * @return 缺料数量
      */
     private static BigDecimal deductInTransitInventory(BigDecimal requiredQuantity, ProductionOrder order, Material material,
@@ -75,7 +75,7 @@ public class InventoryUtils {
             return lackQuantity;
         }
         // 扣减库存
-        List<IncomingMaterialOrder> incomingMaterialOrders = incomingMaterialOrderMap.get(material.getCode());
+        List<IncomingMaterialOrder> incomingMaterialOrders = incomingMaterialOrderMap.get(material.getId());
         if (ObjectNull.isNull(incomingMaterialOrders)) {
             return lackQuantity;
         }
@@ -92,12 +92,12 @@ public class InventoryUtils {
             if (incomingMaterialOrder.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
-            // 跳过订单交期时间比在途库存预计入库时间晚的
-            LocalDateTime deliverTime = incomingMaterialOrder.getDeliveryTime();
+            // 到货加缓冲后的可用时间不得晚于订单交期；恰好在交期可用的来料仍可分配。
+            LocalDateTime availableAt = incomingMaterialOrder.getDeliveryTime();
             if (ObjectNull.isNotNull(material.getBufferTimeDuration())) {
-                deliverTime = deliverTime.plus(material.getBufferTimeDuration());
+                availableAt = availableAt.plus(material.getBufferTimeDuration());
             }
-            if (order.getDeliveryTime().isAfter(deliverTime)) {
+            if (availableAt.isAfter(order.getDeliveryTime())) {
                 continue;
             }
             // 计算库存
