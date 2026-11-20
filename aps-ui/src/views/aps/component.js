@@ -1,6 +1,7 @@
 import { defineAsyncComponent } from 'vue'
 
 export default {
+  demandPlanning: defineAsyncComponent(() => import('@/views/aps/demandPlanning/index.vue')),
   matter: defineAsyncComponent(() => import('@/views/aps/dataBase/matter/index.vue')),
   resource: defineAsyncComponent(() => import('@/views/aps/dataBase/resource/index.vue')),
   productionOrder: defineAsyncComponent(() => import('@/views/aps/dataBase/productionOrder/index.vue')),

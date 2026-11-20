@@ -175,7 +175,8 @@ public class ApsAuthService {
 
         groups.add(buildMenuGroup("生产计划", "jvs-aps-icon-shengchanjihua", "programOfProduction", List.of(
                 buildMenuItem("/jvs-aps-ui/productionSchedulingStrategy", "排产策略", "aps:strategy:view", "productionSchedulingStrategy"),
-                buildMenuItem("/jvs-aps-ui/productionSchedulingPlan", "排产计划", "aps:schedule:view", "productionSchedulingPlan")
+                buildMenuItem("/jvs-aps-ui/productionSchedulingPlan", "排产计划", "aps:schedule:view", "productionSchedulingPlan"),
+                buildMenuItem("/jvs-aps-ui/demandPlanning", "需求预测与补货", "aps:demand:view", "demandPlanning")
         ), permissions));
 
         groups.add(buildMenuGroup("系统治理", "jvs-aps-icon-jichushuju", "systemGovernance", List.of(
@@ -387,8 +388,12 @@ public class ApsAuthService {
 
     private static Map<String, Set<String>> buildRolePermissionMap() {
         Map<String, Set<String>> rolePermissionMap = new LinkedHashMap<>();
+        rolePermissionMap.put("APS_DEMAND_CONNECTOR", Set.of("aps:demand:view","aps:demand:import","aps:demand:receipt","aps:demand:run"));
+        rolePermissionMap.put("APS_PURCHASER", Set.of("aps:demand:view","aps:demand:approve"));
+        rolePermissionMap.put("APS_DEMAND_PLANNER", Set.of("aps:demand:view","aps:demand:run","aps:demand:edit"));
         rolePermissionMap.put("APS_ADMIN", Set.of("*"));
         rolePermissionMap.put("APS_PLAN_MANAGER", Set.of(
+                "aps:demand:view", "aps:demand:import", "aps:demand:run", "aps:demand:edit", "aps:demand:override", "aps:demand:approve",
                 "aps:material:view", "aps:material:edit",
                 "aps:resource:view", "aps:resource:edit",
                 "aps:production-order:view", "aps:production-order:edit",
@@ -408,6 +413,7 @@ public class ApsAuthService {
                 "aps:audit:view"
         ));
         rolePermissionMap.put("APS_SCHEDULER", Set.of(
+                "aps:demand:view",
                 "aps:material:view",
                 "aps:resource:view",
                 "aps:production-order:view",
@@ -426,6 +432,7 @@ public class ApsAuthService {
                 "aps:report-field:view"
         ));
         rolePermissionMap.put("APS_DISPATCHER", Set.of(
+                "aps:demand:view",
                 "aps:material:view",
                 "aps:resource:view",
                 "aps:production-order:view",

@@ -220,6 +220,7 @@ const lang_zh_CN = {
     productionCalendar: '生产日历',
     programOfProduction: '生产计划',
     productionSchedulingStrategy: '排产策略',
+    demandPlanning: '需求预测与补货',
     productionSchedulingPlan: '排产计划',
     systemGovernance: '系统治理',
     operationAudit: '操作审计',
