@@ -1,0 +1,450 @@
+{
+  "date": "2026-11-20",
+  "branch": "codex/需求预测和智能补货",
+  "gitBase": "315ef6d307bcfb72595125dbcbef37f380cfc911",
+  "workingTree": true,
+  "backendSha256": "c240ac738cad9847ec4eecfaf2b61cadd6da06c51aa4981f6365284460a0a58c",
+  "frontendFinalIndexSha256": "820e4f37cf49c0ca8bec931f7a0bc30e6a1bfadd6f6725ff5d697980d95767f3",
+  "runs": {
+    "check1": {
+      "id": "59279211-aa2a-426e-8c9a-6958530d0231",
+      "revision": 1,
+      "result": {
+        "forecasts": [
+          {
+            "week": "2026-11-16",
+            "baseline": 25.0,
+            "total": 25.0,
+            "consumed": 25.0,
+            "net": 0.0
+          }
+        ],
+        "consumption": [
+          {
+            "line": "SO-1190",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 6
+          },
+          {
+            "line": "SO-1191",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 12
+          },
+          {
+            "line": "SO-1192",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 7.0
+          }
+        ],
+        "projection": [
+          {
+            "at": "2026-11-20T11:00:00Z",
+            "flows": [],
+            "confirmed": 14,
+            "scenario": 14
+          },
+          {
+            "at": "2026-11-20T14:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1190",
+                "change": -6
+              }
+            ],
+            "confirmed": 8,
+            "scenario": 8
+          },
+          {
+            "at": "2026-11-20T15:00:00Z",
+            "flows": [
+              {
+                "kind": "SUPPLY",
+                "line": "PO-4301",
+                "change": 6
+              }
+            ],
+            "confirmed": 14,
+            "scenario": 14
+          },
+          {
+            "at": "2026-11-20T16:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1191",
+                "change": -12
+              }
+            ],
+            "confirmed": 2,
+            "scenario": 2
+          },
+          {
+            "at": "2026-11-20T17:00:00Z",
+            "flows": [],
+            "confirmed": 2,
+            "scenario": 14
+          },
+          {
+            "at": "2026-11-20T18:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1192",
+                "change": -7
+              }
+            ],
+            "confirmed": -5,
+            "scenario": 7
+          }
+        ],
+        "proposals": [
+          {
+            "releaseAt": "2026-11-20T13:00:00Z",
+            "availableAt": "2026-11-20T17:00:00Z",
+            "shortageAt": "2026-11-20T17:00:00Z",
+            "net": 8,
+            "quantity": 12
+          }
+        ],
+        "exceptions": [
+          {
+            "reason": "BELOW_SAFETY",
+            "reference": "液压泵 HP-25",
+            "at": "2026-11-20T16:00:00Z",
+            "quantity": 1
+          }
+        ]
+      }
+    },
+    "check2": {
+      "id": "a8778b76-8181-4118-b3d2-111487b81fc2",
+      "revision": 2,
+      "result": {
+        "forecasts": [
+          {
+            "week": "2026-11-16",
+            "baseline": 25.0,
+            "total": 25.0,
+            "consumed": 25.0,
+            "net": 0.0
+          }
+        ],
+        "consumption": [
+          {
+            "line": "SO-1190",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 6
+          },
+          {
+            "line": "SO-1191",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 12
+          },
+          {
+            "line": "SO-1192",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 7.0
+          }
+        ],
+        "projection": [
+          {
+            "at": "2026-11-20T11:00:00Z",
+            "flows": [],
+            "confirmed": 14,
+            "scenario": 14
+          },
+          {
+            "at": "2026-11-20T14:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1190",
+                "change": -6
+              }
+            ],
+            "confirmed": 8,
+            "scenario": 8
+          },
+          {
+            "at": "2026-11-20T16:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1191",
+                "change": -12
+              }
+            ],
+            "confirmed": -4,
+            "scenario": -4
+          },
+          {
+            "at": "2026-11-20T17:00:00Z",
+            "flows": [],
+            "confirmed": -4,
+            "scenario": 12
+          },
+          {
+            "at": "2026-11-20T18:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1192",
+                "change": -7
+              }
+            ],
+            "confirmed": -11,
+            "scenario": 5
+          },
+          {
+            "at": "2026-11-20T19:00:00Z",
+            "flows": [
+              {
+                "kind": "SUPPLY",
+                "line": "PO-4301",
+                "change": 6
+              }
+            ],
+            "confirmed": -5,
+            "scenario": 11
+          }
+        ],
+        "proposals": [
+          {
+            "releaseAt": "2026-11-20T13:00:00Z",
+            "availableAt": "2026-11-20T17:00:00Z",
+            "shortageAt": "2026-11-20T17:00:00Z",
+            "net": 14,
+            "quantity": 16
+          }
+        ],
+        "exceptions": [
+          {
+            "reason": "SHORTAGE",
+            "reference": "液压泵 HP-25",
+            "at": "2026-11-20T16:00:00Z",
+            "quantity": 7
+          }
+        ]
+      }
+    },
+    "received": {
+      "id": "c6d8461b-525c-47da-bc44-f9b3ad7cb621",
+      "revision": 3,
+      "result": {
+        "forecasts": [
+          {
+            "week": "2026-11-16",
+            "baseline": 25.0,
+            "total": 25.0,
+            "consumed": 25.0,
+            "net": 0.0
+          }
+        ],
+        "consumption": [
+          {
+            "line": "SO-1190",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 6
+          },
+          {
+            "line": "SO-1191",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 12
+          },
+          {
+            "line": "SO-1192",
+            "revision": 1,
+            "originalWeek": "2026-11-16",
+            "week": "2026-11-16",
+            "quantity": 7.0
+          }
+        ],
+        "projection": [
+          {
+            "at": "2026-11-20T11:00:00Z",
+            "flows": [],
+            "confirmed": 18,
+            "scenario": 18
+          },
+          {
+            "at": "2026-11-20T14:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1190",
+                "change": -6
+              }
+            ],
+            "confirmed": 12,
+            "scenario": 12
+          },
+          {
+            "at": "2026-11-20T16:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1191",
+                "change": -12
+              }
+            ],
+            "confirmed": 0,
+            "scenario": 0
+          },
+          {
+            "at": "2026-11-20T17:00:00Z",
+            "flows": [
+              {
+                "kind": "SUPPLY",
+                "line": "PO-QA-4316",
+                "change": 12
+              }
+            ],
+            "confirmed": 12,
+            "scenario": 12
+          },
+          {
+            "at": "2026-11-20T18:00:00Z",
+            "flows": [
+              {
+                "kind": "SALE",
+                "line": "SO-1192",
+                "change": -7
+              }
+            ],
+            "confirmed": 5,
+            "scenario": 5
+          },
+          {
+            "at": "2026-11-20T19:00:00Z",
+            "flows": [
+              {
+                "kind": "SUPPLY",
+                "line": "PO-4301",
+                "change": 6
+              }
+            ],
+            "confirmed": 11,
+            "scenario": 11
+          }
+        ],
+        "proposals": [],
+        "exceptions": [
+          {
+            "reason": "BELOW_SAFETY",
+            "reference": "液压泵 HP-25",
+            "at": "2026-11-20T16:00:00Z",
+            "quantity": 3
+          }
+        ]
+      }
+    }
+  },
+  "approvedPurchase": {
+    "id": "5b5db882-6f93-49b2-95a3-6d5e1548ff44",
+    "location_id": "总装一库",
+    "material_id": "液压泵 HP-25",
+    "unit": "件",
+    "supplier": "液压件供应商 A",
+    "quantity": 16.0,
+    "release_at": "2026-11-20T13:00:00Z",
+    "available_at": "2026-11-20T17:00:00Z",
+    "run_id": "a8778b76-8181-4118-b3d2-111487b81fc2",
+    "external_line": null,
+    "state": "READY"
+  },
+  "databaseCheck": {
+    "version": "8.4.13",
+    "tenant": "screen",
+    "count": 1,
+    "total": 16,
+    "state": "RECONCILED",
+    "externalLine": "PO-QA-4316"
+  },
+  "workerRecovery": {
+    "state": "DONE",
+    "attempts": 2,
+    "hasPublishedRun": true
+  },
+  "screenshots": {
+    "01-forecast.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "148e69f18c7c7390c42efa8fddaf06df1606c728cb1d58cdc7766895355b2f7d"
+    },
+    "02-consumption.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "cd1ff327059190f6990ce3c2be0ec1748601c4d5b1aa7088a03889ea3a0ff7e1"
+    },
+    "03-on-time.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "73b66ea5b55e123261595c88563d5568226660aa2b2fdea8447ea359c0d8d21d"
+    },
+    "04-delayed.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "9c88753acd98f41d12d4cc7a2052a40256f5d5f649d540a8d2bf438afa065556"
+    },
+    "05-projection.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "9027199851cbec54d8f0be9b9524544225021b955a7f174bcc4d9064b753f436"
+    },
+    "06-buyer-approval.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "add0eb28efe38b1d497855b98180f1882cbf2d1d57eaf2449436aaf7f29b2b3a"
+    },
+    "07-ready.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "8715b12f429827a55f0066d897ff6f37413c1f05a49e519c3a26dbbe5ed3ce6e"
+    },
+    "08-reconciled.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "bdc0620089b1504208945358fa5b114812d89ca49eb20e5bb73663ee7ad9f947"
+    },
+    "09-final-balance.png": {
+      "pixels": [
+        1145,
+        759
+      ],
+      "sha256": "df331a99aa7cc7b8fe025f3be12ee46521a4f51e45c604bee9b56920b614b272"
+    }
+  }
+}

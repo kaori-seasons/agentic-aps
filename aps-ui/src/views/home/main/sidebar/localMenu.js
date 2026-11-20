@@ -108,6 +108,12 @@ export const localMenuData =  {
       langKey: 'programOfProduction',
       children: [
         {
+          extend: { newWindow: false, icon: "", url: "/jvs-aps-ui/demandPlanning", name: "需求预测与补货" },
+          name: "需求预测与补货",
+          permisionFlag: "aps:demand:view",
+          langKey: 'demandPlanning'
+        },
+        {
           extend: {
             newWindow: false,
             icon: "",

@@ -1,4 +1,10 @@
 export default [
+    {
+        path: "/demandPlanning",
+        name: "需求预测与补货",
+        component: () => import("./demandPlanning/index.vue"),
+        meta: { keepAlive: false, isTab: false, isAuth: true, permission: "aps:demand:view" }
+    },
 	{
 		path: "/matter",
 		name: "物料",

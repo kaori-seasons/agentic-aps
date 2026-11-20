@@ -220,6 +220,7 @@ const lang_en = {
     productionCalendar: 'Production calendar',
     programOfProduction: 'program of production',
     productionSchedulingStrategy: 'Production scheduling strategy',
+    demandPlanning: 'Demand and replenishment',
     productionSchedulingPlan: 'Production scheduling plan',
     systemGovernance: 'System governance',
     operationAudit: 'Operation audit',

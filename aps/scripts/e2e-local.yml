@@ -15,6 +15,12 @@ aps:
         display-name: 管理员
         password: admin123
         role-codes: [APS_ADMIN]
+      - tenant-id: demo
+        user-id: planner
+        username: planner
+        display-name: 需求计划测试账号
+        password: local-planning-test
+        role-codes: [APS_DEMAND_PLANNER]
       - tenant-id: other
         user-id: other-admin
         username: other-admin

@@ -21,8 +21,12 @@ public class PermissionServiceImpl implements PermissionService {
 
     static {
         Map<String, Set<String>> rolePermissionMap = new HashMap<>();
+        rolePermissionMap.put("APS_DEMAND_CONNECTOR", Set.of("aps:demand:view","aps:demand:import","aps:demand:receipt","aps:demand:run"));
+        rolePermissionMap.put("APS_PURCHASER", Set.of("aps:demand:view","aps:demand:approve"));
+        rolePermissionMap.put("APS_DEMAND_PLANNER", Set.of("aps:demand:view","aps:demand:run","aps:demand:edit"));
         rolePermissionMap.put(ROLE_APS_ADMIN, Set.of("*"));
         rolePermissionMap.put(ROLE_APS_PLAN_MANAGER, Set.of(
+                "aps:demand:view", "aps:demand:import", "aps:demand:run", "aps:demand:edit", "aps:demand:override", "aps:demand:approve",
                 "aps:material:view", "aps:material:edit",
                 "aps:production-order:view", "aps:production-order:edit",
                 "aps:incoming-material-order:view", "aps:incoming-material-order:edit",
@@ -42,6 +46,7 @@ public class PermissionServiceImpl implements PermissionService {
                 "aps:audit:view"
         ));
         rolePermissionMap.put(ROLE_APS_SCHEDULER, Set.of(
+                "aps:demand:view",
                 "aps:material:view",
                 "aps:production-order:view",
                 "aps:incoming-material-order:view",
@@ -60,6 +65,7 @@ public class PermissionServiceImpl implements PermissionService {
                 "aps:report-field:view"
         ));
         rolePermissionMap.put(ROLE_APS_DISPATCHER, Set.of(
+                "aps:demand:view",
                 "aps:material:view",
                 "aps:production-order:view",
                 "aps:incoming-material-order:view",
