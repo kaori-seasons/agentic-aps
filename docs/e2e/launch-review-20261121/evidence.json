@@ -1,0 +1,51 @@
+{
+  "reviewId": "d7ff1d2d-9e5c-4021-a5dd-840ed5693e7c",
+  "material": "LAUNCH-1c524055",
+  "week": "2026-11-23",
+  "reference": 140,
+  "secondRoundMedian": 150,
+  "purchaseQuantity": 3000,
+  "checks": [
+    "tenant isolation",
+    "membership",
+    "sealed rounds",
+    "concurrent submissions",
+    "duplicate vote",
+    "round revision",
+    "anonymous rationale",
+    "maker checker",
+    "idempotent draft",
+    "stale version",
+    "forecast-to-replenishment",
+    "demand week outside horizon rejected"
+  ],
+  "browserReviewId": "a8e38f2a-fa7e-4d71-a62c-649729285bf9",
+  "browserMaterial": "LAUNCH-de37f159",
+  "backendSha256": "69eab04de185cb4c67a78537eb2e969a9fb80bcfb956a151a71b4428aeacba02",
+  "frontendIndexSha256": "a0786ef1afe7bc532483566e5bef6fe801aecf5a4e8b7f8a104d120f9a3dc42a",
+  "backendTests": {
+    "tests": 71,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "browserDraftId": "44d5c56c-71ac-438d-ab53-a9ed3644a4ae",
+  "browserChecks": [
+    "organizer form creation",
+    "expert form submission",
+    "close round",
+    "anonymous rationale expansion",
+    "create adjustment application",
+    "supervisor approval via HTTP",
+    "recalculate in browser",
+    "effective weekly forecast 150",
+    "net shortage 150 and purchase proposal 3000",
+    "same review preserved after parent refresh"
+  ],
+  "screenshots": {
+    "01-sealed-round.png": "8fdc117e6973cbe809678184e05331ca6c209d8d8f5651b160cd402597360d98",
+    "04-replenishment.png": "a3fb69990b04667ef5d74cae63ce9175cf20d7569b2b8294d821f26c40ca80bf",
+    "03-effective-forecast.png": "012a9382aeac69641c006aaacbde02c80acc32f166f606ea82e882d6a9b88878",
+    "02-anonymous-review.png": "c15a8526ee4bd7fac546590cb8d2965ccc8ade4d83ff7b7c905a2bfedf18dce2"
+  }
+}
