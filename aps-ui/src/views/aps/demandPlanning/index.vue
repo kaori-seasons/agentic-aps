@@ -17,6 +17,7 @@
       <el-button v-permission="'aps:demand:run'" type="primary" :disabled="!scope" @click="calculate">计算预测与补货</el-button>
       <span v-if="scope">快照版本 {{ scope.revision }}</span>
     </div>
+    <LaunchReview v-if="scope" :scope="scope" @changed="loadReview"/>
     <el-empty v-if="!plan" description="选择已对账的物料地点并计算计划"/>
     <template v-else>
       <p>预测方法 {{ methods[plan.result.method] || plan.result.method }} · 安全库存 {{ plan.result.policy?.safety }} · 输入版本 {{ plan.revision }}</p>
@@ -115,6 +116,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import request from '@/api/request'
+import LaunchReview from './LaunchReview.vue'
 const series=ref([]), selected=ref(null), offset=ref(0), plan=ref(null), busy=ref(false), error=ref('')
 const scope=computed(()=>series.value[selected.value]), tab=ref('forecast'), editing=ref(false)
 const detailPage=ref(1)

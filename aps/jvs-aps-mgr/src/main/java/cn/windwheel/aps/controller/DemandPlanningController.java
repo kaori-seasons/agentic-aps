@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 @RequiredArgsConstructor
 @RequirePermission("aps:demand:view")
 public class DemandPlanningController {
+    private final cn.windwheel.aps.demand.LaunchReviewStore launchReviews;
     private final PlanningStore store;
     private final PlanningJobs jobs;
     private final ApsInventoryEvidence inventory;
@@ -51,6 +52,52 @@ public class DemandPlanningController {
     public void authenticated(HttpServletRequest request) {
         if (!"session".equals(request.getAttribute(AuthSessionKeys.REQUEST_AUTH_CONTEXT_SOURCE)))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "需要已认证的登录会话");
+    }
+
+    @PostMapping("/launch-reviews")
+    @RequirePermission("aps:demand:edit")
+    public R<?> createLaunch(@RequestBody cn.windwheel.aps.demand.LaunchReview.Request request) {
+        return R.ok(launchReviews.create(request));
+    }
+
+    @GetMapping("/launch-reviews")
+    public R<?> launchList(
+            @RequestParam String location,
+            @RequestParam String material,
+            @RequestParam(defaultValue = "0") int offset) {
+        return R.ok(launchReviews.list(location, material, offset));
+    }
+
+    @GetMapping("/launch-reviews/{id}")
+    public R<?> launch(@PathVariable String id) {
+        return R.ok(launchReviews.get(id));
+    }
+
+    @PostMapping("/launch-reviews/{id}/rounds/{round}/votes")
+    @RequirePermission("aps:demand:edit")
+    public R<?> launchVote(
+            @PathVariable String id,
+            @PathVariable int round,
+            @RequestBody cn.windwheel.aps.demand.LaunchReview.Vote vote) {
+        launchReviews.vote(id, round, vote);
+        return R.ok();
+    }
+
+    @PostMapping("/launch-reviews/{id}/{action}")
+    @RequirePermission("aps:demand:edit")
+    public R<?> launchAction(
+            @PathVariable String id,
+            @PathVariable String action,
+            @RequestBody cn.windwheel.aps.demand.LaunchReviewStore.Command command) {
+        switch (action) {
+            case "close" -> launchReviews.close(id, command);
+            case "next" -> launchReviews.next(id, command);
+            case "draft" -> {
+                return R.ok(launchReviews.draft(id, command));
+            }
+            default -> throw new PlanningStore.Missing();
+        }
+        return R.ok();
     }
 
     @GetMapping("/series")
