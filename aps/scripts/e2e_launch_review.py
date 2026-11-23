@@ -85,11 +85,47 @@ def main():
     ok(admin.call(prefix+'/snapshots',source))
     assert experts[0].call(prefix+'/launch-reviews/'+stale+'/rounds/1/votes',
                           dict(low=0,expected=100,high=200,reason='旧版本',informationNeeded='无'))['code']==409
-    # MOQ edits do not change demand estimates or evidence.
+
+    # Lifecycle is forecast-only, stockout evidence corrects only closed history, and commercial
+    # terms choose a larger price-break quantity only when its total cost is lower.
+    signal_sku='SIGNAL-'+uuid.uuid4().hex[:8]
+    signal_monday=(now.date()-timedelta(days=now.weekday())).isoformat()
+    history_week=(now.date()-timedelta(days=now.weekday(),weeks=1)).isoformat()
+    signal_source=dict(location='pilot', material=signal_sku, revision=1, asOf=now.isoformat(), zone='UTC', unit='ea',
+        historyStart=(now.date()-timedelta(days=now.weekday(),weeks=4)).isoformat(), weeks=1, opening=0,
+        sales=[dict(line='stockout-week', revision=1, knownAt=(now-timedelta(minutes=2)).isoformat(),
+                    due=history_week+'T00:00:00+00:00', ordered=50, shipped=50)],
+        supplies=[], requirements=[],
+        policy=dict(supplier='supplier-b', purchased=True, safety=0, minimum=0, multiple=1,
+                    nettingWeeks=0, protectionWeeks=1),
+        windows=[dict(releaseAt=now.isoformat(),availableAt=(now+timedelta(hours=1)).isoformat())],
+        signals=dict(
+            lifecycle=dict(launchWeek=signal_monday, anchorAgeWeek=0, anchorWeeklyDemand=100,
+                           replaceStatisticalBaseline=True,
+                           points=[dict(ageWeek=0,index=1),dict(ageWeek=1,index=2)]),
+            availability=[dict(week=history_week,observedDemand=50,inStockFraction=.5,comparableDemand=80)],
+            costs=dict(pricingMode='ALL_UNITS',
+                       tiers=[dict(fromQuantity=1,unitPrice=12),dict(fromQuantity=100,unitPrice=8)],
+                       freightFixedCost=20,processingFixedCost=0,processingUnitCost=0,
+                       holdingCostPerUnitWeek=0,excessHoldingWeeks=0)))
+    signal_head=ok(admin.call(prefix+'/snapshots',signal_source))
+    signal_run=ok(admin.call(prefix+'/planning-runs',dict(location='pilot',material=signal_sku,
+                                                          **signal_head,requestKey='lifecycle-cost')))
+    signal_result=signal_run['result']
+    assert signal_result['method']=='LIFECYCLE_MEAN4'
+    assert [row['baseline'] for row in signal_result['forecasts']]==[100]
+    assert signal_result['lostSales'][0]['estimatedLostDemand']==30
+    assert signal_result['lostSales'][0]['correctedDemand']==80
+    assert signal_result['proposals'][0]['quantity']==100
+    assert signal_result['proposals'][0]['cost']['totalCost']==820
+    assert signal_result['proposals'][0]['cost']['tierStart']==100
+
     evidence=dict(reviewId=rid,material=sku,week=week,reference=140,secondRoundMedian=150,
-                  purchaseQuantity=3000,checks=['tenant isolation','membership','sealed rounds','concurrent submissions',
+                  purchaseQuantity=3000,signalMaterial=signal_sku,signalForecast=[100],
+                  signalLostDemand=30,signalCost=820,checks=['tenant isolation','membership','sealed rounds','concurrent submissions',
                   'duplicate vote','round revision','anonymous rationale','maker checker','idempotent draft','stale version',
-                  'forecast-to-replenishment'])
+                  'forecast-to-replenishment','lifecycle curve','stockout lost-demand correction',
+                  'all-units tiered total-cost optimization'])
     if args.output:
         with open(args.output,'w') as f:json.dump(evidence,f,ensure_ascii=False,indent=2)
     print(json.dumps(evidence,ensure_ascii=False))

@@ -52,6 +52,11 @@
             <el-table-column prop="releaseAt" label="下单时刻 (UTC)" min-width="185"/>
             <el-table-column prop="availableAt" label="可用时刻 (UTC)" min-width="185"/>
             <el-table-column prop="net" label="净缺口"/><el-table-column prop="quantity" label="采购量"/>
+            <el-table-column label="总成本"><template #default="{row}">{{ row.cost?.totalCost ?? '沿用单位价' }}</template></el-table-column>
+            <el-table-column label="成本明细"><template #default="{row}">
+              <span v-if="row.cost">{{ row.cost.pricingMode }} · 阶梯起量 {{ row.cost.tierStart }} · 采购 {{ row.cost.purchaseCost }} · 运费 {{ row.cost.freightCost }} · 加工 {{ row.cost.processingCost }} · 持有 {{ row.cost.holdingCost }}</span>
+              <span v-else>未配置商业成本</span>
+            </template></el-table-column>
             <el-table-column label="审批"><template #default="{$index}">
               <el-button v-permission="'aps:demand:approve'" link :disabled="$index!==0" @click="beginApproval($index)">批准采购</el-button>
             </template></el-table-column>
@@ -66,6 +71,15 @@
             <el-table-column prop="method" label="候选模型"/><el-table-column prop="folds" label="滚动截点"/>
             <el-table-column prop="wape" label="WAPE (比值)"/><el-table-column prop="biasUnits" label="累计偏差"/>
           </el-table>
+        </el-tab-pane>
+        <el-tab-pane label="需求信号" name="signals">
+          <p>生命周期曲线和历史缺货修正仅在导入快照中配置，页面保留每周修正结果供审核。</p>
+          <el-table :data="visible(plan.result.lostSales || [])" max-height="400">
+            <el-table-column prop="week" label="历史周"/><el-table-column prop="observedDemand" label="实际销量"/>
+            <el-table-column prop="inStockFraction" label="可售比例"/><el-table-column prop="estimatedLostDemand" label="估计损失需求"/>
+            <el-table-column prop="correctedDemand" label="校正需求"/><el-table-column prop="method" label="修正方法"/>
+          </el-table>
+          <el-empty v-if="!(plan.result.lostSales || []).length" description="当前快照未配置缺货可售率观察"/>
         </el-tab-pane>
       </el-tabs>
       <el-pagination v-if="detailCount>100" v-model:current-page="detailPage" :page-size="100"
@@ -121,12 +135,12 @@ const series=ref([]), selected=ref(null), offset=ref(0), plan=ref(null), busy=re
 const scope=computed(()=>series.value[selected.value]), tab=ref('forecast'), editing=ref(false)
 const detailPage=ref(1)
 const detailCount=computed(()=>{
-  const field={orders:'consumption',stock:'projection',issues:'exceptions'}[tab.value]
+  const field={orders:'consumption',stock:'projection',issues:'exceptions',signals:'lostSales'}[tab.value]
   return field ? plan.value?.result?.[field]?.length || 0 : 0
 })
 watch([tab,plan],()=>{detailPage.value=1})
 function visible(rows){return rows.slice((detailPage.value-1)*100,detailPage.value*100)}
-const methods={LAST:'最近一期',MEAN4:'四周移动平均',LEVEL:'指数平滑',DAMPED:'阻尼趋势',SBA:'间歇需求 SBA',YEAR:'同期朴素法',SEASONAL_LEVEL:'双年度同期加权'}
+const methods={LAST:'最近一期',MEAN4:'四周移动平均',LEVEL:'指数平滑',DAMPED:'阻尼趋势',SBA:'间歇需求 SBA',YEAR:'同期朴素法',SEASONAL_LEVEL:'双年度同期加权',LIFECYCLE_MEAN4:'生命周期曲线＋四周移动平均',LIFECYCLE_LAST:'生命周期曲线＋最近一期',LIFECYCLE_LEVEL:'生命周期曲线＋指数平滑',LIFECYCLE_DAMPED:'生命周期曲线＋阻尼趋势',LIFECYCLE_SBA:'生命周期曲线＋间歇需求',LIFECYCLE_YEAR:'生命周期曲线＋同期朴素法',LIFECYCLE_SEASONAL_LEVEL:'生命周期曲线＋双年度同期加权'}
 const findings={STORAGE_CAPACITY:'库容不足',PURCHASE_BUDGET:'采购预算不足',ORDER_LIMIT:'超过采购上限',STALE_ETA:'在途交期已过，需核实',INACTIVE_REVIEW:'长期无需求，待复核',SHORTAGE:'确定短缺',BELOW_SAFETY:'低于安全库存',PURCHASE_PENDING_RECONCILIATION:'已有采购待对账'}
 const buying=ref(false), purchase=reactive({runId:'',index:0,quantity:'',reason:''})
 function beginApproval(index) {

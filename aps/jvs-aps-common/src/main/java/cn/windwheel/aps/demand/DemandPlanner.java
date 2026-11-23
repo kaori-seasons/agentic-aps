@@ -38,7 +38,34 @@ public final class DemandPlanner {
             Instant availableAt,
             Instant shortageAt,
             BigDecimal net,
-            BigDecimal quantity) {}
+            BigDecimal quantity,
+            CostBreakdown cost) {
+        public Proposal(
+                Instant releaseAt,
+                Instant availableAt,
+                Instant shortageAt,
+                BigDecimal net,
+                BigDecimal quantity) {
+            this(releaseAt, availableAt, shortageAt, net, quantity, null);
+        }
+    }
+
+    public record CostBreakdown(
+            String pricingMode,
+            BigDecimal tierStart,
+            BigDecimal purchaseCost,
+            BigDecimal freightCost,
+            BigDecimal processingCost,
+            BigDecimal holdingCost,
+            BigDecimal totalCost) {}
+
+    public record LostSales(
+            LocalDate week,
+            BigDecimal observedDemand,
+            BigDecimal inStockFraction,
+            BigDecimal estimatedLostDemand,
+            BigDecimal correctedDemand,
+            String method) {}
 
     public record Finding(String reason, String reference, Instant at, BigDecimal quantity) {}
 
@@ -77,6 +104,7 @@ public final class DemandPlanner {
             String method,
             Evaluation holdout,
             List<ModelScore> backtest,
+            List<LostSales> lostSales,
             List<Bucket> forecasts,
             List<Allocation> consumption,
             List<Point> projection,
@@ -109,6 +137,100 @@ public final class DemandPlanner {
         return Arrays.stream(totals).boxed().toList();
     }
 
+    private record CorrectedHistory(List<Double> values, List<LostSales> findings) {}
+
+    private static CorrectedHistory correctedHistory(
+            PlanningInput s, LocalDate until, Instant cutoff, ZoneId zone) {
+        List<Double> raw = history(s, until, cutoff, zone);
+        var values = new ArrayList<>(raw);
+        var findings = new ArrayList<LostSales>();
+        var signals = s.signals();
+        if (signals == null || signals.availability() == null) {
+            return new CorrectedHistory(values, findings);
+        }
+        for (AvailabilityObservation observation : signals.availability()) {
+            int index = Math.toIntExact(ChronoUnit.WEEKS.between(s.historyStart(), observation.week()));
+            if (index < 0 || index >= values.size()) continue;
+            BigDecimal observed = BigDecimal.valueOf(values.get(index));
+            PlanningChecks.require(
+                    observed.compareTo(observation.observedDemand()) == 0,
+                    "缺货观察销量须与同周已对账销量一致：" + observation.week());
+            if (observation.inStockFraction().compareTo(BigDecimal.ONE) == 0) {
+                findings.add(
+                        new LostSales(
+                                observation.week(),
+                                observed,
+                                observation.inStockFraction(),
+                                ZERO,
+                                observed,
+                                "FULL_AVAILABILITY"));
+                continue;
+            }
+            if (observation.inStockFraction().compareTo(new BigDecimal(".20")) < 0) {
+                findings.add(
+                        new LostSales(
+                                observation.week(),
+                                observed,
+                                observation.inStockFraction(),
+                                ZERO,
+                                observed,
+                                "LOW_AVAILABILITY_REVIEW"));
+                continue;
+            }
+            BigDecimal uncensored =
+                    observed.divide(observation.inStockFraction(), 6, RoundingMode.HALF_UP);
+            if (observation.comparableDemand() != null) {
+                uncensored = uncensored.min(observation.comparableDemand());
+            }
+            BigDecimal lost = uncensored.subtract(observed).max(ZERO);
+            values.set(index, uncensored.doubleValue());
+            findings.add(
+                    new LostSales(
+                            observation.week(),
+                            observed,
+                            observation.inStockFraction(),
+                            lost,
+                            uncensored,
+                            observation.comparableDemand() == null
+                                    ? "AVAILABILITY_UPLIFT"
+                                    : "COMPARABLE_CAPPED_UPLIFT"));
+        }
+        return new CorrectedHistory(values, findings);
+    }
+
+    private static BigDecimal lifecycleForecast(
+            LifecycleCurve curve, LocalDate forecastWeek, BigDecimal statisticalForecast) {
+        int age = Math.toIntExact(ChronoUnit.WEEKS.between(curve.launchWeek(), forecastWeek));
+        if (age < 0) return ZERO;
+        BigDecimal anchorIndex = lifecycleIndex(curve.points(), curve.anchorAgeWeek());
+        BigDecimal index = lifecycleIndex(curve.points(), age);
+        if (curve.replaceStatisticalBaseline()) {
+            return curve.anchorWeeklyDemand()
+                    .multiply(index)
+                    .divide(anchorIndex, 6, RoundingMode.HALF_UP);
+        }
+        return statisticalForecast.multiply(index).divide(anchorIndex, 6, RoundingMode.HALF_UP);
+    }
+
+    private static BigDecimal lifecycleIndex(List<LifecyclePoint> points, int age) {
+        LifecyclePoint left = points.get(0);
+        if (age <= left.ageWeek()) return left.index();
+        for (int i = 1; i < points.size(); i++) {
+            LifecyclePoint right = points.get(i);
+            if (age <= right.ageWeek()) {
+                BigDecimal distance = BigDecimal.valueOf(right.ageWeek() - left.ageWeek());
+                BigDecimal progress =
+                        BigDecimal.valueOf(age - left.ageWeek())
+                                .divide(distance, 12, RoundingMode.HALF_UP);
+                return left.index()
+                        .add(right.index().subtract(left.index()).multiply(progress))
+                        .setScale(6, RoundingMode.HALF_UP);
+            }
+            left = right;
+        }
+        return left.index();
+    }
+
     public static Result calculate(PlanningInput s, Map<LocalDate, Adjustment> overrides) {
         PlanningChecks.require(s.assembly() == null, "配置展开需要已发布的车型族需求版本");
         return calculate(s, overrides, List.of(), List.of());
@@ -122,7 +244,8 @@ public final class DemandPlanner {
         ZoneId zone = PlanningChecks.validate(s);
         LocalDate first = week(s.asOf(), zone);
         Instant end = first.plusWeeks(s.weeks()).atStartOfDay(zone).toInstant();
-        List<Double> history = history(s, first, s.asOf(), zone);
+        CorrectedHistory corrected = correctedHistory(s, first, s.asOf(), zone);
+        List<Double> history = corrected.values();
         List<ForecastModels.Fold> folds = new ArrayList<>();
         int protection = s.policy().protectionWeeks();
         int holdoutStart = history.size() - protection;
@@ -130,14 +253,22 @@ public final class DemandPlanner {
             LocalDate cut = s.historyStart().plusWeeks(n);
             folds.add(
                     new ForecastModels.Fold(
-                            history(s, cut, cut.atStartOfDay(zone).toInstant().minusNanos(1), zone),
+                            correctedHistory(
+                                            s,
+                                            cut,
+                                            cut.atStartOfDay(zone).toInstant().minusNanos(1),
+                                            zone)
+                                    .values(),
                             history.subList(n, n + protection)));
         }
         var model = ForecastModels.select(folds);
         Evaluation holdout = null;
         if (holdoutStart >= 4) {
             LocalDate date = s.historyStart().plusWeeks(holdoutStart);
-            var before = history(s, date, date.atStartOfDay(zone).toInstant().minusNanos(1), zone);
+            var before =
+                    correctedHistory(
+                                    s, date, date.atStartOfDay(zone).toInstant().minusNanos(1), zone)
+                            .values();
             double actual = 0, absolute = 0, bias = 0;
             for (int k = 0; k < protection; k++) {
                 double observed = history.get(holdoutStart + k);
@@ -165,6 +296,9 @@ public final class DemandPlanner {
         for (int i = 0; i < s.weeks(); i++) {
             LocalDate bucket = first.plusWeeks(i);
             BigDecimal forecast = ForecastModels.quantity(model.method(), history, i + 1);
+            LifecycleCurve lifecycle =
+                    s.signals() == null ? null : s.signals().lifecycle();
+            if (lifecycle != null) forecast = lifecycleForecast(lifecycle, bucket, forecast);
             baseline.put(bucket, forecast);
             Adjustment override = overrides.get(bucket);
             total.put(
@@ -304,7 +438,14 @@ public final class DemandPlanner {
         List<Proposal> proposals =
                 inactive
                         ? List.of()
-                        : propose(s.policy(), target, confirmed, windows, end, exceptions);
+                        : propose(
+                                s.policy(),
+                                s.signals() == null ? null : s.signals().costs(),
+                                target,
+                                confirmed,
+                                windows,
+                                end,
+                                exceptions);
         Map<Instant, BigDecimal> receipts = new HashMap<>();
         proposals.forEach(p -> receipts.put(p.availableAt(), p.quantity()));
         List<Point> points = new ArrayList<>();
@@ -324,9 +465,12 @@ public final class DemandPlanner {
         return new Result(
                 target,
                 Pattern.of(history),
-                model.method().name(),
+                (s.signals() != null && s.signals().lifecycle() != null
+                                ? "LIFECYCLE_" + model.method().name()
+                                : model.method().name()),
                 holdout,
                 scores,
+                corrected.findings(),
                 forecasts,
                 allocations,
                 points,
@@ -362,6 +506,7 @@ public final class DemandPlanner {
 
     private static List<Proposal> propose(
             Policy p,
+            CostProfile costs,
             StockTargets target,
             NavigableMap<Instant, BigDecimal> confirmed,
             List<Window> windows,
@@ -370,6 +515,7 @@ public final class DemandPlanner {
         List<Proposal> proposals = new ArrayList<>();
         if (!p.purchased()) return proposals;
         BigDecimal prior = ZERO;
+        BigDecimal priorCost = ZERO;
         for (int i = 0; i < windows.size(); i++) {
             Window window = windows.get(i);
             Instant until = i + 1 == windows.size() ? end : windows.get(i + 1).availableAt();
@@ -382,40 +528,118 @@ public final class DemandPlanner {
                 need = need.max(gap);
             }
             if (need.signum() == 0) continue;
-            BigDecimal qty =
-                    need.max(p.minimum())
-                            .max(target.economicLot())
-                            .divide(p.multiple(), 0, RoundingMode.CEILING)
-                            .multiply(p.multiple());
-            if (p.maximumOrder() != null && qty.compareTo(p.maximumOrder()) > 0) {
-                exceptions.add(new Finding("ORDER_LIMIT", p.supplier(), firstShort, qty));
-                continue;
-            }
-            if (p.purchaseBudget() != null
-                    && prior.add(qty).multiply(p.unitCost()).compareTo(p.purchaseBudget()) > 0) {
-                exceptions.add(new Finding("PURCHASE_BUDGET", p.supplier(), firstShort, qty));
-                continue;
-            }
-            if (p.maximumOnHand() != null) {
-                BigDecimal peak =
-                        Collections.max(confirmed.tailMap(window.availableAt(), true).values())
-                                .add(prior)
-                                .add(qty);
-                if (peak.compareTo(p.maximumOnHand()) > 0) {
-                    exceptions.add(
-                            new Finding(
-                                    "STORAGE_CAPACITY",
-                                    p.supplier(),
-                                    firstShort,
-                                    peak.subtract(p.maximumOnHand())));
-                    continue;
+            BigDecimal minimum = need.max(p.minimum()).max(target.economicLot());
+            var candidates = commercialCandidates(minimum, p.multiple(), costs);
+            Candidate selected = null;
+            for (BigDecimal qty : candidates) {
+                if (p.maximumOrder() != null && qty.compareTo(p.maximumOrder()) > 0) continue;
+                if (p.maximumOnHand() != null) {
+                    BigDecimal peak =
+                            Collections.max(confirmed.tailMap(window.availableAt(), true).values())
+                                    .add(prior)
+                                    .add(qty);
+                    if (peak.compareTo(p.maximumOnHand()) > 0) continue;
                 }
+                CostBreakdown cost = totalCost(qty, need, p, costs);
+                if (p.purchaseBudget() != null) {
+                    BigDecimal currentCost =
+                            cost == null ? qty.multiply(p.unitCost()) : cost.totalCost();
+                    if (priorCost.add(currentCost).compareTo(p.purchaseBudget()) > 0) continue;
+                }
+                Candidate candidate = new Candidate(qty, cost);
+                if (selected == null || candidate.costForSort().compareTo(selected.costForSort()) < 0)
+                    selected = candidate;
+            }
+            if (selected == null) {
+                BigDecimal first = candidates.get(0);
+                if (p.maximumOrder() != null && first.compareTo(p.maximumOrder()) > 0)
+                    exceptions.add(new Finding("ORDER_LIMIT", p.supplier(), firstShort, first));
+                else if (p.maximumOnHand() != null)
+                    exceptions.add(new Finding("STORAGE_CAPACITY", p.supplier(), firstShort, first));
+                else exceptions.add(new Finding("PURCHASE_BUDGET", p.supplier(), firstShort, first));
+                continue;
             }
             proposals.add(
-                    new Proposal(window.releaseAt(), window.availableAt(), firstShort, need, qty));
-            prior = prior.add(qty);
+                    new Proposal(
+                            window.releaseAt(),
+                            window.availableAt(),
+                            firstShort,
+                            need,
+                            selected.quantity(),
+                            selected.cost()));
+            prior = prior.add(selected.quantity());
+            if (selected.cost() != null) priorCost = priorCost.add(selected.cost().totalCost());
+            else if (p.unitCost() != null)
+                priorCost = priorCost.add(selected.quantity().multiply(p.unitCost()));
         }
         return proposals;
+    }
+
+    private record Candidate(BigDecimal quantity, CostBreakdown cost) {
+        BigDecimal costForSort() {
+            return cost == null ? quantity : cost.totalCost();
+        }
+    }
+
+    private static List<BigDecimal> commercialCandidates(
+            BigDecimal minimum, BigDecimal multiple, CostProfile costs) {
+        var quantities = new TreeSet<BigDecimal>();
+        quantities.add(roundPurchase(minimum, multiple));
+        if (costs != null) {
+            for (PriceTier tier : costs.tiers()) {
+                if (tier.fromQuantity().compareTo(minimum) >= 0)
+                    quantities.add(roundPurchase(tier.fromQuantity(), multiple));
+            }
+        }
+        return List.copyOf(quantities);
+    }
+
+    private static BigDecimal roundPurchase(BigDecimal amount, BigDecimal multiple) {
+        return amount.divide(multiple, 0, RoundingMode.CEILING).multiply(multiple);
+    }
+
+    private static CostBreakdown totalCost(
+            BigDecimal quantity, BigDecimal need, Policy policy, CostProfile costs) {
+        if (costs == null) return null;
+        PriceTier applied =
+                costs.tiers().stream()
+                        .filter(tier -> tier.fromQuantity().compareTo(quantity) <= 0)
+                        .reduce((left, right) -> right)
+                        .orElseThrow();
+        BigDecimal purchase =
+                "ALL_UNITS".equals(costs.pricingMode())
+                        ? quantity.multiply(applied.unitPrice())
+                        : incrementalPurchaseCost(quantity, costs.tiers());
+        BigDecimal freight = costs.freightFixedCost();
+        BigDecimal processing =
+                costs.processingFixedCost()
+                        .add(costs.processingUnitCost().multiply(quantity));
+        BigDecimal holding =
+                quantity.subtract(need)
+                        .max(ZERO)
+                        .multiply(costs.holdingCostPerUnitWeek())
+                        .multiply(BigDecimal.valueOf(costs.excessHoldingWeeks()));
+        return new CostBreakdown(
+                costs.pricingMode(),
+                applied.fromQuantity(),
+                purchase,
+                freight,
+                processing,
+                holding,
+                purchase.add(freight).add(processing).add(holding));
+    }
+
+    private static BigDecimal incrementalPurchaseCost(
+            BigDecimal quantity, List<PriceTier> tiers) {
+        BigDecimal total = ZERO;
+        for (int i = 0; i < tiers.size(); i++) {
+            PriceTier tier = tiers.get(i);
+            BigDecimal upper =
+                    i + 1 == tiers.size() ? quantity : tiers.get(i + 1).fromQuantity().subtract(BigDecimal.ONE);
+            BigDecimal units = quantity.min(upper).subtract(tier.fromQuantity()).add(BigDecimal.ONE);
+            if (units.signum() > 0) total = total.add(units.multiply(tier.unitPrice()));
+        }
+        return total;
     }
 
     static Result awaitingReconciliation(Result result, String purchaseId, Instant at) {
@@ -431,6 +655,7 @@ public final class DemandPlanner {
                 result.method(),
                 result.holdout(),
                 result.backtest(),
+                result.lostSales(),
                 result.forecasts(),
                 result.consumption(),
                 points,

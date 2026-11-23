@@ -22,7 +22,45 @@ public record PlanningInput(
         List<Requirement> requirements,
         List<Window> windows,
         ConfiguredAssembly assembly,
-        PolicySamples samples) {
+        PolicySamples samples,
+        DemandSignals signals) {
+    public PlanningInput(
+            String location,
+            String material,
+            String unit,
+            long revision,
+            Instant asOf,
+            String zone,
+            LocalDate historyStart,
+            int weeks,
+            BigDecimal opening,
+            Policy policy,
+            List<Sale> sales,
+            List<Supply> supplies,
+            List<Requirement> requirements,
+            List<Window> windows,
+            ConfiguredAssembly assembly,
+            PolicySamples samples) {
+        this(
+                location,
+                material,
+                unit,
+                revision,
+                asOf,
+                zone,
+                historyStart,
+                weeks,
+                opening,
+                policy,
+                sales,
+                supplies,
+                requirements,
+                windows,
+                assembly,
+                samples,
+                null);
+    }
+
     PlanningInput withSales(List<Sale> rows) {
         return new PlanningInput(
                 location,
@@ -40,7 +78,8 @@ public record PlanningInput(
                 requirements,
                 windows,
                 assembly,
-                samples);
+                samples,
+                signals);
     }
 
     /**
@@ -83,6 +122,51 @@ public record PlanningInput(
      * Released by the approved supplier calendar; availableAt already includes receiving buffer.
      */
     public record Window(Instant releaseAt, Instant availableAt) {}
+
+    /**
+     * Optional auditable evidence used for lifecycle demand, stockout correction, and total-cost
+     * purchasing. Missing signals retain the established forecast and replenishment behavior.
+     */
+    public record DemandSignals(
+            LifecycleCurve lifecycle,
+            List<AvailabilityObservation> availability,
+            CostProfile costs) {}
+
+    /**
+     * A weekly lifecycle curve. anchorWeeklyDemand is the known or approved demand at
+     * anchorAgeWeek. Curves can replace a sparse statistical baseline for a new launch, or scale
+     * a mature-product statistical baseline by lifecycle index.
+     */
+    public record LifecycleCurve(
+            LocalDate launchWeek,
+            int anchorAgeWeek,
+            BigDecimal anchorWeeklyDemand,
+            boolean replaceStatisticalBaseline,
+            List<LifecyclePoint> points) {}
+
+    public record LifecyclePoint(int ageWeek, BigDecimal index) {}
+
+    /**
+     * Historical realised demand and availability for one closed week. comparableDemand is an
+     * optional business cap for the demand that could have been realised without the stockout.
+     */
+    public record AvailabilityObservation(
+            LocalDate week,
+            BigDecimal observedDemand,
+            BigDecimal inStockFraction,
+            BigDecimal comparableDemand) {}
+
+    /** Commercial terms applied only when the plan selects a purchase proposal. */
+    public record CostProfile(
+            String pricingMode,
+            List<PriceTier> tiers,
+            BigDecimal freightFixedCost,
+            BigDecimal processingFixedCost,
+            BigDecimal processingUnitCost,
+            BigDecimal holdingCostPerUnitWeek,
+            int excessHoldingWeeks) {}
+
+    public record PriceTier(BigDecimal fromQuantity, BigDecimal unitPrice) {}
 
     public record Policy(
             String supplier,
