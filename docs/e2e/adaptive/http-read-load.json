@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "requests": 200,
+  "concurrency": 8,
+  "endpoint": "/smart-scheduling/plan/progress",
+  "errors": 0,
+  "statuses": [
+    "SCHEDULING"
+  ],
+  "elapsedSeconds": 0.07657274999655783,
+  "meanMs": 2.315248934955889,
+  "p95Ms": 3.6903750005876645,
+  "maxMs": 5.761874999734573,
+  "scope": "Single local burst during one solve; excludes login latency. Not a sustained-load SLA."
+}

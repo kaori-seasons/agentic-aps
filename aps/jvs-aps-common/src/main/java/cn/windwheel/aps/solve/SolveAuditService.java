@@ -36,9 +36,25 @@ public class SolveAuditService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void finish(UUID planId, String status, Object report) {
-        mapper.update(new SolveAuditPO().setStatus(status).setResultJson(json(report)).setFinishedAt(LocalDateTime.now()),
+        var merged = objectMapper.valueToTree(report);
+        var previous = get(planId.toString());
+        if (previous != null && previous.getResultJson() != null) {
+            try {
+                var adaptive = objectMapper.readTree(previous.getResultJson()).get("adaptive");
+                if (adaptive != null && merged.isObject()) ((com.fasterxml.jackson.databind.node.ObjectNode)merged).set("adaptive",adaptive);
+            } catch (Exception ex) { throw new BusinessException("自适应审计记录无法读取，禁止完成求解"); }
+        }
+        mapper.update(new SolveAuditPO().setStatus(status).setResultJson(json(merged)).setFinishedAt(LocalDateTime.now()),
                 Wrappers.<SolveAuditPO>lambdaUpdate().eq(SolveAuditPO::getId,planId.toString())
                         .eq(SolveAuditPO::getTenantId,TenantContextHolder.getTenantId()));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void recordAdaptive(UUID planId, cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.Report report) {
+        int updated = mapper.update(new SolveAuditPO().setResultJson(json(Map.of("adaptive",report))),
+                Wrappers.<SolveAuditPO>lambdaUpdate().eq(SolveAuditPO::getId,planId.toString())
+                        .eq(SolveAuditPO::getTenantId,TenantContextHolder.getTenantId()).eq(SolveAuditPO::getStatus,"RUNNING"));
+        if (updated != 1) throw new BusinessException("自适应审计会话已失效");
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)

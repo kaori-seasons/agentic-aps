@@ -21,6 +21,78 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HybridSchedulingTest {
+    @Test
+    void adaptiveEvolutionPreservesHardLayersAndReplaysWithoutMutatingInput() throws Exception {
+        var problem = problem(SolverEngineEnum.TIMEFOLD,PlanningDirectionEnum.FORWARD,SolverProfileEnum.FFD_LATE_ACCEPTANCE);
+        problem.getStrategy().getConfig().setMaterialConstrained(true).setAdaptive(new AdaptiveSolveConfig()
+                .setEnabled(true).setPopulationSize(4).setGenerations(1).setTotalSeconds(60).setTrialSeconds(5).setTrialScoreLimit(100));
+        var resource=problem.getMainResources().get(0);
+        problem.getTasks().get(0).setPinned(true).setResource(resource).setStartTime(START);
+        problem.getTasks().get(1).setNotBefore(START.plusHours(2));
+        problem.getTasks().get(1).addFrontTask(problem.getTasks().get(0));
+        new DynamicSchedulingService().apply(problem,new BasicData());
+        resource.getDowntimes().add(new ResourceDowntime().setResourceId("R").setStart(START.plusHours(2)).setEnd(START.plusHours(4)));
+        var reports=new ArrayList<cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.Report>();
+        var router=new SchedulingEngineRouter(new SolveManageConfigurator(),new TimefoldManageConfigurator());
+        var result=router.solve(UUID.randomUUID(),problem,()->false,reports::add);
+        assertEquals(0,result.getScore().hardScore());
+        assertEquals(0,result.getScore().initScore());
+        assertTrue(cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.frozenPreserved(problem,result));
+        assertFalse(result.getTasks().get(1).getStartTime().isBefore(START.plusHours(4)));
+        assertNull(problem.getTasks().get(1).getStartTime());
+        assertEquals(1,resource.getTaskList().size());
+        var completed=reports.get(reports.size()-1);
+        assertEquals(8,completed.trials().size());
+        assertEquals("COMPLETED",completed.stopReason());
+        assertTrue(result.getTimefoldScore().softScore()>=result.getTimefoldScore().parseScore(completed.trials().get(0).score()).softScore());
+        var replay=new ArrayList<cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.Report>();
+        assertEquals(result.getScore(),router.solve(UUID.randomUUID(),problem,()->false,replay::add).getScore());
+        assertEquals(completed.selectedTrial(),replay.get(replay.size()-1).selectedTrial());
+        assertEquals(completed.trials().stream().map(t->t.score()).toList(),
+                replay.get(replay.size()-1).trials().stream().map(t->t.score()).toList());
+    }
+
+    @Test
+    void adaptiveRejectsFrozenConflictAndStopsOnCancellationOrAuditFailure() throws Exception {
+        var p=problem(SolverEngineEnum.TIMEFOLD,PlanningDirectionEnum.FORWARD,SolverProfileEnum.FFD_LATE_ACCEPTANCE);
+        p.getStrategy().getConfig().setMaterialConstrained(true).setAdaptive(new AdaptiveSolveConfig().setEnabled(true)
+                .setPopulationSize(4).setGenerations(0).setTotalSeconds(30).setTrialSeconds(2).setTrialScoreLimit(50));
+        var r=p.getMainResources().get(0);
+        p.getTasks().get(0).setPinned(true).setResource(r).setStartTime(START);
+        new DynamicSchedulingService().apply(p,new BasicData());
+        var router=new SchedulingEngineRouter(new SolveManageConfigurator(),new TimefoldManageConfigurator());
+        assertNull(router.solve(UUID.randomUUID(),p,()->true));
+        assertThrows(IllegalStateException.class,()->router.solve(UUID.randomUUID(),p,()->false,
+                report->{throw new IllegalStateException("audit unavailable");}));
+        r.getDowntimes().add(new ResourceDowntime().setResourceId("R").setStart(START).setEnd(START.plusHours(1)));
+        assertThrows(IllegalStateException.class,()->router.solve(UUID.randomUUID(),p));
+        p.getStrategy().getConfig().setMaterialConstrained(false);
+        assertThrows(IllegalArgumentException.class,()->router.solve(UUID.randomUUID(),p));
+    }
+
+    @Test
+    void adaptiveDifferentialMutationIsBoundedAndForcesCrossover() {
+        var actual=cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.mutate(new double[]{0,0,0,0},
+                new double[]{1,1,1,1},new double[]{1,1,1,1},new double[]{0,0,0,0},.5,0,new Random(42));
+        assertEquals(1,Arrays.stream(actual).filter(v->v==1).count());
+        assertTrue(Arrays.stream(actual).allMatch(v->v>=0&&v<=1));
+        assertThrows(IllegalArgumentException.class,()->new AdaptiveSolveConfig().setPopulationSize(3).validate());
+    }
+
+    @Test
+    void adaptiveBudgetReturnsFeasibleIncumbentAndRunningCancellationReturnsNoPlan() throws Exception {
+        var p=problem(SolverEngineEnum.TIMEFOLD,PlanningDirectionEnum.FORWARD,SolverProfileEnum.FFD_LATE_ACCEPTANCE);
+        p.getStrategy().getConfig().setMaterialConstrained(true).setAdaptive(new AdaptiveSolveConfig().setEnabled(true)
+                .setPopulationSize(4).setGenerations(2).setTotalSeconds(1).setTrialSeconds(1).setTrialScoreLimit(1000000));
+        new DynamicSchedulingService().apply(p,new BasicData());
+        var reports=new ArrayList<cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.Report>();
+        var router=new SchedulingEngineRouter(new SolveManageConfigurator(),new TimefoldManageConfigurator());
+        var result=router.solve(UUID.randomUUID(),p,()->false,reports::add);
+        assertEquals(0,result.getScore().hardScore());
+        assertEquals("TIME_BUDGET",reports.get(reports.size()-1).stopReason());
+        var calls=new java.util.concurrent.atomic.AtomicInteger();
+        assertNull(router.solve(UUID.randomUUID(),p,()->calls.incrementAndGet()>3));
+    }
     static final LocalDateTime START = LocalDateTime.of(2026, 11, 13, 8, 0);
     GenericApplicationContext context;
 

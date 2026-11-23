@@ -15,6 +15,7 @@ import javax.validation.constraints.NotNull;
 @Accessors(chain = true)
 @ApiModel("排产策略——基本配置")
 public class StrategyConfigDTO {
+    private AdaptiveSolveConfig adaptive;
     @ApiModelProperty("求解引擎，历史策略默认使用 OptaPlanner")
     private cn.windwheel.aps.entity.enums.SolverEngineEnum solverEngine = cn.windwheel.aps.entity.enums.SolverEngineEnum.OPTAPLANNER;
 

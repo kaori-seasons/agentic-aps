@@ -147,7 +147,10 @@ public class DynamicSchedulingService {
                 if (event.getType() == DynamicSchedulingRequest.EventType.MATERIAL_DELAY) {
                     solution.getTasks().stream().filter(task -> task.getInputMaterials() != null
                             && task.getInputMaterials().stream().anyMatch(m -> event.getTargetId().equals(m.getId())))
-                            .forEach(task -> task.setNotBefore(event.getAvailableAt()));
+                            .forEach(task -> {
+                                if (task.getNotBefore() == null || task.getNotBefore().isBefore(event.getAvailableAt()))
+                                    task.setNotBefore(event.getAvailableAt());
+                            });
                 }
             }
         }

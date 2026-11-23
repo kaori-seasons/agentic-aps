@@ -55,6 +55,14 @@
 
     <build>
         <plugins>
+            <!-- Repackage must not reuse a previous executable jar when only common changes. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

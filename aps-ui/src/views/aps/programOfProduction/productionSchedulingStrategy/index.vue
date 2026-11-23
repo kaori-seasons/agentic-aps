@@ -249,6 +249,23 @@ const formOption = ref({
       span: 12,
     },
     {
+      label: '自适应组合求解',
+      prop: 'adaptiveEnabled',
+      type: 'switch',
+      defaultValue: false,
+      span: 12,
+    },
+    {
+      label: '组合总预算(秒)',
+      prop: 'adaptiveTotalSeconds',
+      type: 'inputNumber',
+      min: 15,
+      max: 3600,
+      precision: 0,
+      defaultValue: 180,
+      span: 12,
+    },
+    {
       label: '随机种子',
       prop: 'randomSeed',
       type: 'inputNumber',
@@ -365,6 +382,8 @@ function addEditRow (row) {
         rowData.value[k] = row.config[k]
       }
       delete rowData.value['config']
+      rowData.value.adaptiveEnabled = !!row.config?.adaptive?.enabled
+      rowData.value.adaptiveTotalSeconds = row.config?.adaptive?.totalSeconds || 180
       if(!row.orderSchedulingRules) {
         rowData.value['orderSchedulingRules'] = []
       }
@@ -391,7 +410,7 @@ function submitHandle (form) {
     'direction', 'materialConstrained', 'maxNoImprovementTime',
     'solverEngine', 'solverProfile', 'solveTimeSeconds', 'randomSeed',
     'entityTabuSize', 'lateAcceptanceSize', 'acceptedCountLimit',
-    'scoreCalculationCountLimit', 'constraintWeightConfig'
+    'scoreCalculationCountLimit', 'constraintWeightConfig', 'adaptive'
   ]
   for (const key of configKeys) {
     if (rowData.value[key] !== undefined && rowData.value[key] !== null) {
@@ -400,6 +419,18 @@ function submitHandle (form) {
     delete temp[key]
   }
   temp.config.materialConstrained = rowData.value['materialConstrained'] || false
+  temp.config.adaptive = {
+    ...(temp.config.adaptive || {}),
+    enabled: !!rowData.value.adaptiveEnabled,
+    totalSeconds: rowData.value.adaptiveTotalSeconds || 180
+  }
+  delete temp.adaptiveEnabled
+  delete temp.adaptiveTotalSeconds
+  if (temp.config.adaptive.enabled &&
+      (temp.config.solverEngine !== 'TIMEFOLD' || !temp.config.materialConstrained)) {
+    ElNotification({type: 'warning', message: '自适应组合求解需要选择 Timefold 并启用物料约束'})
+    return
+  }
   formOption.value.submitLoading = true
   fun(temp).then(res => {
     if(res.data && res.data.code == 0) {

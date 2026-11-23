@@ -55,8 +55,10 @@ public class TaskTimeForwardServiceImpl implements TaskTimeService {
             return startTime;
         }
         if (task.getNotBefore() != null && startTime.isBefore(task.getNotBefore())) {
-            startTime = TaskCalendarUtils.calculateStartTime(task.getNotBefore(), mainProductionResource.getWorkCalendars(), PlanningDirectionEnum.FORWARD);
+            startTime = task.getNotBefore();
         }
+        // Resource/predecessor availability can fall exactly at shift end or during a break.
+        startTime = TaskCalendarUtils.calculateStartTime(startTime, mainProductionResource.getWorkCalendars(), PlanningDirectionEnum.FORWARD);
         while (startTime != null) {
             LocalDateTime end = TaskCalendarUtils.calculateEndTime(startTime, task.calculateTaskDuration(), mainProductionResource.getWorkCalendars());
             if (end == null) { return null; }

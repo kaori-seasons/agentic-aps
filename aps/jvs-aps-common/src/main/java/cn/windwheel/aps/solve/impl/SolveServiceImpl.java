@@ -64,6 +64,8 @@ public class SolveServiceImpl implements SolveService {
             String planKey = getPlanCacheKey();
             if (!planId.toString().equals(String.valueOf(redisUtils.get(planKey)))) { return; }
             solveAuditService.start(planId, strategy, basicData);
+            // Expose the durable audit while running and on failure, not only after publication.
+            solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, "求解审计ID：" + planId);
             if (redisUtils.exists(planKey + ":cancel:" + planId)) {
                 solveAuditService.finish(planId,"CANCELLED",Map.of("message","用户已取消求解"));
                 return;
@@ -89,7 +91,8 @@ public class SolveServiceImpl implements SolveService {
             solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, profileMsg);
             // 排产求解
             String cancelKey = getPlanCacheKey() + ":cancel:" + planId;
-            SchedulingSolution apsSolutionResult = engineRouter.solve(planId, solution, () -> redisUtils.exists(cancelKey));
+            SchedulingSolution apsSolutionResult = engineRouter.solve(planId, solution, () -> redisUtils.exists(cancelKey),
+                    report -> solveAuditService.recordAdaptive(planId,report));
             if (ObjectNull.isNull(apsSolutionResult) || redisUtils.exists(getPlanCacheKey() + ":cancel:" + planId)) {
                 solveAuditService.finish(planId,"CANCELLED",Map.of("message","用户已取消求解"));
                 return;
@@ -115,7 +118,6 @@ public class SolveServiceImpl implements SolveService {
             } finally {
                 redisUtils.unLock(lockKey);
             }
-            solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, "求解审计ID：" + planId);
             // 修改排产进度
             solveProgressService.addProgressLog(SolveProgressStatusEnum.SUCCESS,"排程已完成");
         } catch (Exception | StackOverflowError e) {

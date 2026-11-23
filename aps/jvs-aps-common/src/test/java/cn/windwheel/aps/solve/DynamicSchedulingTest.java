@@ -18,6 +18,24 @@ import static cn.windwheel.aps.solve.HybridSchedulingTest.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DynamicSchedulingTest {
+    @Test
+    void multipleMaterialDelaysKeepLatestAvailabilityRegardlessOfEventOrder() {
+        for (boolean reverse : List.of(false,true)) {
+            var problem=problem(SolverEngineEnum.TIMEFOLD,PlanningDirectionEnum.FORWARD,SolverProfileEnum.DEFAULT);
+            var task=problem.getTasks().get(0);
+            task.setInputMaterials(List.of(new cn.windwheel.aps.entity.dto.plan.PlanTaskInputMaterialDTO().setId("M1"),
+                    new cn.windwheel.aps.entity.dto.plan.PlanTaskInputMaterialDTO().setId("M2")));
+            var first=new DynamicSchedulingRequest.Event();
+            first.setType(DynamicSchedulingRequest.EventType.MATERIAL_DELAY);
+            first.setTargetId("M1"); first.setAvailableAt(START.plusHours(8));
+            var second=new DynamicSchedulingRequest.Event();
+            second.setType(DynamicSchedulingRequest.EventType.MATERIAL_DELAY);
+            second.setTargetId("M2"); second.setAvailableAt(START.plusHours(2));
+            var request=request(); request.setEvents(reverse?List.of(second,first):List.of(first,second));
+            new DynamicSchedulingService().apply(problem,new BasicData().setDynamicRequest(request));
+            assertEquals(START.plusHours(8),task.getNotBefore());
+        }
+    }
     static DynamicSchedulingRequest request() {
         var request = new DynamicSchedulingRequest();
         request.setFreezeUntil(START);

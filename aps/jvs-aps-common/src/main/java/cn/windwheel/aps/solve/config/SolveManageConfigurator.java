@@ -157,6 +157,13 @@ public class SolveManageConfigurator {
             throw new IllegalArgumentException("求解参数超出允许范围");
         }
         cn.windwheel.aps.entity.dto.planning.ConstraintWeightConfigDTO weights = config.getConstraintWeightConfig();
+        if (config.getAdaptive() != null && config.getAdaptive().isEnabled()) {
+            config.getAdaptive().validate();
+            if (config.getSolverEngine() != cn.windwheel.aps.entity.enums.SolverEngineEnum.TIMEFOLD
+                    || !Boolean.TRUE.equals(config.getMaterialConstrained())) {
+                throw new IllegalArgumentException("自适应求解要求TIMEFOLD引擎并启用物料约束");
+            }
+        }
         if (weights == null) {
             weights = new cn.windwheel.aps.entity.dto.planning.ConstraintWeightConfigDTO();
             config.setConstraintWeightConfig(weights);

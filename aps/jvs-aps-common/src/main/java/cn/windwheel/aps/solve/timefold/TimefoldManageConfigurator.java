@@ -68,6 +68,13 @@ public class TimefoldManageConfigurator {
      * @return SolverManager实例
      */
     private SolverManager<SchedulingSolution, UUID> createSolverManager(StrategyConfigDTO config) {
+        SolverManager<SchedulingSolution, UUID> manager = SolverManager.create(SolverFactory.create(buildConfig(config)));
+        SOLVER_MANAGER_MAP.put(TenantContextHolder.getTenantId(), manager);
+        return manager;
+    }
+
+    /** Independent factory configuration: adaptive trials never replace a tenant manager. */
+    public SolverConfig buildConfig(StrategyConfigDTO config) {
         // 终止配置
         TerminationConfig terminationConfig = buildTerminationConfig(config);
         // 求解配置
@@ -102,10 +109,7 @@ public class TimefoldManageConfigurator {
         }
 
         // 创建SolverManager实例
-        SolverFactory<SchedulingSolution> solverFactory = SolverFactory.create(solverConfig);
-        SolverManager<SchedulingSolution, UUID> solverManager = SolverManager.create(solverFactory);
-        SOLVER_MANAGER_MAP.put(TenantContextHolder.getTenantId(), solverManager);
-        return solverManager;
+        return solverConfig;
     }
 
     /**

@@ -27,7 +27,7 @@ public class SolveProblemSnapshot {
         @JsonIgnore abstract List<ProductionTask> getTaskList();
     }
 
-    static ObjectMapper mapper(ObjectMapper mapper) {
+    public static ObjectMapper mapper(ObjectMapper mapper) {
         return mapper.copy().addMixIn(ProductionTask.class,TaskMixin.class).addMixIn(MainProductionResource.class,ResourceMixin.class);
     }
 

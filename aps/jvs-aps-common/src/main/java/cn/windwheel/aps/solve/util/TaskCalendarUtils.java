@@ -133,17 +133,19 @@ public class TaskCalendarUtils {
         if (ObjectNull.isNull(workCalendars)) {
             return Collections.emptyList();
         }
-        return workCalendars.stream()
+        List<WorkCalendar> covered = workCalendars.stream()
                 .filter(calendar ->
                         (calendar.getBeginTime().isBefore(time) || calendar.getBeginTime().isEqual(time))
                                 &&
                                 (calendar.getEndTime().isAfter(time) || calendar.getEndTime().isEqual(time))
                 )
-                .filter(calendar -> {
-                    DayOfWeekEnum dayOfWeekEnum = DayOfWeekEnum.getDayOfWeekEnumByName(time.getDayOfWeek().name());
-                    return calendar.getWorkDaySetting().get(dayOfWeekEnum);
-                })
                 .toList();
+        DayOfWeekEnum weekday = DayOfWeekEnum.getDayOfWeekEnumByName(time.getDayOfWeek().name());
+        List<WorkCalendar> working = covered.stream().filter(calendar -> calendar.getWorkDaySetting() != null
+                && Boolean.TRUE.equals(calendar.getWorkDaySetting().get(weekday))).toList();
+        // Preserve selection among applicable working-day calendars (e.g. weekend overtime).
+        // If all covered calendars are closed, keep that closure instead of unlimited capacity.
+        return working.isEmpty() ? covered : working;
     }
 
 
@@ -211,6 +213,12 @@ public class TaskCalendarUtils {
      * @return 最近的工作时间
      */
     public static LocalDateTime findRecentWorkTime(LocalDateTime dateTime, WorkCalendar useWorkCalendar) {
+        // A covered non-working day is closed, not an absent/unconstrained calendar.
+        DayOfWeekEnum weekday = DayOfWeekEnum.getDayOfWeekEnumByName(dateTime.getDayOfWeek().name());
+        if (useWorkCalendar.getWorkDaySetting() == null
+                || !Boolean.TRUE.equals(useWorkCalendar.getWorkDaySetting().get(weekday))) {
+            return null;
+        }
         // 已配置工作模式，根据工作模式，找最近的可开工时间
         LocalTime time = dateTime.toLocalTime();
 

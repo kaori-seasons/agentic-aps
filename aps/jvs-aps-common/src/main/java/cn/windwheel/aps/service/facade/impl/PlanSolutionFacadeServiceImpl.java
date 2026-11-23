@@ -79,6 +79,7 @@ public class PlanSolutionFacadeServiceImpl implements PlanSolutionFacadeService 
         // 保存待确认排产计划任务
         List<ProductionTask> tasks = schedulingSolution.getTasks();
         if (ObjectNull.isNotNull(tasks)) {
+            alignTaskOrderIds(taskOrderPendingList, tasks);
             List<PlanTaskPendingPO> planTaskPendingList = tasks.stream()
                     .map(task ->
                             BeanCopyUtil.copy(cn.windwheel.aps.solve.util.SchedulingTaskMapper.toDTO(task), PlanTaskPendingPO.class)
@@ -141,6 +142,19 @@ public class PlanSolutionFacadeServiceImpl implements PlanSolutionFacadeService 
         // 创建待确认排产计划基本信息
         if (ObjectNull.isNotNull(tasks)) {
             planInfoService.createUnconfirmedPlan(schedulingSolution.getStrategy());
+        }
+    }
+
+    /** Adaptive candidates are deep copies; do not rely on shared order object identity. */
+    static void alignTaskOrderIds(List<ProductionOrder> orders, List<ProductionTask> tasks) {
+        Map<String,String> canonicalIds = orders.stream().collect(Collectors.toMap(ProductionOrder::getCode, ProductionOrder::getId));
+        for (ProductionTask task : tasks) {
+            ProductionOrder order = task.getOrder();
+            String id = order == null ? null : canonicalIds.get(order.getCode());
+            if (id == null) {
+                throw new cn.windwheel.common.exception.BusinessException("候选任务引用的订单不存在，拒绝保存计划");
+            }
+            order.setId(id);
         }
     }
 

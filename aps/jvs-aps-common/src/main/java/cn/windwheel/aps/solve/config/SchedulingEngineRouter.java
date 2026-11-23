@@ -20,7 +20,17 @@ public class SchedulingEngineRouter {
 
     public SchedulingSolution solve(UUID planId, SchedulingSolution problem, java.util.function.BooleanSupplier cancelled)
             throws InterruptedException, ExecutionException {
+        return solve(planId,problem,cancelled,report -> {});
+    }
+
+    public SchedulingSolution solve(UUID planId, SchedulingSolution problem, java.util.function.BooleanSupplier cancelled,
+            java.util.function.Consumer<cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.Report> audit)
+            throws InterruptedException, ExecutionException {
         if (cancelled != null && cancelled.getAsBoolean()) { return null; }
+        var adaptive = problem.getStrategy().getConfig().getAdaptive();
+        if (adaptive != null && adaptive.isEnabled()) {
+            return cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.solve(problem,cancelled,audit);
+        }
         if (problem.getStrategy().getConfig().getSolverEngine() == SolverEngineEnum.TIMEFOLD) {
             var manager = timefold.initSolverManager(problem.getStrategy());
             try {

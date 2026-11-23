@@ -1,0 +1,904 @@
+{
+  "dateRange": [
+    "2026-11-23 16:00:00",
+    "2026-11-28 23:59:59"
+  ],
+  "earliestTaskStartTime": "2026-11-24 08:00:00",
+  "lastTaskAssignmentTime": null,
+  "resources": [
+    {
+      "id": "r-cut01",
+      "code": "QG1",
+      "name": "切割1"
+    },
+    {
+      "id": "r-cut02",
+      "code": "QG2",
+      "name": "切割2"
+    },
+    {
+      "id": "r-coat01",
+      "code": "PQ1",
+      "name": "喷涂1"
+    },
+    {
+      "id": "r-assy01",
+      "code": "ZZ1",
+      "name": "总装1"
+    },
+    {
+      "id": "r-assy02",
+      "code": "ZZ2",
+      "name": "总装2"
+    },
+    {
+      "id": "r-test01",
+      "code": "CS1",
+      "name": "测试1"
+    },
+    {
+      "id": "r-wind01",
+      "code": "RL1",
+      "name": "液压预装1"
+    },
+    {
+      "id": "r-weld01",
+      "code": "HJ1",
+      "name": "焊接1"
+    }
+  ],
+  "tasks": [
+    {
+      "code": "SYN-FL-003-SF-HOUSING-CUT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 08:00:00",
+      "endTime": "2026-11-24 09:36:00",
+      "mainResourceId": "r-cut01",
+      "taskStatus": null,
+      "pinned": true,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-003-SF-HOUSING-WELD"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "切割1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 16,
+        "orderCode": "SYN-FL-003-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-004-SF-HOUSING-CUT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 08:00:00",
+      "endTime": "2026-11-24 09:30:00",
+      "mainResourceId": "r-cut02",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-004-SF-HOUSING-WELD"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "切割2",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 18,
+        "orderCode": "SYN-FL-004-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-004-SF-HOUSING-WELD",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 09:30:00",
+      "endTime": "2026-11-24 11:45:00",
+      "mainResourceId": "r-weld01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-004-SF-HOUSING-COAT"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "焊接1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 18,
+        "orderCode": "SYN-FL-004-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-005-SF-HOUSING-CUT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 09:30:00",
+      "endTime": "2026-11-24 11:10:12",
+      "mainResourceId": "r-cut02",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-005-SF-HOUSING-WELD"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "切割2",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 20,
+        "orderCode": "SYN-FL-005-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-002-SF-HOUSING-CUT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 09:36:00",
+      "endTime": "2026-11-24 11:00:00",
+      "mainResourceId": "r-cut01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-002-SF-HOUSING-WELD"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "切割1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 14,
+        "orderCode": "SYN-FL-002-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-006-SF-HOUSING-CUT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 11:00:00",
+      "endTime": "2026-11-24 12:00:00",
+      "mainResourceId": "r-cut01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-006-SF-HOUSING-WELD"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "切割1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 10,
+        "orderCode": "SYN-FL-006-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-001-SF-HOUSING-CUT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 11:10:12",
+      "endTime": "2026-11-24 13:10:12",
+      "mainResourceId": "r-cut02",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-001-SF-HOUSING-WELD"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "切割2",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 12,
+        "orderCode": "SYN-FL-001-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-004-SF-HOUSING-COAT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 11:45:00",
+      "endTime": "2026-11-24 14:33:00",
+      "mainResourceId": "r-coat01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-004-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "喷涂1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 18,
+        "orderCode": "SYN-FL-004-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-003-SF-HOUSING-WELD",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 11:45:00",
+      "endTime": "2026-11-24 14:45:00",
+      "mainResourceId": "r-weld01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-003-SF-HOUSING-COAT"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "焊接1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 16,
+        "orderCode": "SYN-FL-003-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-003-SF-HOUSING-COAT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 14:45:00",
+      "endTime": "2026-11-24 16:21:00",
+      "mainResourceId": "r-coat01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-003-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "喷涂1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 16,
+        "orderCode": "SYN-FL-003-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-002-SF-HOUSING-WELD",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 14:45:00",
+      "endTime": "2026-11-24 16:30:00",
+      "mainResourceId": "r-weld01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-002-SF-HOUSING-COAT"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "焊接1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 14,
+        "orderCode": "SYN-FL-002-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-002-SF-HOUSING-COAT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 16:30:00",
+      "endTime": "2026-11-24 18:24:00",
+      "mainResourceId": "r-coat01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-002-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "喷涂1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 14,
+        "orderCode": "SYN-FL-002-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-005-SF-HOUSING-WELD",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 16:30:00",
+      "endTime": "2026-11-24 19:30:00",
+      "mainResourceId": "r-weld01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-005-SF-HOUSING-COAT"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "焊接1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 20,
+        "orderCode": "SYN-FL-005-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-001-SF-HOUSING-WELD",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 19:30:00",
+      "endTime": "2026-11-24 21:00:00",
+      "mainResourceId": "r-weld01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-001-SF-HOUSING-COAT"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "焊接1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 12,
+        "orderCode": "SYN-FL-001-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-005-SF-HOUSING-COAT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 19:30:00",
+      "endTime": "2026-11-24 21:30:00",
+      "mainResourceId": "r-coat01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-005-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "喷涂1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 20,
+        "orderCode": "SYN-FL-005-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-006-SF-HOUSING-WELD",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 21:00:00",
+      "endTime": "2026-11-25 08:15:00",
+      "mainResourceId": "r-weld01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-006-SF-HOUSING-COAT"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "焊接1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 10,
+        "orderCode": "SYN-FL-006-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-001-SF-HOUSING-COAT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 21:30:00",
+      "endTime": "2026-11-25 08:42:00",
+      "mainResourceId": "r-coat01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-001-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "喷涂1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 12,
+        "orderCode": "SYN-FL-001-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-004-SF-ROTOR-WIND",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 08:00:00",
+      "endTime": "2026-11-25 11:36:00",
+      "mainResourceId": "r-wind01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-004-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "液压预装1",
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 18,
+        "orderCode": "SYN-FL-004-SF-ROTOR"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-006-SF-HOUSING-COAT",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 08:42:00",
+      "endTime": "2026-11-25 09:42:00",
+      "mainResourceId": "r-coat01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-006-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "喷涂1",
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 10,
+        "orderCode": "SYN-FL-006-SF-HOUSING"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-003-SF-ROTOR-WIND",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 11:36:00",
+      "endTime": "2026-11-25 15:48:00",
+      "mainResourceId": "r-wind01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-003-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "液压预装1",
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 16,
+        "orderCode": "SYN-FL-003-SF-ROTOR"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-004-ASSY",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 13:00:00",
+      "endTime": "2026-11-25 16:00:00",
+      "mainResourceId": "r-assy01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-004-TEST"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "总装1",
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 18,
+        "orderCode": "SYN-FL-004"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-006-SF-ROTOR-WIND",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 15:48:00",
+      "endTime": "2026-11-25 18:18:00",
+      "mainResourceId": "r-wind01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-006-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "液压预装1",
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 10,
+        "orderCode": "SYN-FL-006-SF-ROTOR"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-003-ASSY",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 15:48:00",
+      "endTime": "2026-11-26 08:58:12",
+      "mainResourceId": "r-assy02",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-003-TEST"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "总装2",
+        "materialName": "合成叉车 E30",
+        "scheduledQuantity": 16,
+        "orderCode": "SYN-FL-003"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-004-TEST",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 16:00:00",
+      "endTime": "2026-11-25 17:30:00",
+      "mainResourceId": "r-test01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": null,
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "测试1",
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 18,
+        "orderCode": "SYN-FL-004"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-001-SF-ROTOR-WIND",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 18:18:00",
+      "endTime": "2026-11-25 20:42:00",
+      "mainResourceId": "r-wind01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-001-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "液压预装1",
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 12,
+        "orderCode": "SYN-FL-001-SF-ROTOR"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-002-SF-ROTOR-WIND",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 20:42:00",
+      "endTime": "2026-11-26 09:30:00",
+      "mainResourceId": "r-wind01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-002-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "液压预装1",
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 14,
+        "orderCode": "SYN-FL-002-SF-ROTOR"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-001-ASSY",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 08:00:00",
+      "endTime": "2026-11-26 10:00:00",
+      "mainResourceId": "r-assy01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-001-TEST"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "总装1",
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 12,
+        "orderCode": "SYN-FL-001"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-006-ASSY",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 08:58:12",
+      "endTime": "2026-11-26 10:38:24",
+      "mainResourceId": "r-assy02",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-006-TEST"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "总装2",
+        "materialName": "合成叉车 E30",
+        "scheduledQuantity": 10,
+        "orderCode": "SYN-FL-006"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-003-TEST",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 08:58:12",
+      "endTime": "2026-11-26 10:18:00",
+      "mainResourceId": "r-test01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": null,
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "测试1",
+        "materialName": "合成叉车 E30",
+        "scheduledQuantity": 16,
+        "orderCode": "SYN-FL-003"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-005-SF-ROTOR-WIND",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 09:30:00",
+      "endTime": "2026-11-26 14:30:00",
+      "mainResourceId": "r-wind01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-005-ASSY"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "液压预装1",
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 20,
+        "orderCode": "SYN-FL-005-SF-ROTOR"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-002-ASSY",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 10:00:00",
+      "endTime": "2026-11-26 13:19:48",
+      "mainResourceId": "r-assy01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-002-TEST"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "总装1",
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 14,
+        "orderCode": "SYN-FL-002"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-006-TEST",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 10:38:24",
+      "endTime": "2026-11-26 11:28:12",
+      "mainResourceId": "r-test01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": null,
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "测试1",
+        "materialName": "合成叉车 E30",
+        "scheduledQuantity": 10,
+        "orderCode": "SYN-FL-006"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-002-TEST",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 13:19:48",
+      "endTime": "2026-11-26 14:30:00",
+      "mainResourceId": "r-test01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": null,
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "测试1",
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 14,
+        "orderCode": "SYN-FL-002"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-001-TEST",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 14:30:00",
+      "endTime": "2026-11-26 15:30:00",
+      "mainResourceId": "r-test01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": null,
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "测试1",
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 12,
+        "orderCode": "SYN-FL-001"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-005-ASSY",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 14:30:00",
+      "endTime": "2026-11-27 08:19:48",
+      "mainResourceId": "r-assy02",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": [
+        "SYN-FL-005-TEST"
+      ],
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "总装2",
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 20,
+        "orderCode": "SYN-FL-005"
+      },
+      "mergeExtras": null
+    },
+    {
+      "code": "SYN-FL-005-TEST",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-27 08:19:48",
+      "endTime": "2026-11-27 10:00:00",
+      "mainResourceId": "r-test01",
+      "taskStatus": null,
+      "pinned": false,
+      "mergeTask": false,
+      "overdueTimeString": null,
+      "nextTaskCodes": null,
+      "taskProgressTime": null,
+      "compliant": true,
+      "adjusted": null,
+      "extras": {
+        "mainResourceName": "测试1",
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 20,
+        "orderCode": "SYN-FL-005"
+      },
+      "mergeExtras": null
+    }
+  ]
+}

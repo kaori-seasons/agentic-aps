@@ -1,0 +1,31 @@
+{
+  "os": "macOS-15.7-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "jdk": "Zulu OpenJDK 17.0.13",
+  "maven": "3.9.9",
+  "heap": "-Xmx2g",
+  "deployedJarSha256": "3fda10d20401bfb248905e21d4261c7ef57e9bf0d22bd69f40a25a2bc023c179",
+  "frontendIndexSha256": "bada1768862ac707f446ef1855f7095c601db4389f85ea42393ef6b8fa2e57ad",
+  "backendTests": {
+    "tests": 86,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontendTests": {
+    "tests": 5,
+    "failures": 0
+  },
+  "transport": "HTTP sessions on localhost; no mock solver",
+  "build": "mvn clean verify followed by calendar fix mvn verify; frontend production build + vite preview",
+  "commitBase": "483d3d7c356143e2984df5de4156f95ee7e31095",
+  "workingTreeChangesIncluded": true,
+  "resourceSample": {
+    "serverRssKiB": 307360,
+    "serverCpuPercent": 102.4,
+    "during": "144-task Timefold construction",
+    "note": "one point sample; not peak memory"
+  },
+  "scaleAndLoadJarSha256": "62f967aa96fea5c6da29c6351fe83ec23b334aba8a585b5400fef789180ca1a0",
+  "revisionNote": "Scale/load runs used shift-alignment/weekend fix. Final HTTP transactional suite additionally uses explicit overtime-calendar compatibility, early audit ID publication and deep-copy task order ID canonicalization. Scale fixtures have exactly one calendar/resource; all scale outputs revalidated with final independent harness."
+}

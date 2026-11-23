@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "requests": 4562,
+  "concurrency": 8,
+  "endpoint": "/smart-scheduling/plan/progress",
+  "errors": 0,
+  "statuses": [
+    "SCHEDULING"
+  ],
+  "elapsedSeconds": 60.099647791997995,
+  "meanMs": 0.8720108568712895,
+  "p95Ms": 1.2639160013350192,
+  "maxMs": 7.863542003178736,
+  "scope": "Single local run during one solve; paced duration 60s (0=burst); excludes login latency. Not a production SLA."
+}
