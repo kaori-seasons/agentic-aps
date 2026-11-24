@@ -1,0 +1,56 @@
+[
+  {
+    "name": "36-tasks-17-fixed-cold",
+    "lateMainOrders": 0,
+    "mainOrderTardinessMinutes": 0,
+    "lastFinish": "2026-11-26T10:00:00"
+  },
+  {
+    "name": "36-tasks-17-fixed-warm",
+    "lateMainOrders": 0,
+    "mainOrderTardinessMinutes": 0,
+    "lastFinish": "2026-11-26T10:00:00"
+  },
+  {
+    "name": "36-tasks-17-scale_aware-warm",
+    "lateMainOrders": 0,
+    "mainOrderTardinessMinutes": 0,
+    "lastFinish": "2026-11-26T10:00:00"
+  },
+  {
+    "name": "72-tasks-17-fixed-cold",
+    "lateMainOrders": 1,
+    "mainOrderTardinessMinutes": 1074.0,
+    "lastFinish": "2026-11-27T14:24:00"
+  },
+  {
+    "name": "72-tasks-17-fixed-warm",
+    "lateMainOrders": 1,
+    "mainOrderTardinessMinutes": 1074.0,
+    "lastFinish": "2026-11-27T14:24:00"
+  },
+  {
+    "name": "72-tasks-17-scale_aware-warm",
+    "lateMainOrders": 1,
+    "mainOrderTardinessMinutes": 1074.0,
+    "lastFinish": "2026-11-27T14:24:00"
+  },
+  {
+    "name": "144-tasks-17-fixed-cold",
+    "lateMainOrders": null,
+    "mainOrderTardinessMinutes": null,
+    "lastFinish": null
+  },
+  {
+    "name": "144-tasks-17-fixed-warm",
+    "lateMainOrders": null,
+    "mainOrderTardinessMinutes": null,
+    "lastFinish": null
+  },
+  {
+    "name": "144-tasks-17-scale_aware-warm",
+    "lateMainOrders": 12,
+    "mainOrderTardinessMinutes": 51774.0,
+    "lastFinish": "2026-12-02T11:30:00"
+  }
+]

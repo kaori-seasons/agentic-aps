@@ -256,6 +256,24 @@ const formOption = ref({
       span: 12,
     },
     {
+      label: '复用本次最佳方案',
+      prop: 'adaptiveWarmStartEnabled',
+      type: 'switch',
+      defaultValue: true,
+      span: 12,
+    },
+    {
+      label: '组合预算分配',
+      prop: 'adaptiveBudgetMode',
+      type: 'select',
+      dicData: [
+        {label: '按任务规模分配', value: 'SCALE_AWARE'},
+        {label: '固定单候选预算', value: 'FIXED'}
+      ],
+      defaultValue: 'SCALE_AWARE',
+      span: 12,
+    },
+    {
       label: '组合总预算(秒)',
       prop: 'adaptiveTotalSeconds',
       type: 'inputNumber',
@@ -384,6 +402,8 @@ function addEditRow (row) {
       delete rowData.value['config']
       rowData.value.adaptiveEnabled = !!row.config?.adaptive?.enabled
       rowData.value.adaptiveTotalSeconds = row.config?.adaptive?.totalSeconds || 180
+      rowData.value.adaptiveWarmStartEnabled = row.config?.adaptive?.warmStartEnabled ?? true
+      rowData.value.adaptiveBudgetMode = row.config?.adaptive?.budgetMode || 'SCALE_AWARE'
       if(!row.orderSchedulingRules) {
         rowData.value['orderSchedulingRules'] = []
       }
@@ -422,10 +442,14 @@ function submitHandle (form) {
   temp.config.adaptive = {
     ...(temp.config.adaptive || {}),
     enabled: !!rowData.value.adaptiveEnabled,
-    totalSeconds: rowData.value.adaptiveTotalSeconds || 180
+    totalSeconds: rowData.value.adaptiveTotalSeconds || 180,
+    warmStartEnabled: rowData.value.adaptiveWarmStartEnabled ?? true,
+    budgetMode: rowData.value.adaptiveBudgetMode || 'SCALE_AWARE'
   }
   delete temp.adaptiveEnabled
   delete temp.adaptiveTotalSeconds
+  delete temp.adaptiveWarmStartEnabled
+  delete temp.adaptiveBudgetMode
   if (temp.config.adaptive.enabled &&
       (temp.config.solverEngine !== 'TIMEFOLD' || !temp.config.materialConstrained)) {
     ElNotification({type: 'warning', message: '自适应组合求解需要选择 Timefold 并启用物料约束'})

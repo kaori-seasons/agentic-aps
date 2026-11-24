@@ -1,0 +1,35 @@
+{
+  "algorithm": "JDE_TIMEFOLD_V2",
+  "os": "macOS-15.7-arm64-arm-64bit-Mach-O",
+  "jdk": "Zulu OpenJDK 17.0.13",
+  "maven": "3.9.9",
+  "heap": "-Xmx2g",
+  "backendTests": {
+    "tests": 91,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontendTests": {
+    "tests": 5,
+    "failures": 0
+  },
+  "frontendBuild": "npm run build: PASS",
+  "jarSha256": "e8f277dacd4b5072477439461e607532e76c1c1b77549e94a2b54e36e60a4973",
+  "frontendIndexSha256": "f87344a2271fdfb8bf7eb9e155553e4c766135769b9c1e4ee7431dca77f3847e",
+  "commitBase": "35fd14be3e8b36201d7c1c1d6e62408cdcc53d3a",
+  "workingTreeChangesIncluded": true,
+  "transport": "Real HTTP on localhost, dedicated MySQL/Redis, actual Timefold solver; no MiniCPM required",
+  "sourceSha256": {
+    "aps-ui/src/views/aps/programOfProduction/productionSchedulingStrategy/index.vue": "a706eea8a70978e6c3bff8ee597514a4767ababd23a5d9b42fa16dd68f02548b",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/entity/dto/planning/AdaptiveSolveConfig.java": "16980fd598a306b344c13308d4c219a6c7ac51be25e0bc94a11935879dde6eea",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/solve/adaptive/AdaptiveScheduling.java": "c317a70bfc15a6d9cf1775d3e70b2adb4092412ca18f2787eedf67416812ee5b",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/solve/timefold/TimefoldManageConfigurator.java": "317f1e1a4b81ed956868178bfa07b014ed663778bbbd3d276f84edb94adfba74",
+    "aps/jvs-aps-common/src/test/java/cn/windwheel/aps/solve/HybridSchedulingTest.java": "3cb7787b0a8442be0678b0275affefacfe711c77e5d43b380af2c803e5aa11d6",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/solve/adaptive/AdaptiveBudgetPolicy.java": "4e2dfd348021234aad6bab5cbd655d2c3d5053557fe087bda930d936fa8b77d8",
+    "aps/jvs-aps-common/src/test/java/cn/windwheel/aps/solve/AdaptiveWarmStartTest.java": "d8159d67a1e737aa263e82d39ca17db99998839f36fa69c1388aff93eb9a1dfd"
+  },
+  "finalRegressionApplicationClassesMatchDeployed": true,
+  "applicationClassesChecked": 554,
+  "finalVerifiedJarSha256": "c4b8212cc1996274f9c7240996cfa5b80ed3b546578cafa24a7cfa0a5f5b0343"
+}

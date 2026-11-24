@@ -83,7 +83,8 @@ def strategy(c, adaptive, count=6, constrained=False):
         solverProfile='FFD_LATE_ACCEPTANCE', scoreCalculationCountLimit=16000,
         solveTimeSeconds=45, maxNoImprovementTime=0,
         adaptive=dict(enabled=adaptive, populationSize=4, generations=1, totalSeconds=total_seconds,
-                      trialSeconds=trial_seconds, trialScoreLimit=scores))
+                      trialSeconds=trial_seconds, trialScoreLimit=scores,
+                      warmStartEnabled=True, budgetMode='FIXED' if constrained else 'SCALE_AWARE'))
     ok(c.call('/planning-strategy', row, method='PUT'))
     actual = ok(c.call('/planning-strategy/page?current=1&size=10'))['records'][0]['config']
     assert actual.get('adaptive', {}).get('enabled') == adaptive, 'Running backend is stale or dropped adaptive config'
@@ -98,7 +99,8 @@ def await_solve(c, label, success=True):
             assert ids, p
             audit = ok(c.call('/smart-scheduling/audit/' + ids[-1]))
             save(label, dict(progress=p, audit=audit))
-            assert (p['status'] == 'SUCCESS') == success, p
+            if success is not None:
+                assert (p['status'] == 'SUCCESS') == success, p
             return audit, json.loads(audit['resultJson']), round(time.monotonic()-began, 3)
         time.sleep(.25)
     raise AssertionError('HTTP solve timeout: ' + label)
@@ -178,15 +180,28 @@ def validate(audit, result, count):
         assert any(t['index'] == adaptive['selectedTrial'] and t['score'] == result['score'] for t in trials)
         feasible_scores = [int(t['score'].split('/')[1].removesuffix('soft')) for t in trials if t['status']=='FEASIBLE']
         assert int(result['score'].split('/')[1].removesuffix('soft')) == max(feasible_scores)
+        if adaptive['algorithm'] == 'JDE_TIMEFOLD_V2':
+            assert adaptive['budget']['activeTasks'] == len(rows)
+            for trial in trials:
+                execution = trial['execution']
+                assert execution['budgetMillis'] > 0 and execution['scoreLimit'] >= 10
+                if execution['startMode'] == 'WARM':
+                    assert not execution['constructionEnabled'] and not execution['fallbackReason']
+                    source = trials[execution['seedTrial']]
+                    assert source['index'] < trial['index'] and source['status'] == 'FEASIBLE'
+                    assert source['score'] == execution['seedScore']
         checks.update(trials=len(trials), selected=adaptive['selectedTrial'], stop=adaptive['stopReason'])
     return checks
 
 
 def main():
+    global OUT
     parser = argparse.ArgumentParser()
     parser.add_argument('--scales', default='6,12,24', help='Comma-separated order counts; empty skips scale runs')
     parser.add_argument('--resume', action='store_true', help='Reuse successful scale evidence from this plan date')
+    parser.add_argument('--output', type=Path, default=OUT, help='Evidence directory; use a new directory to retain prior acceptance')
     args = parser.parse_args()
+    OUT = args.output.resolve()
     if args.resume:
         prior = json.loads((OUT/'report.json').read_text())
         assert prior['planStart'] == DAY.isoformat()
@@ -258,6 +273,8 @@ def main():
     audit, result, elapsed = await_solve(c, 'dynamic')
     checks = validate(audit, result, 6)
     assert checks['frozen'] >= 1 and checks['release'] >= 1
+    if result.get('adaptive', {}).get('algorithm') == 'JDE_TIMEFOLD_V2':
+        assert any(t['execution']['startMode']=='WARM' for t in result['adaptive']['trials']), 'Dynamic frozen scenario must exercise warm start'
     for t in result['tasks']:
         if t['resourceId'] == 'r-assy01':
             assert not (datetime.fromisoformat(t['start']) < outage_end and datetime.fromisoformat(t['end']) > outage_start)
@@ -284,7 +301,10 @@ def main():
         if ids:
             running = ok(c.call('/smart-scheduling/audit/'+ids[-1]))
             partial = json.loads(running.get('resultJson') or '{}')
-            if running['status'] == 'RUNNING' and partial.get('adaptive', {}).get('trials'):
+            completed = partial.get('adaptive', {}).get('trials', [])
+            warm_observed = any(t.get('execution', {}).get('startMode') == 'WARM' for t in completed)
+            if running['status'] == 'RUNNING' and completed and (
+                    partial['adaptive'].get('algorithm') != 'JDE_TIMEFOLD_V2' or warm_observed):
                 running_id = ids[-1]
                 save('cancel-before', running)
                 break

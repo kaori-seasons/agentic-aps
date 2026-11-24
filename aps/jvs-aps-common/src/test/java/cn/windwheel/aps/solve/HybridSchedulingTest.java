@@ -44,6 +44,16 @@ class HybridSchedulingTest {
         var completed=reports.get(reports.size()-1);
         assertEquals(8,completed.trials().size());
         assertEquals("COMPLETED",completed.stopReason());
+        assertEquals("JDE_TIMEFOLD_V2", completed.algorithm());
+        assertEquals("COLD", completed.trials().get(0).execution().startMode());
+        assertEquals(7, completed.trials().stream().filter(t -> "WARM".equals(t.execution().startMode())).count());
+        for (var trial : completed.trials().subList(1,8)) {
+            assertFalse(trial.execution().constructionEnabled());
+            assertNull(trial.execution().fallbackReason());
+            assertTrue(trial.execution().seedTrial() < trial.index());
+            assertTrue(ai.timefold.solver.core.api.score.buildin.hardsoftlong.HardSoftLongScore.parseScore(trial.score())
+                    .compareTo(ai.timefold.solver.core.api.score.buildin.hardsoftlong.HardSoftLongScore.parseScore(trial.execution().seedScore())) >= 0);
+        }
         assertTrue(result.getTimefoldScore().softScore()>=result.getTimefoldScore().parseScore(completed.trials().get(0).score()).softScore());
         var replay=new ArrayList<cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.Report>();
         assertEquals(result.getScore(),router.solve(UUID.randomUUID(),problem,()->false,replay::add).getScore());

@@ -75,6 +75,11 @@ public class TimefoldManageConfigurator {
 
     /** Independent factory configuration: adaptive trials never replace a tenant manager. */
     public SolverConfig buildConfig(StrategyConfigDTO config) {
+        return buildConfig(config, false);
+    }
+
+    /** A fully assigned, validated warm seed needs local search only. */
+    public SolverConfig buildConfig(StrategyConfigDTO config, boolean initialized) {
         // 终止配置
         TerminationConfig terminationConfig = buildTerminationConfig(config);
         // 求解配置
@@ -108,6 +113,15 @@ public class TimefoldManageConfigurator {
             solverConfig.withPhases(chPhaseConfig, lsPhaseConfig);
         }
 
+        if (initialized) {
+            if (solverConfig.getPhaseConfigList() == null) {
+                solverConfig.withPhases(new ai.timefold.solver.core.config.localsearch.LocalSearchPhaseConfig());
+            } else {
+                solverConfig.setPhaseConfigList(solverConfig.getPhaseConfigList().stream()
+                        .filter(phase -> !(phase instanceof ConstructionHeuristicPhaseConfig))
+                        .collect(java.util.stream.Collectors.toList()));
+            }
+        }
         // 创建SolverManager实例
         return solverConfig;
     }

@@ -1,0 +1,23 @@
+{
+  "coldRollback": {
+    "enabled": true,
+    "budgetMode": "FIXED",
+    "generations": 1,
+    "totalSeconds": 45,
+    "trialSeconds": 5,
+    "populationSize": 4,
+    "trialScoreLimit": 2000,
+    "warmStartEnabled": false
+  },
+  "warmScale": {
+    "enabled": true,
+    "budgetMode": "SCALE_AWARE",
+    "generations": 1,
+    "totalSeconds": 45,
+    "trialSeconds": 5,
+    "populationSize": 4,
+    "trialScoreLimit": 2000,
+    "warmStartEnabled": true
+  },
+  "status": "PASS"
+}

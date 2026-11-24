@@ -1,0 +1,58 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "planStart": "2026-11-24T08:00:00",
+  "description": "Synthetic forklift E20/E30; 6 operations/order; 8 resources; no customer data",
+  "cases": [
+    {
+      "name": "authentication and scheduling authorization",
+      "status": "PASS"
+    },
+    {
+      "name": "360-task undersized budget safely rejected",
+      "status": "PASS",
+      "auditId": "05324c46-558a-4b5e-97ad-0b08e8d528c2",
+      "seconds": 36.574,
+      "capacityConclusion": "No feasible schedule under 5s/trial and 2000 score calculations; not a scalability pass"
+    },
+    {
+      "name": "concurrent submission admits exactly one solve",
+      "status": "PASS"
+    },
+    {
+      "name": "stale snapshot confirmation rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "dynamic outage, material delay, priority insertion, frozen WIP and four previews",
+      "status": "PASS",
+      "auditId": "7bdfe0cd-31ce-44d8-abb9-b099de1828c8",
+      "score": "0hard/-1798416838soft",
+      "seconds": 26.841,
+      "tasks": 36,
+      "precedence": 30,
+      "release": 6,
+      "frozen": 1,
+      "capability": 36,
+      "calendar": 36,
+      "duration": 35,
+      "trials": 8,
+      "selected": 1,
+      "stop": "COMPLETED"
+    },
+    {
+      "name": "atomic confirmation persists 36 tasks and terminal audit",
+      "status": "PASS"
+    },
+    {
+      "name": "cancellation releases lock and never republishes pending tasks",
+      "status": "PASS",
+      "auditId": "64d46e7d-36a3-4787-9c5a-c44f275400ef"
+    },
+    {
+      "name": "infeasible frozen outage rejected without replacing confirmed plan",
+      "status": "PASS",
+      "auditId": "53f59e6b-7a27-46c2-b6dd-15e95743c72a"
+    }
+  ]
+}

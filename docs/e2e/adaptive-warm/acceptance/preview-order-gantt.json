@@ -1,0 +1,586 @@
+{
+  "dateRange": [
+    "2026-11-23 16:00:00",
+    "2026-11-28 23:59:59"
+  ],
+  "orders": [
+    {
+      "id": "po-003",
+      "code": "SYN-FL-003"
+    },
+    {
+      "id": "po-002",
+      "code": "SYN-FL-002"
+    },
+    {
+      "id": "2124884005091868683",
+      "code": "SYN-FL-006-SF-HOUSING"
+    },
+    {
+      "id": "2124884005079285783",
+      "code": "SYN-FL-003-SF-HOUSING"
+    },
+    {
+      "id": "po-005",
+      "code": "SYN-FL-005"
+    },
+    {
+      "id": "2124884005091868681",
+      "code": "SYN-FL-006-SF-ROTOR"
+    },
+    {
+      "id": "2124884005087674379",
+      "code": "SYN-FL-001-SF-HOUSING"
+    },
+    {
+      "id": "2124884005096062984",
+      "code": "SYN-FL-005-SF-HOUSING"
+    },
+    {
+      "id": "2124884005083480072",
+      "code": "SYN-FL-002-SF-ROTOR"
+    },
+    {
+      "id": "po-001",
+      "code": "SYN-FL-001"
+    },
+    {
+      "id": "2124884005087674377",
+      "code": "SYN-FL-001-SF-ROTOR"
+    },
+    {
+      "id": "2124884005079285768",
+      "code": "SYN-FL-004-SF-HOUSING"
+    },
+    {
+      "id": "po-004",
+      "code": "SYN-FL-004"
+    },
+    {
+      "id": "2124884005083480074",
+      "code": "SYN-FL-002-SF-HOUSING"
+    },
+    {
+      "id": "po-006",
+      "code": "SYN-FL-006"
+    },
+    {
+      "id": "2124884005079285787",
+      "code": "SYN-FL-003-SF-ROTOR"
+    },
+    {
+      "id": "2124884005079285772",
+      "code": "SYN-FL-004-SF-ROTOR"
+    },
+    {
+      "id": "2124884005096062988",
+      "code": "SYN-FL-005-SF-ROTOR"
+    }
+  ],
+  "tasks": [
+    {
+      "processCode": "CUT",
+      "productionOrderId": "2124884005083480074",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 08:00:00",
+      "endTime": "2026-11-24 09:24:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 14
+      }
+    },
+    {
+      "processCode": "CUT",
+      "productionOrderId": "2124884005079285768",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 08:00:00",
+      "endTime": "2026-11-24 09:30:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 18
+      }
+    },
+    {
+      "processCode": "CUT",
+      "productionOrderId": "2124884005096062984",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 09:24:00",
+      "endTime": "2026-11-24 11:24:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": "16时0分0秒",
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 20
+      }
+    },
+    {
+      "processCode": "WELD",
+      "productionOrderId": "2124884005079285768",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 09:30:00",
+      "endTime": "2026-11-24 11:45:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 18
+      }
+    },
+    {
+      "processCode": "CUT",
+      "productionOrderId": "2124884005091868683",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 09:30:00",
+      "endTime": "2026-11-24 10:19:48",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 10
+      }
+    },
+    {
+      "processCode": "CUT",
+      "productionOrderId": "2124884005079285783",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 10:19:48",
+      "endTime": "2026-11-24 11:39:36",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 16
+      }
+    },
+    {
+      "processCode": "CUT",
+      "productionOrderId": "2124884005087674379",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 11:39:36",
+      "endTime": "2026-11-24 13:39:36",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 12
+      }
+    },
+    {
+      "processCode": "WELD",
+      "productionOrderId": "2124884005079285783",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 11:45:00",
+      "endTime": "2026-11-24 14:45:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 16
+      }
+    },
+    {
+      "processCode": "COAT",
+      "productionOrderId": "2124884005079285768",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 11:45:00",
+      "endTime": "2026-11-24 14:33:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 18
+      }
+    },
+    {
+      "processCode": "COAT",
+      "productionOrderId": "2124884005079285783",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 14:45:00",
+      "endTime": "2026-11-24 16:21:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 16
+      }
+    },
+    {
+      "processCode": "WELD",
+      "productionOrderId": "2124884005083480074",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 14:45:00",
+      "endTime": "2026-11-24 16:30:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 14
+      }
+    },
+    {
+      "processCode": "WELD",
+      "productionOrderId": "2124884005096062984",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 16:30:00",
+      "endTime": "2026-11-24 19:30:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": "16时0分0秒",
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 20
+      }
+    },
+    {
+      "processCode": "COAT",
+      "productionOrderId": "2124884005083480074",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 16:30:00",
+      "endTime": "2026-11-24 18:24:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 14
+      }
+    },
+    {
+      "processCode": "COAT",
+      "productionOrderId": "2124884005096062984",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 19:30:00",
+      "endTime": "2026-11-24 21:30:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": "16时0分0秒",
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 20
+      }
+    },
+    {
+      "processCode": "WELD",
+      "productionOrderId": "2124884005087674379",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 19:30:00",
+      "endTime": "2026-11-24 21:00:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 12
+      }
+    },
+    {
+      "processCode": "WELD",
+      "productionOrderId": "2124884005091868683",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 21:00:00",
+      "endTime": "2026-11-25 08:15:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 10
+      }
+    },
+    {
+      "processCode": "COAT",
+      "productionOrderId": "2124884005087674379",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-24 21:30:00",
+      "endTime": "2026-11-25 08:42:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 12
+      }
+    },
+    {
+      "processCode": "WIND",
+      "productionOrderId": "2124884005079285772",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 08:00:00",
+      "endTime": "2026-11-25 11:36:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 18
+      }
+    },
+    {
+      "processCode": "COAT",
+      "productionOrderId": "2124884005091868683",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 08:42:00",
+      "endTime": "2026-11-25 09:42:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车车架",
+        "scheduledQuantity": 10
+      }
+    },
+    {
+      "processCode": "WIND",
+      "productionOrderId": "2124884005079285787",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 11:36:00",
+      "endTime": "2026-11-25 15:48:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 16
+      }
+    },
+    {
+      "processCode": "ASSY",
+      "productionOrderId": "po-004",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 13:00:00",
+      "endTime": "2026-11-25 16:00:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 18
+      }
+    },
+    {
+      "processCode": "WIND",
+      "productionOrderId": "2124884005091868681",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 15:48:00",
+      "endTime": "2026-11-25 18:18:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 10
+      }
+    },
+    {
+      "processCode": "ASSY",
+      "productionOrderId": "po-003",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 15:48:00",
+      "endTime": "2026-11-26 08:58:12",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E30",
+        "scheduledQuantity": 16
+      }
+    },
+    {
+      "processCode": "TEST",
+      "productionOrderId": "po-004",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 16:00:00",
+      "endTime": "2026-11-25 17:30:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 18
+      }
+    },
+    {
+      "processCode": "WIND",
+      "productionOrderId": "2124884005087674377",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 18:18:00",
+      "endTime": "2026-11-25 20:42:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 12
+      }
+    },
+    {
+      "processCode": "WIND",
+      "productionOrderId": "2124884005083480072",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-25 20:42:00",
+      "endTime": "2026-11-26 09:30:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 14
+      }
+    },
+    {
+      "processCode": "ASSY",
+      "productionOrderId": "po-001",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 08:00:00",
+      "endTime": "2026-11-26 10:00:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 12
+      }
+    },
+    {
+      "processCode": "TEST",
+      "productionOrderId": "po-003",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 08:58:12",
+      "endTime": "2026-11-26 10:18:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E30",
+        "scheduledQuantity": 16
+      }
+    },
+    {
+      "processCode": "ASSY",
+      "productionOrderId": "po-006",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 08:58:12",
+      "endTime": "2026-11-26 10:38:24",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E30",
+        "scheduledQuantity": 10
+      }
+    },
+    {
+      "processCode": "WIND",
+      "productionOrderId": "2124884005096062988",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 09:30:00",
+      "endTime": "2026-11-26 14:30:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": "16时0分0秒",
+      "extras": {
+        "materialName": "合成液压模块",
+        "scheduledQuantity": 20
+      }
+    },
+    {
+      "processCode": "ASSY",
+      "productionOrderId": "po-002",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 10:00:00",
+      "endTime": "2026-11-26 13:19:48",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 14
+      }
+    },
+    {
+      "processCode": "TEST",
+      "productionOrderId": "po-006",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 10:38:24",
+      "endTime": "2026-11-26 11:28:12",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E30",
+        "scheduledQuantity": 10
+      }
+    },
+    {
+      "processCode": "TEST",
+      "productionOrderId": "po-001",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 11:28:12",
+      "endTime": "2026-11-26 13:28:12",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 12
+      }
+    },
+    {
+      "processCode": "TEST",
+      "productionOrderId": "po-002",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 13:28:12",
+      "endTime": "2026-11-26 14:38:24",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": null,
+      "extras": {
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 14
+      }
+    },
+    {
+      "processCode": "ASSY",
+      "productionOrderId": "po-005",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-26 14:30:00",
+      "endTime": "2026-11-27 08:19:48",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": "16时0分0秒",
+      "extras": {
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 20
+      }
+    },
+    {
+      "processCode": "TEST",
+      "productionOrderId": "po-005",
+      "color": "#8EC5FC",
+      "startTime": "2026-11-27 08:19:48",
+      "endTime": "2026-11-27 10:00:00",
+      "taskStatus": null,
+      "overdueTimeString": null,
+      "delayTimeString": "16时0分0秒",
+      "extras": {
+        "materialName": "合成叉车 E20",
+        "scheduledQuantity": 20
+      }
+    }
+  ]
+}

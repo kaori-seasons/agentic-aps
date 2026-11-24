@@ -22,34 +22,53 @@ public final class AdaptiveScheduling {
 
     public record Trial(int index, int generation, List<Double> vector, double f, double cr,
                         long seed, String profile, int tabuSize, int lateSize, int acceptedLimit,
-                        String score, String status, long elapsedMillis) {}
+                        String score, String status, long elapsedMillis, Execution execution) {}
+    public record Execution(String startMode, int seedTrial, String seedScore, String fallbackReason,
+                            boolean constructionEnabled, long budgetMillis, long scoreLimit,
+                            long preparationMillis, long solveMillis, long validationMillis) {}
     public record Report(String algorithm, long rootSeed, int selectedTrial, String stopReason,
-                         List<Trial> trials) {}
-    private record Member(double[] vector, double f, double cr, SchedulingSolution result) {}
+                         List<Trial> trials, AdaptiveBudgetPolicy.Plan budget, boolean warmStartEnabled) {
+        public Report(String algorithm, long rootSeed, int selectedTrial, String stopReason, List<Trial> trials) {
+            this(algorithm, rootSeed, selectedTrial, stopReason, trials, null, false);
+        }
+    }
+    // Retain only fitness in the population, not N complete mutable planning graphs.
+    private record Member(double[] vector, double f, double cr,
+                          ai.timefold.solver.core.api.score.buildin.hardsoftlong.HardSoftLongScore score) {}
 
     public static SchedulingSolution solve(SchedulingSolution input, BooleanSupplier cancelled,
                                            Consumer<Report> audit) throws InterruptedException {
         SolveManageConfigurator.validate(input.getStrategy().getConfig());
         var settings = input.getStrategy().getConfig().getAdaptive();
+        var budget = AdaptiveBudgetPolicy.plan(input, settings);
         long rootSeed = Optional.ofNullable(input.getStrategy().getConfig().getRandomSeed()).orElse(17L);
         Random random = new Random(rootSeed);
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(settings.getTotalSeconds());
         var mapper = SolveProblemSnapshot.mapper(new ObjectMapper().findAndRegisterModules());
         final byte[] snapshot;
-        try { snapshot = mapper.writeValueAsBytes(SolveProblemSnapshot.from(input)); }
+        final byte[] originalConfig;
+        try {
+            snapshot = mapper.writeValueAsBytes(SolveProblemSnapshot.from(input));
+            originalConfig = mapper.writeValueAsBytes(input.getStrategy().getConfig());
+        }
         catch (Exception ex) { throw new IllegalArgumentException("无法创建独立求解快照", ex); }
+        var validationManager = SolutionManager.create(SolverFactory.<SchedulingSolution>create(
+                new TimefoldManageConfigurator().buildConfig(input.getStrategy().getConfig())));
         List<Trial> trials = new ArrayList<>();
         List<Member> population = new ArrayList<>();
         SchedulingSolution best = null;
+        // Serialized only on improvement. Every trial restores a private graph, including business facts.
+        byte[] bestSnapshot = null;
         int selected = -1;
         String stop = "COMPLETED";
+        audit.accept(report(rootSeed, selected, "RUNNING", trials, budget, settings.isWarmStartEnabled()));
         for (int generation = 0; generation <= settings.getGenerations(); generation++) {
             // Synchronous generations prevent evaluation order from changing donor selection.
             List<Member> parents = new ArrayList<>(population);
             for (int i = 0; i < settings.getPopulationSize(); i++) {
                 if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
                 if (cancelled != null && cancelled.getAsBoolean()) {
-                    audit.accept(new Report("JDE_TIMEFOLD_V1",rootSeed,selected,"CANCELLED",List.copyOf(trials)));
+                    audit.accept(report(rootSeed,selected,"CANCELLED",trials,budget,settings.isWarmStartEnabled()));
                     return null;
                 }
                 if (System.nanoTime() >= deadline) { stop = "TIME_BUDGET"; break; }
@@ -68,8 +87,17 @@ public final class AdaptiveScheduling {
                     vector = mutate(target.vector(), parents.get(donors.get(0)).vector(),
                             parents.get(donors.get(1)).vector(), parents.get(donors.get(2)).vector(),f,cr,random);
                 }
+                long preparedAt = System.nanoTime();
+                boolean warm = settings.isWarmStartEnabled() && bestSnapshot != null;
+                int seedTrial = warm ? selected : -1;
+                String seedScore = warm ? best.getTimefoldScore().toString() : null;
+                String fallback = null;
                 SchedulingSolution problem;
-                try { problem = mapper.readValue(snapshot,SolveProblemSnapshot.class).restore(); }
+                try {
+                    problem = mapper.readValue(warm ? bestSnapshot : snapshot,SolveProblemSnapshot.class).restore();
+                    // Search parameters must start from the request, not leak from the incumbent's strategy.
+                    problem.getStrategy().setConfig(mapper.readValue(originalConfig, StrategyConfigDTO.class));
+                }
                 catch (Exception ex) { throw new IllegalStateException("求解快照无法重建",ex); }
                 StrategyConfigDTO config = problem.getStrategy().getConfig();
                 if (config.getSolverProfile()==null) config.setSolverProfile(SolverProfileEnum.DEFAULT);
@@ -80,12 +108,28 @@ public final class AdaptiveScheduling {
                 else decode(config,vector);
                 long seed = rootSeed; // common random numbers: parameter comparisons use the same solver seed
                 config.setRandomSeed(seed);
-                long nanos = Math.min(TimeUnit.SECONDS.toNanos(settings.getTrialSeconds()),deadline-System.nanoTime());
-                if (nanos < TimeUnit.MILLISECONDS.toNanos(1)) { stop="TIME_BUDGET"; break; }
-                var solverConfig = new TimefoldManageConfigurator().buildConfig(config);
+                var configurator = new TimefoldManageConfigurator();
+                var solverConfig = configurator.buildConfig(config, warm);
+                if (warm) {
+                    // Rebuild shadows and re-score the copied seed before skipping construction.
+                    boolean intact = completeQueues(problem) && frozenPreserved(input, problem);
+                    var seedFitness = intact ? validationManager.update(problem, SolutionUpdatePolicy.UPDATE_ALL) : null;
+                    if (seedFitness == null || seedFitness.initScore() != 0 || !seedFitness.isFeasible()
+                            || !seedFitness.equals(best.getTimefoldScore()) || !frozenPreserved(input, problem)) {
+                        fallback = "WARM_SEED_VALIDATION_FAILED";
+                        warm = false;
+                        try { problem = mapper.readValue(snapshot,SolveProblemSnapshot.class).restore(); }
+                        catch (Exception ex) { throw new IllegalStateException("冷启动快照无法重建", ex); }
+                        problem.getStrategy().setConfig(config);
+                        solverConfig = configurator.buildConfig(config, false);
+                    }
+                }
+                var allowance = budget.allocate(warm, TimeUnit.NANOSECONDS.toMillis(deadline-System.nanoTime()),
+                        budget.plannedTrials()-trials.size());
+                if (allowance.millis() < 1) { stop="TIME_BUDGET"; break; }
                 solverConfig.setTerminationConfig(new TerminationConfig()
-                        .withSpentLimit(Duration.ofMillis(TimeUnit.NANOSECONDS.toMillis(nanos)))
-                        .withScoreCalculationCountLimit(settings.getTrialScoreLimit()));
+                        .withSpentLimit(Duration.ofMillis(allowance.millis()))
+                        .withScoreCalculationCountLimit(allowance.scoreLimit()));
                 var factory = SolverFactory.<SchedulingSolution>create(solverConfig);
                 var solver = factory.buildSolver();
                 long started = System.nanoTime();
@@ -106,35 +150,71 @@ public final class AdaptiveScheduling {
                 if (cancelFailure.get()!=null) throw new IllegalStateException("取消状态不可用，已停止求解",cancelFailure.get());
                 if (Thread.currentThread().isInterrupted()) throw new InterruptedException();
                 if (cancelled != null && cancelled.getAsBoolean()) {
-                    audit.accept(new Report("JDE_TIMEFOLD_V1",rootSeed,selected,"CANCELLED",List.copyOf(trials)));
+                    audit.accept(report(rootSeed,selected,"CANCELLED",trials,budget,settings.isWarmStartEnabled()));
                     return null;
                 }
                 // Independent full score update, followed by immutable frozen-baseline comparison.
-                var score = SolutionManager.create(factory).update(result, SolutionUpdatePolicy.UPDATE_SCORE_ONLY);
+                long validationStarted = System.nanoTime();
+                var score = validationManager.update(result, SolutionUpdatePolicy.UPDATE_SCORE_ONLY);
                 boolean feasible = score != null && score.initScore()==0 && score.isFeasible()
-                        && frozenPreserved(input,result);
+                        && completeQueues(result) && frozenPreserved(input,result);
                 int trialId = trials.size();
                 trials.add(new Trial(trialId,generation,Arrays.stream(vector).boxed().toList(),f,cr,seed,
                         config.getSolverProfile().name(),config.getEntityTabuSize(),config.getLateAcceptanceSize(),
                         config.getAcceptedCountLimit(),String.valueOf(score),feasible?"FEASIBLE":"INFEASIBLE",
-                        TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started)));
+                        TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-preparedAt),
+                        new Execution(warm ? "WARM" : "COLD",seedTrial,seedScore,fallback,!warm,
+                                allowance.millis(),allowance.scoreLimit(),
+                                TimeUnit.NANOSECONDS.toMillis(started-preparedAt),
+                                TimeUnit.NANOSECONDS.toMillis(validationStarted-started),
+                                TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-validationStarted))));
                 if (feasible) {
                     result.setScore(org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore
                             .of(result.getTimefoldScore().hardScore(),result.getTimefoldScore().softScore()));
-                    if (better(result,best)) { best=result; selected=trialId; }
+                    if (better(result,best)) {
+                        best=result; selected=trialId;
+                        if (settings.isWarmStartEnabled()) {
+                            try { bestSnapshot = mapper.writeValueAsBytes(SolveProblemSnapshot.from(best)); }
+                            catch (Exception ex) { throw new IllegalStateException("无法保存热启动快照", ex); }
+                        }
+                    }
                 } else result=null;
-                Member member = new Member(vector,f,cr,result);
+                Member member = new Member(vector,f,cr,result == null ? null : result.getTimefoldScore());
                 if (generation==0) population.add(member);
-                else if (better(result,parents.get(i).result())) population.set(i,member);
+                else if (member.score()!=null && (parents.get(i).score()==null
+                        || member.score().compareTo(parents.get(i).score())>0)) population.set(i,member);
                 // Persist before beginning another trial; failures propagate and prevent publication.
-                audit.accept(new Report("JDE_TIMEFOLD_V1",rootSeed,selected,"RUNNING",List.copyOf(trials)));
+                audit.accept(report(rootSeed,selected,"RUNNING",trials,budget,settings.isWarmStartEnabled()));
             }
             if (!stop.equals("COMPLETED")) break;
         }
-        audit.accept(new Report("JDE_TIMEFOLD_V1",rootSeed,selected,stop,List.copyOf(trials)));
+        audit.accept(report(rootSeed,selected,stop,trials,budget,settings.isWarmStartEnabled()));
         if (best==null) throw new IllegalStateException("自适应求解预算内未找到硬约束可行解；请检查物料、冻结和资源冲突");
         // Expose the actual winning inner strategy, with the original outer request in audit.inputJson.
         return best;
+    }
+
+    private static Report report(long seed, int selected, String stop, List<Trial> trials,
+                                 AdaptiveBudgetPolicy.Plan budget, boolean warm) {
+        return new Report("JDE_TIMEFOLD_V2", seed, selected, stop, List.copyOf(trials), budget, warm);
+    }
+
+    /** Require exactly one assignment per active task and an intact frozen prefix on every resource. */
+    public static boolean completeQueues(SchedulingSolution solution) {
+        Set<ProductionTask> expected = Collections.newSetFromMap(new IdentityHashMap<>());
+        solution.getTasks().stream().filter(SchedulingRules::active).forEach(expected::add);
+        Set<ProductionTask> assigned = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (var resource : solution.getMainResources()) {
+            var queue = resource.getTaskList();
+            int pinned = resource.getFirstUnpinnedIndex();
+            if (pinned < 0 || pinned > queue.size()) return false;
+            for (int i=0;i<queue.size();i++) {
+                var task = queue.get(i);
+                if (!expected.contains(task) || !assigned.add(task) || task.getResource()!=resource
+                        || !SchedulingRules.scheduled(task) || Boolean.TRUE.equals(task.getPinned()) != (i < pinned)) return false;
+            }
+        }
+        return assigned.size() == expected.size();
     }
 
     static boolean better(SchedulingSolution candidate, SchedulingSolution incumbent) {
