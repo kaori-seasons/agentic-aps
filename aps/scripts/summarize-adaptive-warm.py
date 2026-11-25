@@ -47,7 +47,7 @@ for case in comparison['cases']:
     rows.append(f"| {case['tasks']} | {case['seed']} | {mode} | {limits} | {duration} | {case['coldTrials']} / {case['warmTrials']} | {score} | {late} |")
 (out/'business-metrics.json').write_text(json.dumps(metrics,ensure_ascii=False,indent=2)+'\n')
 lines=['# 自适应排程 V2 验收结果','',
-       '本轮使用本地隔离 MySQL/Redis、真实 HTTP、实际 Timefold 求解器及合成装配数据。不是制造企业现场数据。', '',
+       '本轮使用本地隔离 MySQL/Redis、真实 HTTP、实际 Timefold 求解器及合成装配数据。', '',
        '## 三种模式对照','',
        '| 工序 | 种子 | 模式 | 冷 / 热时间额度（秒） | HTTP 耗时（秒） | 构造 / 热启动次数 | 最终得分 | 逾期主订单数 / 总逾期分钟 |',
        '|---:|---:|---|---:|---:|---:|---|---:|',*rows,'',
