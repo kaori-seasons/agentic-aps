@@ -244,10 +244,14 @@ const formOption = ref({
     { label: 'CP-SAT计划窗口（天）', prop: 'cpSatHorizon', type: 'inputNumber', span: 12, min: 1, max: 180, precision: 0, defaultValue: 30 },
     { label: 'CP-SAT计算线程', prop: 'cpSatWorkers', type: 'inputNumber', span: 12, min: 1, max: 8, precision: 0, defaultValue: 1 },
     { label: 'CP-SAT可行基线保护', prop: 'cpSatBaseline', type: 'switch', span: 12, defaultValue: true },
+    { label:'Timefold热启动与局部精修', prop:'cpSat_timefoldWarmStart', type:'switch', span:12, defaultValue:false },
+    { label:'按规模分配热启动预算', prop:'cpSat_sizeAwareBudget', type:'switch', span:12, defaultValue:true },
+    { label:'固定热启动预算比例（%）', prop:'cpSat_timefoldBudgetPercent', type:'inputNumber', span:12, defaultValue:50, min:10,max:80,precision:0 },
+    { label:'CP-SAT搜索方式', prop:'cpSat_searchMode', type:'select', span:12, defaultValue:'AUTOMATIC', dicData:[{label:'自动搜索',value:'AUTOMATIC'},{label:'组合搜索',value:'PORTFOLIO'}] },
     { label:'复用求解进程', prop:'cpSat_reuseWorker', type:'switch', span:12, defaultValue:true },
     { label:'优化范围', prop:'cpSat_optimizationScope', type:'select', span:12, defaultValue:'FULL', dicData:[{label:'全量优化',value:'FULL'},{label:'局部优化（需要可行基线）',value:'LOCAL'}] },
     { label:'局部任务编码（逗号分隔）', prop:'cpSat_focusTaskCodes', type:'input', span:12, defaultValue:'' },
-    { label:'邻域扩展层数', prop:'cpSat_neighborhoodDepth', type:'inputNumber', span:12, defaultValue:1, precision:0, min:0,max:5 },
+    { label:'初始邻域扩展层数', prop:'cpSat_neighborhoodDepth', type:'inputNumber', span:12, defaultValue:1, precision:0, min:0,max:5 },
     { label:'邻域任务上限', prop:'cpSat_maxNeighborhoodTasks', type:'inputNumber', span:12, defaultValue:60, precision:0, min:1,max:300 },
     { label:'每项任务调整成本', prop:'cpSat_changedTaskWeight', type:'inputNumber', span:12, defaultValue:1000, precision:0, min:0,max:1000000000 },
     { label:'每次设备变更成本', prop:'cpSat_resourceChangeWeight', type:'inputNumber', span:12, defaultValue:3000, precision:0, min:0,max:1000000000 },
@@ -422,6 +426,10 @@ function addEditRow (row) {
       rowData.value.cpSatHorizon = row.config?.cpSat?.horizonDays || 30
       rowData.value.cpSatWorkers = row.config?.cpSat?.numWorkers || 1
       rowData.value.cpSatBaseline = row.config?.cpSat?.useBaselineHint ?? true
+      rowData.value.cpSat_timefoldWarmStart = row.config?.cpSat?.timefoldWarmStart ?? false
+      rowData.value.cpSat_sizeAwareBudget = row.config?.cpSat?.sizeAwareBudget ?? true
+      rowData.value.cpSat_timefoldBudgetPercent = row.config?.cpSat?.timefoldBudgetPercent ?? 50
+      rowData.value.cpSat_searchMode = row.config?.cpSat?.searchMode ?? 'AUTOMATIC'
       rowData.value.cpSat_reuseWorker = row.config?.cpSat?.reuseWorker ?? true
       rowData.value.cpSat_optimizationScope = row.config?.cpSat?.optimizationScope ?? 'FULL'
       rowData.value.cpSat_focusTaskCodes = (row.config?.cpSat?.focusTaskCodes || []).join(', ')
@@ -473,6 +481,10 @@ function submitHandle (form) {
   temp.config.materialConstrained = rowData.value['materialConstrained'] || false
   temp.config.cpSat = { executionMode: rowData.value.cpSatMode || 'SHADOW', horizonDays: rowData.value.cpSatHorizon || 30,
     numWorkers: rowData.value.cpSatWorkers || 1, useBaselineHint: rowData.value.cpSatBaseline ?? true,
+    timefoldWarmStart: rowData.value.cpSat_timefoldWarmStart ?? false,
+    sizeAwareBudget: rowData.value.cpSat_sizeAwareBudget ?? true,
+    timefoldBudgetPercent: rowData.value.cpSat_timefoldBudgetPercent ?? 50,
+    searchMode: rowData.value.cpSat_searchMode ?? 'AUTOMATIC',
     reuseWorker: rowData.value.cpSat_reuseWorker ?? true,
     optimizationScope: rowData.value.cpSat_optimizationScope ?? 'FULL',
     focusTaskCodes: (rowData.value.cpSat_focusTaskCodes || '').split(/[,，\n]/).map(x => x.trim()).filter(Boolean),
@@ -484,7 +496,7 @@ function submitHandle (form) {
     minNetImprovement: rowData.value.cpSat_minNetImprovement ?? 1,
     minTardinessImprovementMinutes: rowData.value.cpSat_minTardinessImprovementMinutes ?? 0,
     maxChangedTaskPercent: rowData.value.cpSat_maxChangedTaskPercent ?? 100 }
-  for (const key of ['cpSatMode','cpSatHorizon','cpSatWorkers','cpSatBaseline','cpSat_reuseWorker','cpSat_optimizationScope','cpSat_focusTaskCodes','cpSat_neighborhoodDepth','cpSat_maxNeighborhoodTasks','cpSat_changedTaskWeight','cpSat_resourceChangeWeight','cpSat_startShiftMinuteWeight','cpSat_minNetImprovement','cpSat_minTardinessImprovementMinutes','cpSat_maxChangedTaskPercent']) delete temp[key]
+  for (const key of ['cpSat_timefoldWarmStart','cpSat_sizeAwareBudget','cpSat_timefoldBudgetPercent','cpSat_searchMode','cpSatMode','cpSatHorizon','cpSatWorkers','cpSatBaseline','cpSat_reuseWorker','cpSat_optimizationScope','cpSat_focusTaskCodes','cpSat_neighborhoodDepth','cpSat_maxNeighborhoodTasks','cpSat_changedTaskWeight','cpSat_resourceChangeWeight','cpSat_startShiftMinuteWeight','cpSat_minNetImprovement','cpSat_minTardinessImprovementMinutes','cpSat_maxChangedTaskPercent']) delete temp[key]
   if (temp.config.solverEngine === 'ORTOOLS_CP_SAT') {
     if (temp.config.direction !== 'FORWARD' || !temp.config.materialConstrained || temp.config.solverProfile !== 'DEFAULT'
         || rowData.value.adaptiveEnabled || (temp.config.maxNoImprovementTime || 0) > 0) {

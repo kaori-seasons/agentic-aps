@@ -12,6 +12,11 @@ public class CpSatConfig {
     private int horizonDays = 30;
     private boolean useBaselineHint = true;
     private boolean reuseWorker = true;
+    private boolean timefoldWarmStart = false;
+    private int timefoldBudgetPercent = 50;
+    private boolean sizeAwareBudget = true;
+    public enum SearchMode { AUTOMATIC, PORTFOLIO }
+    private SearchMode searchMode = SearchMode.AUTOMATIC;
     public enum OptimizationScope { FULL, LOCAL }
     private OptimizationScope optimizationScope = OptimizationScope.FULL;
     private java.util.List<String> focusTaskCodes = new java.util.ArrayList<>();
@@ -24,6 +29,9 @@ public class CpSatConfig {
     private long minTardinessImprovementMinutes = 0;
     private int maxChangedTaskPercent = 100;
     public void validate() {
+        if(searchMode==null || timefoldBudgetPercent<10 || timefoldBudgetPercent>80)
+            throw new IllegalArgumentException("热启动预算比例必须为10–80，搜索模式不能为空");
+        if(timefoldWarmStart && !useBaselineHint) throw new IllegalArgumentException("组合优化必须开启基线保护");
         if(executionMode==null || numWorkers<1 || numWorkers>8 || horizonDays<1 || horizonDays>180)
             throw new IllegalArgumentException("CP-SAT配置超出范围：线程1–8，计划窗口1–180天");
         if(optimizationScope==null || neighborhoodDepth<0 || neighborhoodDepth>5 || maxNeighborhoodTasks<1 || maxNeighborhoodTasks>300

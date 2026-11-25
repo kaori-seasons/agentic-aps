@@ -12,7 +12,7 @@ import java.util.function.BooleanSupplier;
 
 /** Exclusive worker leases, tenant-affine cache, bounded lifetime and fail-closed cancellation. */
 public final class CpSatWorkerPool implements AutoCloseable {
-    public record Result(Response response,long pid,boolean reused,int completedJobs,long processStartMillis) {}
+    public record Result(Response response,long pid,boolean reused,int completedJobs,long processStartMillis,Long cpuMillis) {}
     private static final long IDLE_NANOS=TimeUnit.SECONDS.toNanos(60);
     private final Deque<Worker> idle=new ArrayDeque<>();
     private final Set<Worker> all=new HashSet<>();
@@ -34,11 +34,12 @@ public final class CpSatWorkerPool implements AutoCloseable {
                 w.commands=new BufferedWriter(new OutputStreamWriter(w.process.getOutputStream(),java.nio.charset.StandardCharsets.UTF_8));
             }
             long launchMillis=(System.nanoTime()-start)/1000000;
+            var cpuBefore=w.process.info().totalCpuDuration();
             Files.write(input,bytes,StandardOpenOption.CREATE_NEW);
             w.commands.write(request.attempt());w.commands.newLine();w.commands.flush();
             while(!Files.exists(output)) {
                 if(cancelled.getAsBoolean() || Thread.currentThread().isInterrupted()) throw new CancellationException();
-                if(System.nanoTime()>deadline) throw new IllegalStateException("CP-SAT超出总预算，worker已终止");
+                if(System.nanoTime()>deadline) throw new TimeoutException("CP-SAT超出总预算，worker已终止");
                 if(!w.process.isAlive()) throw new IllegalStateException("CP-SAT worker异常退出，退出码="+w.process.exitValue());
                 Thread.sleep(50);
             }
@@ -47,7 +48,9 @@ public final class CpSatWorkerPool implements AutoCloseable {
             Response response=new ObjectMapper().readValue(output.toFile(),Response.class);
             if(response.version()!=Protocol.VERSION || !request.attempt().equals(response.attempt())) throw new IllegalStateException("CP-SAT响应身份不匹配");
             w.jobs++;healthy=!"MODEL_OR_RUNTIME_ERROR".equals(response.status());
-            return new Result(response,w.process.pid(),reused,w.jobs,launchMillis);
+            var cpuAfter=w.process.info().totalCpuDuration();
+            Long cpuMillis=cpuBefore.isPresent() && cpuAfter.isPresent()?cpuAfter.get().minus(cpuBefore.get()).toMillis():null;
+            return new Result(response,w.process.pid(),reused,w.jobs,launchMillis,cpuMillis);
         } finally {
             try {Files.deleteIfExists(input);Files.deleteIfExists(output);Files.deleteIfExists(output.resolveSibling(output.getFileName()+".tmp"));}
             finally {release(w,healthy && reuse);}

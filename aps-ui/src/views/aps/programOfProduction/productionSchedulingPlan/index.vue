@@ -65,6 +65,11 @@
             <el-descriptions-item label="进程复用">{{cpSatAudit.workerReused ? '已复用' : '新进程'}}</el-descriptions-item>
             <el-descriptions-item label="模型缓存">{{cpSatAudit.worker?.performance?.modelCacheHit ? '命中' : '重新建模'}}</el-descriptions-item>
             <el-descriptions-item label="原生加载 / 建模">{{cpSatAudit.worker?.performance?.nativeLoadMillis ?? '—'}} / {{cpSatAudit.worker?.performance?.modelBuildMillis ?? '—'}} ms</el-descriptions-item>
+            <el-descriptions-item label="模型变量 / 约束">{{cpSatAudit.worker?.performance?.modelStats?.variables ?? '—'}} / {{cpSatAudit.worker?.performance?.modelStats?.constraints ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="邻接模型 / 日历分段">{{cpSatAudit.worker?.performance?.modelStats?.circuits ?? '—'}} / {{cpSatAudit.worker?.performance?.modelStats?.retainedSegments ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item v-if="cpSatAudit.refinementRounds" label="局部精修轮次">{{cpSatAudit.refinementRounds.length}}</el-descriptions-item>
+            <el-descriptions-item label="Worker CPU">{{cpSatAudit.workerCpuMillis ?? '—'}} ms{{cpSatAudit.workerCpuComplete === false ? '（部分记录）' : ''}}</el-descriptions-item>
+            <el-descriptions-item v-if="cpSatAudit.hybrid" label="热启动 / 共享预算">{{cpSatAudit.hybrid.timefoldMillis ?? 0}} ms / {{cpSatAudit.hybrid.sharedBudgetSeconds}} s</el-descriptions-item>
             <el-descriptions-item label="优化范围">{{cpSatAudit.optimizationScope === 'LOCAL' ? '局部' : '全量'}} · {{cpSatAudit.movableTasks}} 项可调</el-descriptions-item>
             <el-descriptions-item label="候选调整任务">{{cpSatAudit.adoption?.changedTasks ?? '—'}}</el-descriptions-item>
             <el-descriptions-item label="候选调整成本">{{cpSatAudit.adoptionExact?.adjustmentCost ?? cpSatAudit.adoption?.adjustmentCost ?? '—'}}</el-descriptions-item>

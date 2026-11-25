@@ -7,12 +7,16 @@ import static cn.windwheel.aps.cpsat.Protocol.*;
 
 /** Optional-machine job shop with exact calendar envelopes and six business objective terms. */
 public final class CpSatSolver {
+    private final boolean simplifyAdjacency,tightenDomains;
+    public CpSatSolver() {this(true,true);}
+    CpSatSolver(boolean simplifyAdjacency,boolean tightenDomains) {this.simplifyAdjacency=simplifyAdjacency;this.tightenDomains=tightenDomains;}
     private final CpModel model=new CpModel();
     private final Map<String,Vars> vars=new LinkedHashMap<>();
     private final LinearExprBuilder objective=LinearExpr.newBuilder();
     private Request request;
     private boolean built;
     private Long baselineCost;
+    private int circuits,inputSegments,retainedSegments;
     private record Vars(IntVar start,IntVar end,Map<String,BoolVar> presence) {}
     private IntVar integer(long max,String name) { return model.newIntVar(0,max,name); }
     private static LinearExpr plus(LinearArgument a,long c) { return LinearExpr.newBuilder().add(a).add(c).build(); }
@@ -25,7 +29,7 @@ public final class CpSatSolver {
         return minutes;
     }
     public Response solve(Request r) {
-        long begin=System.nanoTime(); request=r;
+        long begin=System.nanoTime(),cpuBegin=processCpuNanos(); request=r;
         if(r.version()!=VERSION || r.tasks().isEmpty() || r.tasks().size()>500 || r.horizon()<=0
                 || r.horizon()>180L*86400000 || r.seconds()<0.1 || r.seconds()>3600 || r.workers()<1 || r.workers()>8)
             throw new IllegalArgumentException("Invalid/budget-exceeding CP-SAT request");
@@ -34,6 +38,14 @@ public final class CpSatSolver {
         boolean cacheHit=built;
         long modelStart=System.nanoTime();
         if(!built) {
+            var domains=TimeDomains.propagate(r);
+            if(!tightenDomains) {
+                Map<String,TimeDomains.Bounds> wide=new HashMap<>();
+                r.tasks().forEach(t->wide.put(t.id(),new TimeDomains.Bounds(Math.max(0,t.release()),r.horizon(),0,r.horizon())));
+                domains=new TimeDomains.Result(wide,true,0);
+            }
+            if(!domains.feasible()) return new Response(VERSION,r.attempt(),"INFEASIBLE","Sound temporal propagation found a contradiction",
+                    List.of(),null,0,0,(System.nanoTime()-begin)/1000000,0,0,false);
             Map<String,List<IntervalVar>> occupancy=new LinkedHashMap<>();
             for(var resource:r.resources()) {
                 var intervals=new ArrayList<IntervalVar>(); occupancy.put(resource.id(),intervals);
@@ -42,7 +54,9 @@ public final class CpSatSolver {
             }
             for(var t:r.tasks()) {
                 if(vars.containsKey(t.id())) throw new IllegalArgumentException("Duplicate task id");
-                IntVar s=model.newIntVar(Math.max(0,t.release()),r.horizon(),t.id()+"/start"), e=integer(r.horizon(),t.id()+"/end");
+                var domain=domains.bounds().get(t.id());
+                IntVar s=model.newIntVar(domain.startMin(),domain.startMax(),t.id()+"/start"),
+                        e=model.newIntVar(domain.endMin(),domain.endMax(),t.id()+"/end");
                 var ps=new LinkedHashMap<String,BoolVar>();
                 for(var o:t.options()) {
                     if(o.processing()<=0 || !occupancy.containsKey(o.resource()) || ps.containsKey(o.resource()))
@@ -56,9 +70,14 @@ public final class CpSatSolver {
                     } else {
                         var segments=new ArrayList<BoolVar>();
                         for(var segment:o.segments()) {
+                            inputSegments++;
+                            long lower=Math.max(Math.max(segment.firstStart(),domain.startMin()),domain.endMin()-segment.elapsed());
+                            long upper=Math.min(Math.min(segment.lastStart(),domain.startMax()),domain.endMax()-segment.elapsed());
+                            if(lower>upper)continue;
+                            retainedSegments++;
                             BoolVar b=model.newBoolVar("calendarSegment"); segments.add(b);
-                            model.addGreaterOrEqual(s,segment.firstStart()).onlyEnforceIf(b);
-                            model.addLessOrEqual(s,segment.lastStart()).onlyEnforceIf(b);
+                            model.addGreaterOrEqual(s,lower).onlyEnforceIf(b);
+                            model.addLessOrEqual(s,upper).onlyEnforceIf(b);
                             model.addEquality(e,plus(s,segment.elapsed())).onlyEnforceIf(b);
                         }
                         model.addEquality(LinearExpr.sum(segments.toArray(BoolVar[]::new)),p);
@@ -107,6 +126,8 @@ public final class CpSatSolver {
         CpSolver solver=new CpSolver();
         solver.getParameters().setNumWorkers(r.workers()).setRandomSeed(r.seed())
                 .setMaxTimeInSeconds(Math.max(.01,r.seconds()-buildMillis/1000.0)).setLogSearchProgress(false);
+        if("PORTFOLIO".equals(r.searchMode()))solver.getParameters().setSearchBranching(SatParameters.SearchBranching.PORTFOLIO_SEARCH);
+        else if(!"AUTOMATIC".equals(r.searchMode()))throw new IllegalArgumentException("Unsupported CP-SAT search mode");
         CpSolverStatus status=solver.solve(model);
         var assignments=new ArrayList<Assignment>(); Long cost=null; boolean baselineUsed=false;
         if(status==CpSolverStatus.FEASIBLE || status==CpSolverStatus.OPTIMAL) {
@@ -126,10 +147,14 @@ public final class CpSatSolver {
         return new Response(VERSION,r.attempt(),status.name(),solver.solutionInfo(),assignments,cost,
                 solver.bestObjectiveBound(),solver.wallTime(),buildMillis,solver.numBranches(),solver.numConflicts(),baselineUsed,
                 new Performance(cacheHit,nativeMillis,modelMillis,cost==null?null:Protocol.objective(r,assignments),
-                    cost==null?0:Protocol.adjustment(r,assignments).cost()));
+                    cost==null?0:Protocol.adjustment(r,assignments).cost(),new ModelStats(model.model().getVariablesCount(),model.model().getConstraintsCount(),circuits,inputSegments,retainedSegments),cpuBegin<0?null:Math.max(0,processCpuNanos()-cpuBegin)/1000000));
     }
 
 
+    private static long processCpuNanos() {
+        var bean=java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+        return bean instanceof com.sun.management.OperatingSystemMXBean os?os.getProcessCpuTime():-1;
+    }
     /** Cached models are only reused by the exact semantic-key cache, never across changed constraints. */
     public int modelBytes() {return model.model().getSerializedSize();}
     private void adjustmentAndScope(Request r) {
@@ -175,7 +200,23 @@ public final class CpSatSolver {
             model.addEquality(load,loadExpr); model.addMultiplicationEquality(squared,new LinearArgument[]{load,load});
             term(squared,request.weights().load());
         }
+        // Priority is a pairwise cost, independent of whether physical adjacency is needed.
+        for(var a:ts) for(var b:ts) {
+            var av=vars.get(a.id());var bv=vars.get(b.id());
+            var ap=av.presence().get(resource.id());var bp=bv.presence().get(resource.id());
+                if(a.frozen()==null && b.frozen()==null && a.priority()<b.priority() && request.weights().priority()>0) {
+                    BoolVar inversion=model.newBoolVar("priorityInversion"), after=model.newBoolVar("after");
+                    model.addGreaterThan(av.start(),bv.start()).onlyEnforceIf(after);
+                    model.addLessOrEqual(av.start(),bv.start()).onlyEnforceIf(after.not());
+                    model.addMultiplicationEquality(inversion,new LinearArgument[]{ap,bp,after});
+                    term(inversion,Math.multiplyExact((long)b.priority()-a.priority(),request.weights().priority()));
+                }
+        }
+        boolean needsCircuit=request.weights().setup()!=0
+                || ts.stream().anyMatch(t->t.frozen()==null && t.resourceGap()!=0);
+        if(!needsCircuit && simplifyAdjacency) return; // NoOverlap already enforces the complete zero-gap machine semantics.
         // Circuit encodes actual adjacency, not every pair of different materials.
+        circuits++;
         CircuitConstraint circuit=model.addCircuit(); BoolVar empty=model.newBoolVar("emptyMachine"); circuit.addArc(0,0,empty);
         var presences=ts.stream().map(t->vars.get(t.id()).presence().get(resource.id())).toArray(BoolVar[]::new);
         model.addEquality(LinearExpr.sum(presences),0).onlyEnforceIf(empty);
@@ -192,13 +233,7 @@ public final class CpSatSolver {
                 model.addImplication(arc,ap); model.addImplication(arc,bp);
                 model.addGreaterOrEqual(bv.start(),plus(av.end(),b.frozen()==null?b.resourceGap():0)).onlyEnforceIf(arc);
                 if(!Objects.equals(a.material(),b.material())) term(arc,request.weights().setup());
-                if(a.frozen()==null && b.frozen()==null && a.priority()<b.priority() && request.weights().priority()>0) {
-                    BoolVar inversion=model.newBoolVar("priorityInversion"), after=model.newBoolVar("after");
-                    model.addGreaterThan(av.start(),bv.start()).onlyEnforceIf(after);
-                    model.addLessOrEqual(av.start(),bv.start()).onlyEnforceIf(after.not());
-                    model.addMultiplicationEquality(inversion,new LinearArgument[]{ap,bp,after});
-                    term(inversion,Math.multiplyExact((long)b.priority()-a.priority(),request.weights().priority()));
-                }
+
             }
         }
     }

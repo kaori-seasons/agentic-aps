@@ -1,0 +1,27 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "initial verified seed produces publishable candidate",
+      "status": "PASS",
+      "auditId": "f98ecd57-53fd-4e83-b553-614cf166a490"
+    },
+    {
+      "name": "confirmed baseline skips seed and preserves adoption threshold",
+      "status": "PASS",
+      "auditId": "1d3405bd-fba1-44e5-9bf6-ddc1cc8c8e95"
+    },
+    {
+      "name": "short cold-worker budget preserves verified baseline",
+      "status": "PASS",
+      "auditId": "1bf7247f-fdc2-4ee4-b00d-7e1a04284fcc",
+      "solverStatus": "UNKNOWN",
+      "message": "SHARED_BUDGET_EXHAUSTED"
+    },
+    {
+      "name": "cancelling during Timefold seed never publishes fallback",
+      "status": "PASS"
+    }
+  ]
+}

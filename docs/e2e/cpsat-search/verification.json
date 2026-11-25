@@ -1,0 +1,22 @@
+{
+  "synthetic": true,
+  "protocolVersion": 3,
+  "matrixRuns": 33,
+  "feasibleRuns": 33,
+  "acceptanceCases": 4,
+  "backendTests": 113,
+  "frontendTests": 5,
+  "sourceSha256": {
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/solve/cpsat/CpSatEngine.java": "8e6f6dd56b2889b2c025d566198eb9fa9c9213da08645c2f1f6d6b42ebc26476",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/solve/cpsat/CpSatHybridPreparation.java": "062e6ea7eed355404c2b9765ac431551239372459f619a0f6631ceaba076871b",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/solve/cpsat/CpSatHybridSeeder.java": "2b44a096f7f0c946484ea924b5c086e7c10197cc68d48f6baedce8b3ed89f0f2",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/solve/cpsat/CpSatNeighborhood.java": "72cb3dab834b58738aa2175f1bc93ca08246161ce61b7466cd9232febe637e9f",
+    "aps/jvs-aps-ortools-worker/src/main/java/cn/windwheel/aps/cpsat/CpSatSolver.java": "e590ffe19160ee76e4faab7d6849875d5f70813c82e3c8b99167890579d64ed6",
+    "aps/jvs-aps-ortools-worker/src/main/java/cn/windwheel/aps/cpsat/TimeDomains.java": "f42f1bc747e0548db50132ac294d0d25228bdfa288506f32ed9e5f7aa520ad26",
+    "aps/jvs-aps-scheduling-contract/src/main/java/cn/windwheel/aps/cpsat/Protocol.java": "e3ac77726f3663be06e6d93a70f383f232e62d171690ea6991bd798f281ce017",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/entity/dto/planning/CpSatConfig.java": "82edf346b969105df18860566a56a4b36a829ded837654f621e0acc32cc357cc",
+    "aps/jvs-aps-common/src/main/java/cn/windwheel/aps/solve/cpsat/CpSatWorkerPool.java": "84dc313eff8b9fc7441cc19032b1970319d3d5646a24184ad656af80a4879d96",
+    "aps/scripts/e2e_cpsat_search.py": "5e030b8f75168a89a9071cbfc1b42deb8106b542d288e6d9e9a3366351538504"
+  },
+  "baseCommit": "40e7c01ea9f7134f41ce7fb8fbc969acea3ac959"
+}

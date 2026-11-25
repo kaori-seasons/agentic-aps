@@ -11,6 +11,35 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CpSatIntegrationTest {
+    @Test void hybridRejectsUnsafeConfiguration() {
+        var c=new cn.windwheel.aps.entity.dto.planning.CpSatConfig();
+        c.setTimefoldWarmStart(true).setUseBaselineHint(false);
+        assertThrows(IllegalArgumentException.class,c::validate);
+        c.setUseBaselineHint(true).setTimefoldBudgetPercent(81);
+        assertThrows(IllegalArgumentException.class,c::validate);
+        c.setTimefoldBudgetPercent(50);
+        assertDoesNotThrow(c::validate);
+    }
+    @Test void hybridExistingBaselineSkipsSeedKeepsDisruptionWeightsAndRestoresScope() throws Exception {
+        var p=problem();var resource=p.getMainResources().get(0);
+        p.getTasks().get(0).setResource(resource).setStartTime(HybridSchedulingTest.START);
+        p.getTasks().get(1).setResource(resource).setStartTime(HybridSchedulingTest.START.plusHours(3));
+        var c=p.getStrategy().getConfig().getCpSat();c.setTimefoldWarmStart(true);
+        var type=Class.forName("cn.windwheel.aps.solve.cpsat.CpSatHybridPreparation");
+        var method=type.getDeclaredMethod("prepare",UUID.class,SchedulingSolution.class,double.class,int.class,long.class,
+            java.util.function.BooleanSupplier.class,Map.class);method.setAccessible(true);
+        Map<String,Object> report=new HashMap<>();
+        Object prepared=method.invoke(null,UUID.randomUUID(),p,5.0,100,System.nanoTime()+5_000_000_000L,
+            (java.util.function.BooleanSupplier)()->false,report);
+        var requestMethod=prepared.getClass().getDeclaredMethod("request");requestMethod.setAccessible(true);
+        var request=(Protocol.Request)requestMethod.invoke(prepared);
+        assertEquals(c.getChangedTaskWeight(),request.optimization().changedWeight());
+        assertNotNull(request.optimization().movableTasks());
+        assertTrue(request.seconds()>0 && request.seconds()<=5);
+        assertEquals(cn.windwheel.aps.entity.dto.planning.CpSatConfig.OptimizationScope.FULL,c.getOptimizationScope());
+        var h=(Map<?,?>)report.get("hybrid");assertEquals(true,h.get("existingBaseline"));
+        assertEquals(false,h.get("initialSeedOnly"));assertFalse(h.containsKey("timefoldMillis"));
+    }
     @Test void serverGeneratedCurrentTimeUsesThePersistedMillisecondClock() throws Exception {
         var p=problem();p.getStrategy().setBeginTime(LocalDateTime.now().minusDays(1));
         var service=new cn.windwheel.aps.solve.impl.SolveServiceImpl(null,null,null,null,null,null);

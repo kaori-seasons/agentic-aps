@@ -52,12 +52,14 @@ public class CpSatEngine {
         boolean acquired=false;
         Map<String,Object> report=new LinkedHashMap<>(); long start=System.nanoTime();
         long seconds=solution.getStrategy().getConfig().getSolveTimeSeconds()==null?120:solution.getStrategy().getConfig().getSolveTimeSeconds();
-        long deadline=start+TimeUnit.SECONDS.toNanos(seconds+10);
+        long searchDeadline=start+TimeUnit.SECONDS.toNanos(seconds);
+        long deadline=searchDeadline+TimeUnit.SECONDS.toNanos(1);
         try {
             acquired=cpu.tryAcquire(settings.getNumWorkers());
             if(!acquired) throw new IllegalStateException("CP-SAT计算线程预算已满");
             BooleanSupplier stop=()->Thread.currentThread().isInterrupted() || cancelled!=null && cancelled.getAsBoolean();
-            Request request=CpSatProblemMapper.map(id,solution,seconds,maxTasks,()->stop.getAsBoolean() || System.nanoTime()>deadline);
+            var prepared=CpSatHybridPreparation.prepare(id,solution,seconds,maxTasks,searchDeadline,stop,report);
+            Request request=prepared.request();
             byte[] bytes=json.writeValueAsBytes(request);
             if(bytes.length>32*1024*1024) throw new IllegalArgumentException("CP-SAT输入超过32MiB");
             report.put("engine","ORTOOLS_CP_SAT"); report.put("version","9.15.6755"); report.put("modelVersion",VERSION);
@@ -67,13 +69,82 @@ public class CpSatEngine {
             report.put("baselineCost",request.baseline().isEmpty()?null:Protocol.verify(request,request.baseline()));
             report.put("workers",request.workers()); report.put("seed",request.seed()); report.put("horizonMillis",request.horizon());
             report.put("compileMillis",(System.nanoTime()-start)/1000000);
-            report.put("optimizationScope",settings.getOptimizationScope());
+            report.put("optimizationScope",request.optimization().movableTasks()==null?"FULL":"LOCAL");
+            report.put("searchMode",request.searchMode());
             report.put("movableTasks",request.optimization().movableTasks()==null?request.tasks().size():request.optimization().movableTasks().size());
             if(stop.getAsBoolean()) throw new CancellationException();
-            var execution=pool.execute(jar,TenantContextHolder.getTenantId(),request,bytes,settings.isReuseWorker(),deadline,stop);
-            Response response=execution.response();report.put("worker",response);
-            report.put("workerReused",execution.reused());report.put("workerPid",execution.pid());
-            report.put("workerCompletedJobs",execution.completedJobs());report.put("processStartMillis",execution.processStartMillis());
+            report.put("workerCpuComplete",true);
+            Response response;
+            try {
+                if(request.seconds()<.1)throw new TimeoutException("Shared search budget exhausted");
+                var execution=pool.execute(jar,TenantContextHolder.getTenantId(),request,bytes,settings.isReuseWorker(),deadline,stop);
+                response=execution.response();
+                report.put("workerReused",execution.reused());report.put("workerPid",execution.pid());
+                report.put("workerCpuMillis",response.performance()==null?null:response.performance().processCpuMillis());
+                report.put("workerProcessCpuMillis",execution.cpuMillis());
+                report.put("workerCompletedJobs",execution.completedJobs());report.put("processStartMillis",execution.processStartMillis());
+            } catch(TimeoutException timeout) {
+                report.put("workerCpuComplete",false);
+                if(stop.getAsBoolean())throw new CancellationException();
+                if(request.baseline().isEmpty())throw timeout;
+                long fallback=Protocol.verify(request,request.baseline());
+                response=new Response(VERSION,request.attempt(),"UNKNOWN","SHARED_BUDGET_EXHAUSTED",request.baseline(),fallback,0,0,0,0,0,true,
+                    new Performance(false,0,0,fallback,0));
+            }
+            // Expand only within the original shared deadline. A small local optimum is not a global optimum.
+            var rounds=new ArrayList<Map<String,Object>>();
+            if(settings.isTimefoldWarmStart() && !request.baseline().isEmpty() && response.cost()!=null) {
+                rounds.add(round(request,response));
+                for(int depth=settings.getNeighborhoodDepth()+1;depth<=5;depth++) {
+                    if((searchDeadline-System.nanoTime())/1e9<1)break;
+                    if(stop.getAsBoolean())throw new CancellationException();
+                    var scope=settings.getOptimizationScope();int previousDepth=settings.getNeighborhoodDepth();
+                    List<String> movable;
+                    try {
+                        settings.setOptimizationScope(CpSatConfig.OptimizationScope.LOCAL).setNeighborhoodDepth(depth);
+                        movable=CpSatNeighborhood.select(request,settings);
+                    } catch(IllegalArgumentException limit) {
+                        if(limit.getMessage()!=null && limit.getMessage().contains("超出任务上限"))break;
+                        throw limit;
+                    } finally {settings.setOptimizationScope(scope).setNeighborhoodDepth(previousDepth);}
+                    // Use a monotone union: previous best must remain feasible in every expanded scope.
+                    var union=new TreeSet<String>(request.optimization().movableTasks());union.addAll(movable);
+                    if(union.size()>settings.getMaxNeighborhoodTasks())break;
+                    if(union.size()==request.optimization().movableTasks().size())continue;
+                    var o=request.optimization();
+                    var expanded=new Request(VERSION,request.attempt(),request.parentPid(),request.originEpochMillis(),request.horizon(),
+                        Math.max(.001,(searchDeadline-System.nanoTime())/1e9),request.workers(),request.seed(),request.weights(),request.resources(),
+                        request.tasks(),request.baseline(),new Optimization(List.copyOf(union),o.changedWeight(),o.resourceWeight(),o.shiftMinuteWeight()),request.searchMode());
+                    try {
+                        var execution=pool.execute(jar,TenantContextHolder.getTenantId(),expanded,json.writeValueAsBytes(expanded),settings.isReuseWorker(),deadline,stop);
+                        var next=execution.response();
+                        if(next.cost()==null || next.performance()==null)throw new IllegalStateException("扩展邻域未返回可校验结果："+next.status());
+                        if(Protocol.verify(expanded,next.assignments())!=next.cost()
+                            || !Objects.equals(next.performance().objectiveCost(),Protocol.objective(expanded,next.assignments())))
+                            throw new IllegalStateException("扩展邻域评分不一致");
+                        long previousObjective=Protocol.objective(expanded,response.assignments());
+                        rounds.add(round(expanded,next));
+                        var cpuMillis=next.performance().processCpuMillis();
+                        if(cpuMillis!=null)report.put("workerCpuMillis",(report.get("workerCpuMillis") instanceof Number n?n.longValue():0L)+cpuMillis);
+                        if(previousObjective<next.performance().objectiveCost()) {
+                            var perf=next.performance();
+                            next=new Response(VERSION,next.attempt(),"FEASIBLE","BEST_OF_BOUNDED_NEIGHBORHOODS",response.assignments(),response.cost(),
+                                next.objectiveBound(),next.solveSeconds(),next.buildMillis(),next.branches(),next.conflicts(),response.baselineUsed(),
+                                new Performance(perf.modelCacheHit(),perf.nativeLoadMillis(),perf.modelBuildMillis(),previousObjective,
+                                    Protocol.adjustment(expanded,response.assignments()).cost(),perf.modelStats(),perf.processCpuMillis()));
+                        }
+                        request=expanded;response=next;
+                    } catch(TimeoutException timeout) {
+                        if(stop.getAsBoolean())throw new CancellationException();
+                        report.put("refinementBudgetExhausted",true);report.put("workerCpuComplete",false);break;
+                    }
+                }
+                report.put("refinementRounds",rounds);
+                report.put("request",request);
+                report.put("inputHash",HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(json.writeValueAsBytes(request))));
+                report.put("movableTasks",request.optimization().movableTasks().size());
+            }
+            report.put("worker",response);
             if(response.cost()==null || response.assignments().isEmpty()) throw new IllegalStateException("CP-SAT未返回可行解："+response.status()+" "+response.message());
             long cost=Protocol.verify(request,response.assignments());
             if(cost!=response.cost()) throw new IllegalStateException("CP-SAT结果与独立评分不一致");
@@ -81,7 +152,9 @@ public class CpSatEngine {
             if(response.performance()==null || response.performance().objectiveCost()==null
                     || response.performance().objectiveCost()!=Protocol.objective(request,response.assignments()))
                 throw new IllegalStateException("CP-SAT调整成本与独立评分不一致");
-            var decision=CpSatAdoption.decide(request,response.assignments(),settings);
+            var decision=prepared.initialSeedOnly()
+                ?new CpSatAdoption.Decision(true,"FIRST_FEASIBLE_PLAN",0,0,0,0,0)
+                :CpSatAdoption.decide(request,response.assignments(),settings);
             report.put("adoption",decision);
             // Preserve long precision for browser display; numeric values remain for API consumers.
             report.put("adoptionExact",Map.of("businessGain",Long.toString(decision.businessGain()),
@@ -120,6 +193,11 @@ public class CpSatEngine {
             if(acquired) cpu.release(settings.getNumWorkers()); jobs.release();
             report.put("totalMillis",(System.nanoTime()-start)/1000000); audit.recordCpSat(id,report);
         }
+    }
+    private static Map<String,Object> round(Request request,Response response) {
+        Map<String,Object> round=new LinkedHashMap<>();round.put("movableTasks",request.optimization().movableTasks().size());
+        round.put("status",response.status());round.put("cost",response.cost());round.put("performance",response.performance());
+        round.put("solveSeconds",response.solveSeconds());return round;
     }
     static Map<String,Object> metrics(Request r,List<Assignment> values) {
         var tasks=new HashMap<String,Task>(); r.tasks().forEach(t->tasks.put(t.id(),t));

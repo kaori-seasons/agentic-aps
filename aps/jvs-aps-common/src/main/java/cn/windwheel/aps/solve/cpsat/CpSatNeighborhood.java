@@ -20,6 +20,12 @@ public final class CpSatNeighborhood {
                     .sorted(Comparator.<Task>comparingLong(t->base.get(t.id()).end()-t.due()).reversed().thenComparing(Task::id))
                     .findFirst().ifPresent(t->selected.add(t.id()));
         }
+        if(selected.isEmpty()) {
+            // On-time plans still have a makespan bottleneck; avoid an empty refinement model.
+            tasks.values().stream().filter(t->t.frozen()==null)
+                .sorted(Comparator.<Task>comparingLong(t->base.get(t.id()).end()).reversed().thenComparing(Task::id))
+                .findFirst().ifPresent(t->selected.add(t.id()));
+        }
         Map<String,Set<String>> edges=new HashMap<>();tasks.keySet().forEach(id->edges.put(id,new TreeSet<>()));
         for(var t:tasks.values()) for(var d:t.dependencies()) link(edges,t.id(),d.predecessor());
         Map<String,List<Assignment>> queues=new TreeMap<>();

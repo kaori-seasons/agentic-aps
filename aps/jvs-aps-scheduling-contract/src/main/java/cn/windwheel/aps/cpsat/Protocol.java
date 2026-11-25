@@ -5,7 +5,7 @@ import java.util.*;
 /** Versioned, engine-neutral process boundary. All times are exact relative milliseconds. */
 public final class Protocol {
     private Protocol() {}
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
     public record Window(long start, long end) {}
     public record Segment(long firstStart, long lastStart, long elapsed) {}
     public record Resource(String id, List<Window> working, List<Window> downtime) {}
@@ -17,12 +17,16 @@ public final class Protocol {
     public record Weights(long priority, long finish, long tardiness, long load, long gap, long setup) {}
     public record Request(int version, String attempt, long parentPid, long originEpochMillis, long horizon,
                           double seconds, int workers, int seed, Weights weights, List<Resource> resources,
-                          List<Task> tasks, List<Assignment> baseline, Optimization optimization) {
+                          List<Task> tasks, List<Assignment> baseline, Optimization optimization, String searchMode) {
+        public Request(int version,String attempt,long parentPid,long originEpochMillis,long horizon,double seconds,int workers,int seed,
+                       Weights weights,List<Resource> resources,List<Task> tasks,List<Assignment> baseline,Optimization optimization) {
+            this(version,attempt,parentPid,originEpochMillis,horizon,seconds,workers,seed,weights,resources,tasks,baseline,optimization,"AUTOMATIC");
+        }
         public Request(int version,String attempt,long parentPid,long originEpochMillis,long horizon,double seconds,int workers,int seed,
                        Weights weights,List<Resource> resources,List<Task> tasks,List<Assignment> baseline) {
             this(version,attempt,parentPid,originEpochMillis,horizon,seconds,workers,seed,weights,resources,tasks,baseline,Optimization.full());
         }
-        public Request { if(optimization==null) optimization=Optimization.full(); }
+        public Request { if(optimization==null) optimization=Optimization.full(); if(searchMode==null)searchMode="AUTOMATIC"; }
     }
     /** movableTasks is null for full search; an empty list explicitly fixes every task. */
     public record Optimization(List<String> movableTasks,long changedWeight,long resourceWeight,long shiftMinuteWeight) {
@@ -34,7 +38,10 @@ public final class Protocol {
         }
         public static Optimization full() {return new Optimization(null,0,0,0);}
     }
-    public record Performance(boolean modelCacheHit,long nativeLoadMillis,long modelBuildMillis,Long objectiveCost,long adjustmentCost) {}
+    public record ModelStats(int variables,int constraints,int circuits,int inputSegments,int retainedSegments) {}
+    public record Performance(boolean modelCacheHit,long nativeLoadMillis,long modelBuildMillis,Long objectiveCost,long adjustmentCost,ModelStats modelStats,Long processCpuMillis) {
+        public Performance(boolean hit,long load,long build,Long objective,long adjustment) {this(hit,load,build,objective,adjustment,null,null);}
+    }
     public record Response(int version, String attempt, String status, String message, List<Assignment> assignments,
                            Long cost, double objectiveBound, double solveSeconds, long buildMillis,
                            long branches, long conflicts, boolean baselineUsed, Performance performance) {
