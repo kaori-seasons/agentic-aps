@@ -30,6 +30,8 @@ public class CpSatEngine {
     // A per-service CPU admission gate; deployments must additionally cap worker containers/process memory.
     private final Semaphore cpu=new Semaphore(8,true);
     private final Semaphore jobs=new Semaphore(2,true);
+    private final CpSatWorkerPool pool=new CpSatWorkerPool();
+    @javax.annotation.PreDestroy public void close() {pool.close();}
     public CpSatEngine(SolveAuditService audit,org.springframework.jdbc.core.JdbcTemplate jdbc) { this.audit=audit; this.jdbc=jdbc; }
 
     public SchedulingSolution solve(UUID id,SchedulingSolution solution,BooleanSupplier cancelled) throws InterruptedException {
@@ -47,7 +49,7 @@ public class CpSatEngine {
         }
         if(!jar.isAbsolute() || !Files.isRegularFile(jar)) throw new IllegalArgumentException("CP-SAT worker必须配置可读的绝对jar路径");
         if(!jobs.tryAcquire()) throw new IllegalStateException("CP-SAT并发已满，请稍后重试");
-        boolean acquired=false; Process process=null; Path dir=null;
+        boolean acquired=false;
         Map<String,Object> report=new LinkedHashMap<>(); long start=System.nanoTime();
         long seconds=solution.getStrategy().getConfig().getSolveTimeSeconds()==null?120:solution.getStrategy().getConfig().getSolveTimeSeconds();
         long deadline=start+TimeUnit.SECONDS.toNanos(seconds+10);
@@ -65,29 +67,33 @@ public class CpSatEngine {
             report.put("baselineCost",request.baseline().isEmpty()?null:Protocol.verify(request,request.baseline()));
             report.put("workers",request.workers()); report.put("seed",request.seed()); report.put("horizonMillis",request.horizon());
             report.put("compileMillis",(System.nanoTime()-start)/1000000);
-            dir=Files.createTempDirectory("aps-cpsat-");
-            if(Files.getFileStore(dir).supportsFileAttributeView("posix")) Files.setPosixFilePermissions(dir,PosixFilePermissions.fromString("rwx------"));
-            Path input=dir.resolve("request.json"),output=dir.resolve("response.json"); Files.write(input,bytes);
+            report.put("optimizationScope",settings.getOptimizationScope());
+            report.put("movableTasks",request.optimization().movableTasks()==null?request.tasks().size():request.optimization().movableTasks().size());
             if(stop.getAsBoolean()) throw new CancellationException();
-            process=new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin","java").toString(),"-Xmx512m","-jar",jar.toString(),input.toString(),output.toString())
-                    .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start();
-            while(!process.waitFor(100,TimeUnit.MILLISECONDS)) {
-                if(stop.getAsBoolean()) throw new CancellationException();
-                if(System.nanoTime()>deadline) throw new IllegalStateException("CP-SAT超出总预算，worker已终止");
-            }
-            if(stop.getAsBoolean()) throw new CancellationException();
-            if(process.exitValue()!=0 || !Files.exists(output)) throw new IllegalStateException("CP-SAT worker异常退出，退出码="+process.exitValue());
-            if(Files.size(output)>16L*1024*1024) throw new IllegalStateException("CP-SAT响应超出限制");
-            Response response=json.readValue(output.toFile(),Response.class); report.put("worker",response);
-            if(response.version()!=VERSION || !id.toString().equals(response.attempt())) throw new IllegalStateException("CP-SAT响应身份不匹配");
+            var execution=pool.execute(jar,TenantContextHolder.getTenantId(),request,bytes,settings.isReuseWorker(),deadline,stop);
+            Response response=execution.response();report.put("worker",response);
+            report.put("workerReused",execution.reused());report.put("workerPid",execution.pid());
+            report.put("workerCompletedJobs",execution.completedJobs());report.put("processStartMillis",execution.processStartMillis());
             if(response.cost()==null || response.assignments().isEmpty()) throw new IllegalStateException("CP-SAT未返回可行解："+response.status()+" "+response.message());
             long cost=Protocol.verify(request,response.assignments());
             if(cost!=response.cost()) throw new IllegalStateException("CP-SAT结果与独立评分不一致");
             if(!request.baseline().isEmpty() && cost>Protocol.verify(request,request.baseline())) throw new IllegalStateException("CP-SAT候选劣于已验证基线");
+            if(response.performance()==null || response.performance().objectiveCost()==null
+                    || response.performance().objectiveCost()!=Protocol.objective(request,response.assignments()))
+                throw new IllegalStateException("CP-SAT调整成本与独立评分不一致");
+            var decision=CpSatAdoption.decide(request,response.assignments(),settings);
+            report.put("adoption",decision);
+            // Preserve long precision for browser display; numeric values remain for API consumers.
+            report.put("adoptionExact",Map.of("businessGain",Long.toString(decision.businessGain()),
+                    "adjustmentCost",Long.toString(decision.adjustmentCost()),"netGain",Long.toString(decision.netGain())));
+            report.put("candidateMetrics",metrics(request,response.assignments()));
+            var selected=decision.accepted()?response.assignments():request.baseline();
+            cost=Protocol.verify(request,selected);
+            solution.setCpSatBaselineRetained(!decision.accepted());
             var byCode=new HashMap<String,ProductionTask>(); solution.getTasks().forEach(t->byCode.put(t.getCode(),t));
             var byResource=new HashMap<String,MainProductionResource>(); solution.getMainResources().forEach(r->{byResource.put(r.getId(),r);r.setTaskList(new ArrayList<>());});
             LocalDateTime origin=LocalDateTime.ofInstant(Instant.ofEpochMilli(request.originEpochMillis()),ZoneOffset.UTC);
-            for(var a:response.assignments()) {
+            for(var a:selected) {
                 var t=byCode.get(a.task()); var resource=byResource.get(a.resource());
                 t.setResource(resource).setStartTime(origin.plusNanos(a.start()*1000000)); resource.getTaskList().add(t);
                 // Check against the actual application calendar implementation, not just the compiled calendar.
@@ -99,7 +105,7 @@ public class CpSatEngine {
             solution.getMainResources().forEach(r->r.getTaskList().sort(Comparator.comparing(ProductionTask::getStartTime)));
             solution.setScore(org.optaplanner.core.api.score.buildin.hardsoftlong.HardSoftLongScore.of(0,Math.negateExact(cost)));
             solution.setTimefoldScore(ai.timefold.solver.core.api.score.buildin.hardsoftlong.HardSoftLongScore.of(0,Math.negateExact(cost)));
-            report.put("verified",true); report.put("businessMetrics",metrics(request,response.assignments()));
+            report.put("verified",true); report.put("businessMetrics",metrics(request,selected));
             if(!request.baseline().isEmpty()) report.put("baselineMetrics",metrics(request,request.baseline()));
             if(stop.getAsBoolean()) throw new CancellationException();
             return solution;
@@ -111,13 +117,6 @@ public class CpSatEngine {
             report.put("status","FAILED"); report.put("message",String.valueOf(exception.getMessage()));
             throw new IllegalStateException(exception.getMessage(),exception);
         } finally {
-            if(process!=null && process.isAlive()) {
-                process.destroy();
-                try { if(!process.waitFor(500,TimeUnit.MILLISECONDS)) process.destroyForcibly(); }
-                catch(InterruptedException interrupted) { process.destroyForcibly(); Thread.currentThread().interrupt(); }
-            }
-            if(dir!=null) try(var paths=Files.walk(dir)) { for(var path:paths.sorted(Comparator.reverseOrder()).toList()) Files.deleteIfExists(path); }
-                catch(java.io.IOException ignored) { /* Private OS temp files; cleanup can be retried by the host janitor. */ }
             if(acquired) cpu.release(settings.getNumWorkers()); jobs.release();
             report.put("totalMillis",(System.nanoTime()-start)/1000000); audit.recordCpSat(id,report);
         }

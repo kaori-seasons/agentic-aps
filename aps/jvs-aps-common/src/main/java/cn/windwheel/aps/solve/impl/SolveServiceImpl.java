@@ -111,6 +111,11 @@ public class SolveServiceImpl implements SolveService {
                 solveProgressService.addProgressLog(SolveProgressStatusEnum.SUCCESS,"CP-SAT影子验算完成，结果仅记录审计，未生成待确认计划");
                 return;
             }
+            if(apsSolutionResult.isCpSatBaselineRetained()) {
+                solveAuditService.finish(planId,"BASELINE_RETAINED",report);
+                solveProgressService.addProgressLog(SolveProgressStatusEnum.SUCCESS,"CP-SAT未达到方案采用门槛，保留原计划，未生成待确认计划");
+                return;
+            }
             String lockKey = SysConstant.redisKey("smart:planning:generate:lock", TenantContextHolder.getTenantId());
             if (!redisUtils.tryLock(lockKey, 60)) { throw new BusinessException("计划正在被确认或取消，请重试"); }
             try {

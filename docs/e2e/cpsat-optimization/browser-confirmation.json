@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "auditId": "513b4ca3-bd3e-4737-9f1f-b161a5932c73",
+  "auditStatus": "CONFIRMED",
+  "taskCount": 24,
+  "unchangedExteriorTasks": 23,
+  "changedTasks": 1,
+  "formalTimesExactlyMatchAudit": true,
+  "pendingCount": 0,
+  "confirmationChannel": "BrowserOS neo real UI",
+  "verifiedAt": "2026-11-25T13:04:44.445922"
+}

@@ -1,0 +1,35 @@
+{
+  "backend": {
+    "jvs-aps-common": {
+      "tests": 101,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "jvs-aps-scheduling-contract": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "jvs-aps-ortools-worker": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "frontendTests": 5,
+  "frontendBuild": "PASS",
+  "protocolVersion": 2,
+  "artifacts": {
+    "v4": {
+      "mgr.jar": "de9ac0e5f2534cd9f9265480577e9eb8b2cbf850a56a8d0f1195749b1c64db50",
+      "worker.jar": "4456171d913fd2518410f975ee672905c7e1ae5d57ffb6e6ff90ce095ddebd32"
+    },
+    "v5": {
+      "mgr.jar": "27c91ad37c6516cbcc0c8f3af3945a573bc09d22900f117c8888f3e1cf8fb013",
+      "worker.jar": "49ca6511cd4adf7b591b502cd47e42ff87be63719bdab0e1b7a18b7334f63bad"
+    }
+  }
+}

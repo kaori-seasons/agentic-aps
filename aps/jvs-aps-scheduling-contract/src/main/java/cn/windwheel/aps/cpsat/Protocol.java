@@ -5,7 +5,7 @@ import java.util.*;
 /** Versioned, engine-neutral process boundary. All times are exact relative milliseconds. */
 public final class Protocol {
     private Protocol() {}
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
     public record Window(long start, long end) {}
     public record Segment(long firstStart, long lastStart, long elapsed) {}
     public record Resource(String id, List<Window> working, List<Window> downtime) {}
@@ -17,10 +17,50 @@ public final class Protocol {
     public record Weights(long priority, long finish, long tardiness, long load, long gap, long setup) {}
     public record Request(int version, String attempt, long parentPid, long originEpochMillis, long horizon,
                           double seconds, int workers, int seed, Weights weights, List<Resource> resources,
-                          List<Task> tasks, List<Assignment> baseline) {}
+                          List<Task> tasks, List<Assignment> baseline, Optimization optimization) {
+        public Request(int version,String attempt,long parentPid,long originEpochMillis,long horizon,double seconds,int workers,int seed,
+                       Weights weights,List<Resource> resources,List<Task> tasks,List<Assignment> baseline) {
+            this(version,attempt,parentPid,originEpochMillis,horizon,seconds,workers,seed,weights,resources,tasks,baseline,Optimization.full());
+        }
+        public Request { if(optimization==null) optimization=Optimization.full(); }
+    }
+    /** movableTasks is null for full search; an empty list explicitly fixes every task. */
+    public record Optimization(List<String> movableTasks,long changedWeight,long resourceWeight,long shiftMinuteWeight) {
+        public Optimization {
+            if(changedWeight<0 || resourceWeight<0 || shiftMinuteWeight<0 || changedWeight>1000000000L
+                    || resourceWeight>1000000000L || shiftMinuteWeight>1000000000L)
+                throw new IllegalArgumentException("Invalid adjustment weights");
+            if(movableTasks!=null) movableTasks=List.copyOf(movableTasks);
+        }
+        public static Optimization full() {return new Optimization(null,0,0,0);}
+    }
+    public record Performance(boolean modelCacheHit,long nativeLoadMillis,long modelBuildMillis,Long objectiveCost,long adjustmentCost) {}
     public record Response(int version, String attempt, String status, String message, List<Assignment> assignments,
                            Long cost, double objectiveBound, double solveSeconds, long buildMillis,
-                           long branches, long conflicts, boolean baselineUsed) {}
+                           long branches, long conflicts, boolean baselineUsed, Performance performance) {
+        public Response(int version,String attempt,String status,String message,List<Assignment> assignments,Long cost,
+                        double objectiveBound,double solveSeconds,long buildMillis,long branches,long conflicts,boolean baselineUsed) {
+            this(version,attempt,status,message,assignments,cost,objectiveBound,solveSeconds,buildMillis,branches,conflicts,baselineUsed,null);
+        }
+    }
+    public record Adjustment(long changedTasks,long resourceChanges,long shiftMinutes,long cost) {}
+    public static Adjustment adjustment(Request r,List<Assignment> values) {
+        Map<String,Assignment> base=new HashMap<>(); r.baseline().forEach(a->base.put(a.task(),a));
+        long changed=0,resources=0,minutes=0;
+        for(var a:values) {
+            var b=base.get(a.task()); if(b==null) continue;
+            if(!a.equals(b)) changed++;
+            if(!a.resource().equals(b.resource())) resources++;
+            long delta=Math.abs(Math.subtractExact(a.start(),b.start()));
+            minutes=Math.addExact(minutes,(delta+59999)/60000);
+        }
+        var o=r.optimization();
+        long cost=add(add(add(0,changed,o.changedWeight()),resources,o.resourceWeight()),minutes,o.shiftMinuteWeight());
+        return new Adjustment(changed,resources,minutes,cost);
+    }
+    public static long objective(Request r,List<Assignment> values) {
+        return Math.addExact(verify(r,values),adjustment(r,values).cost());
+    }
 
     /** Exact affine inverse of cumulative working time; envelope spans breaks and retains the machine. */
     public static List<Segment> segments(List<Window> windows, long duration) {
@@ -51,6 +91,14 @@ public final class Protocol {
             throw new IllegalArgumentException("Incomplete/version-mismatched solution");
         Map<String,Assignment> byId=new HashMap<>();
         for(var a:assignments) if(byId.put(a.task(),a)!=null) throw new IllegalArgumentException("Duplicate task");
+        if(r.optimization().movableTasks()!=null) {
+            Set<String> movable=new HashSet<>(r.optimization().movableTasks());
+            Set<String> ids=new HashSet<>();r.tasks().forEach(t->ids.add(t.id()));
+            if(!ids.containsAll(movable) || movable.size()!=r.optimization().movableTasks().size()
+                    || r.baseline().size()!=r.tasks().size()) throw new IllegalArgumentException("Invalid local scope/baseline");
+            for(var b:r.baseline()) if(!movable.contains(b.task()) && !b.equals(byId.get(b.task())))
+                throw new IllegalArgumentException("Task outside local scope changed: "+b.task());
+        }
         Map<String,Resource> resources=new HashMap<>();
         for(var resource:r.resources()) resources.put(resource.id(),resource);
         Map<String,List<Assignment>> queues=new HashMap<>();

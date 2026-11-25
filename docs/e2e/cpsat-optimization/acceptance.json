@@ -1,0 +1,56 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "worker and exact model reused",
+      "status": "PASS",
+      "first": {
+        "modelCacheHit": false,
+        "nativeLoadMillis": 14993,
+        "modelBuildMillis": 71,
+        "objectiveCost": 1796960479,
+        "adjustmentCost": 0
+      },
+      "repeat": {
+        "modelCacheHit": true,
+        "nativeLoadMillis": 0,
+        "modelBuildMillis": 0,
+        "objectiveCost": 1796960479,
+        "adjustmentCost": 0
+      }
+    },
+    {
+      "name": "delivery-time change invalidates model cache",
+      "status": "PASS"
+    },
+    {
+      "name": "local exterior fixed and threshold retains original plan",
+      "status": "PASS",
+      "auditId": "1eca5b95-60fc-443a-9f71-fde769b4509a",
+      "movable": 3,
+      "decision": {
+        "accepted": false,
+        "reason": "UNCHANGED_BASELINE",
+        "businessGain": 0,
+        "adjustmentCost": 0,
+        "netGain": 0,
+        "changedTasks": 0,
+        "tardinessImprovementMinutes": 0
+      }
+    },
+    {
+      "name": "retained result cannot be confirmed",
+      "status": "PASS",
+      "responseCode": 1
+    },
+    {
+      "name": "missing local baseline rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "cancel destroys worker and next request recovers",
+      "status": "PASS"
+    }
+  ],
+  "candidateAudit": "85698464-340e-4871-9f01-5fdf87f28e58"
+}

@@ -79,6 +79,8 @@ public final class CpSatProblemMapper {
             }
             if(t.getFrontTaskCodes()!=null && t.getFrontTaskCodes().size()!=deps.size())
                 throw new IllegalArgumentException("工序依赖不完整："+t.getCode());
+            deps.sort(Comparator.comparing(Dependency::predecessor));
+            options.sort(Comparator.comparing(Option::resource));
             Assignment frozen=null;
             if(Boolean.TRUE.equals(t.getPinned())) {
                 if(t.getFrozenStartTime()==null || t.getFrozenEndTime()==null || t.getFrozenResourceId()==null)
@@ -96,12 +98,15 @@ public final class CpSatProblemMapper {
         long epoch=zero.toInstant(ZoneOffset.UTC).toEpochMilli();
         if(epoch<0) throw new IllegalArgumentException("CP-SAT计划时间必须在1970年之后");
         Request request=new Request(VERSION,id.toString(),ProcessHandle.current().pid(),epoch,limit,seconds,settings.getNumWorkers(),
-                config.getRandomSeed()==null?0:Math.toIntExact(config.getRandomSeed()),weights,List.copyOf(resources.values()),tasks,List.of());
+                config.getRandomSeed()==null?0:Math.toIntExact(config.getRandomSeed()),weights,resources.values().stream().sorted(Comparator.comparing(Resource::id)).toList(),tasks,List.of());
         if(settings.isUseBaselineHint()) try {
             Protocol.verify(request,baseline);
-            return new Request(VERSION,request.attempt(),request.parentPid(),epoch,limit,seconds,request.workers(),request.seed(),weights,request.resources(),tasks,baseline);
-        } catch(IllegalArgumentException|ArithmeticException ignored) { /* An invalid baseline is never a hint or fallback. */ }
-        return request;
+            request=new Request(VERSION,request.attempt(),request.parentPid(),epoch,limit,seconds,request.workers(),request.seed(),weights,request.resources(),tasks,baseline);
+        } catch(IllegalArgumentException|ArithmeticException ignored) { /* Invalid baselines are never hints or fallback. */ }
+        var optimization=new Optimization(CpSatNeighborhood.select(request,settings),settings.getChangedTaskWeight(),
+                settings.getResourceChangeWeight(),settings.getStartShiftMinuteWeight());
+        return new Request(VERSION,request.attempt(),request.parentPid(),epoch,limit,seconds,request.workers(),request.seed(),
+                weights,request.resources(),tasks,request.baseline(),optimization);
     }
     private static long duration(String value) { return DurationUtils.convertDuration(value).toMillis(); }
     static long tick(LocalDateTime origin,LocalDateTime time) {

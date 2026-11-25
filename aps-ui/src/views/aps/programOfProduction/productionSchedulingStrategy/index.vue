@@ -244,6 +244,17 @@ const formOption = ref({
     { label: 'CP-SAT计划窗口（天）', prop: 'cpSatHorizon', type: 'inputNumber', span: 12, min: 1, max: 180, precision: 0, defaultValue: 30 },
     { label: 'CP-SAT计算线程', prop: 'cpSatWorkers', type: 'inputNumber', span: 12, min: 1, max: 8, precision: 0, defaultValue: 1 },
     { label: 'CP-SAT可行基线保护', prop: 'cpSatBaseline', type: 'switch', span: 12, defaultValue: true },
+    { label:'复用求解进程', prop:'cpSat_reuseWorker', type:'switch', span:12, defaultValue:true },
+    { label:'优化范围', prop:'cpSat_optimizationScope', type:'select', span:12, defaultValue:'FULL', dicData:[{label:'全量优化',value:'FULL'},{label:'局部优化（需要可行基线）',value:'LOCAL'}] },
+    { label:'局部任务编码（逗号分隔）', prop:'cpSat_focusTaskCodes', type:'input', span:12, defaultValue:'' },
+    { label:'邻域扩展层数', prop:'cpSat_neighborhoodDepth', type:'inputNumber', span:12, defaultValue:1, precision:0, min:0,max:5 },
+    { label:'邻域任务上限', prop:'cpSat_maxNeighborhoodTasks', type:'inputNumber', span:12, defaultValue:60, precision:0, min:1,max:300 },
+    { label:'每项任务调整成本', prop:'cpSat_changedTaskWeight', type:'inputNumber', span:12, defaultValue:1000, precision:0, min:0,max:1000000000 },
+    { label:'每次设备变更成本', prop:'cpSat_resourceChangeWeight', type:'inputNumber', span:12, defaultValue:3000, precision:0, min:0,max:1000000000 },
+    { label:'每分钟开工偏移成本', prop:'cpSat_startShiftMinuteWeight', type:'inputNumber', span:12, defaultValue:1, precision:0, min:0,max:1000000000 },
+    { label:'最低净收益', prop:'cpSat_minNetImprovement', type:'inputNumber', span:12, defaultValue:1, precision:0, min:0,max:1000000000000 },
+    { label:'最低逾期改善（分钟）', prop:'cpSat_minTardinessImprovementMinutes', type:'inputNumber', span:12, defaultValue:0, precision:0, min:0,max:259200 },
+    { label:'最大调整任务比例（%）', prop:'cpSat_maxChangedTaskPercent', type:'inputNumber', span:12, defaultValue:100, precision:0, min:0,max:100 },
     {
       label: '求解上限(秒)',
       prop: 'solveTimeSeconds',
@@ -411,6 +422,17 @@ function addEditRow (row) {
       rowData.value.cpSatHorizon = row.config?.cpSat?.horizonDays || 30
       rowData.value.cpSatWorkers = row.config?.cpSat?.numWorkers || 1
       rowData.value.cpSatBaseline = row.config?.cpSat?.useBaselineHint ?? true
+      rowData.value.cpSat_reuseWorker = row.config?.cpSat?.reuseWorker ?? true
+      rowData.value.cpSat_optimizationScope = row.config?.cpSat?.optimizationScope ?? 'FULL'
+      rowData.value.cpSat_focusTaskCodes = (row.config?.cpSat?.focusTaskCodes || []).join(', ')
+      rowData.value.cpSat_neighborhoodDepth = row.config?.cpSat?.neighborhoodDepth ?? 1
+      rowData.value.cpSat_maxNeighborhoodTasks = row.config?.cpSat?.maxNeighborhoodTasks ?? 60
+      rowData.value.cpSat_changedTaskWeight = row.config?.cpSat?.changedTaskWeight ?? 1000
+      rowData.value.cpSat_resourceChangeWeight = row.config?.cpSat?.resourceChangeWeight ?? 3000
+      rowData.value.cpSat_startShiftMinuteWeight = row.config?.cpSat?.startShiftMinuteWeight ?? 1
+      rowData.value.cpSat_minNetImprovement = row.config?.cpSat?.minNetImprovement ?? 1
+      rowData.value.cpSat_minTardinessImprovementMinutes = row.config?.cpSat?.minTardinessImprovementMinutes ?? 0
+      rowData.value.cpSat_maxChangedTaskPercent = row.config?.cpSat?.maxChangedTaskPercent ?? 100
       rowData.value.adaptiveTotalSeconds = row.config?.adaptive?.totalSeconds || 180
       rowData.value.adaptiveWarmStartEnabled = row.config?.adaptive?.warmStartEnabled ?? true
       rowData.value.adaptiveBudgetMode = row.config?.adaptive?.budgetMode || 'SCALE_AWARE'
@@ -450,8 +472,19 @@ function submitHandle (form) {
   }
   temp.config.materialConstrained = rowData.value['materialConstrained'] || false
   temp.config.cpSat = { executionMode: rowData.value.cpSatMode || 'SHADOW', horizonDays: rowData.value.cpSatHorizon || 30,
-    numWorkers: rowData.value.cpSatWorkers || 1, useBaselineHint: rowData.value.cpSatBaseline ?? true }
-  for (const key of ['cpSatMode','cpSatHorizon','cpSatWorkers','cpSatBaseline']) delete temp[key]
+    numWorkers: rowData.value.cpSatWorkers || 1, useBaselineHint: rowData.value.cpSatBaseline ?? true,
+    reuseWorker: rowData.value.cpSat_reuseWorker ?? true,
+    optimizationScope: rowData.value.cpSat_optimizationScope ?? 'FULL',
+    focusTaskCodes: (rowData.value.cpSat_focusTaskCodes || '').split(/[,，\n]/).map(x => x.trim()).filter(Boolean),
+    neighborhoodDepth: rowData.value.cpSat_neighborhoodDepth ?? 1,
+    maxNeighborhoodTasks: rowData.value.cpSat_maxNeighborhoodTasks ?? 60,
+    changedTaskWeight: rowData.value.cpSat_changedTaskWeight ?? 1000,
+    resourceChangeWeight: rowData.value.cpSat_resourceChangeWeight ?? 3000,
+    startShiftMinuteWeight: rowData.value.cpSat_startShiftMinuteWeight ?? 1,
+    minNetImprovement: rowData.value.cpSat_minNetImprovement ?? 1,
+    minTardinessImprovementMinutes: rowData.value.cpSat_minTardinessImprovementMinutes ?? 0,
+    maxChangedTaskPercent: rowData.value.cpSat_maxChangedTaskPercent ?? 100 }
+  for (const key of ['cpSatMode','cpSatHorizon','cpSatWorkers','cpSatBaseline','cpSat_reuseWorker','cpSat_optimizationScope','cpSat_focusTaskCodes','cpSat_neighborhoodDepth','cpSat_maxNeighborhoodTasks','cpSat_changedTaskWeight','cpSat_resourceChangeWeight','cpSat_startShiftMinuteWeight','cpSat_minNetImprovement','cpSat_minTardinessImprovementMinutes','cpSat_maxChangedTaskPercent']) delete temp[key]
   if (temp.config.solverEngine === 'ORTOOLS_CP_SAT') {
     if (temp.config.direction !== 'FORWARD' || !temp.config.materialConstrained || temp.config.solverProfile !== 'DEFAULT'
         || rowData.value.adaptiveEnabled || (temp.config.maxNoImprovementTime || 0) > 0) {

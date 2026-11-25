@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "cpSat": {
+    "executionMode": "CANDIDATE",
+    "numWorkers": 1,
+    "horizonDays": 14,
+    "useBaselineHint": true,
+    "reuseWorker": true,
+    "optimizationScope": "LOCAL",
+    "focusTaskCodes": [
+      "SYN-FL-002-TEST"
+    ],
+    "neighborhoodDepth": 0,
+    "maxNeighborhoodTasks": 60,
+    "changedTaskWeight": 1000,
+    "resourceChangeWeight": 3000,
+    "startShiftMinuteWeight": 1,
+    "minNetImprovement": 200,
+    "minTardinessImprovementMinutes": 0,
+    "maxChangedTaskPercent": 10
+  }
+}

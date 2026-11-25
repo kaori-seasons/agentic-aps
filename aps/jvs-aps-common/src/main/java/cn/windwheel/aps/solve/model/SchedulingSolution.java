@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 @ai.timefold.solver.core.api.domain.solution.PlanningSolution
 @PlanningSolution
 public class SchedulingSolution {
+    /** Non-planning publish decision; rejected candidates never enter the pending tables. */
+    private boolean cpSatBaselineRetained;
 
     @Comment("排程计划执行时间")
     @ai.timefold.solver.core.api.domain.solution.ProblemFactProperty

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "candidateAudit": "513b4ca3-bd3e-4737-9f1f-b161a5932c73",
+  "focusTask": "SYN-FL-002-TEST",
+  "adoption": {
+    "accepted": true,
+    "reason": "ACCEPTED",
+    "businessGain": 623283,
+    "adjustmentCost": 11080,
+    "netGain": 612203,
+    "changedTasks": 1,
+    "tardinessImprovementMinutes": 8403
+  },
+  "syntheticPerturbation": "One last task delayed by exactly seven calendar days before optimization"
+}

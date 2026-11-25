@@ -52,16 +52,25 @@
           </div>
         </el-scrollbar>
         <el-card v-if="cpSatAudit" shadow="never" style="margin:12px 0" aria-label="CP-SAT求解验收">
-          <template #header><strong>OR-Tools CP-SAT · {{cpSatAudit.executionMode === 'SHADOW' ? '影子验算' : '候选计划'}}</strong></template>
-          <el-descriptions :column="2" border size="small">
+          <template #header><strong>OR-Tools CP-SAT · {{cpSatAudit.executionMode === 'SHADOW' ? '影子验算' : cpSatAudit.adoption?.accepted === false ? '保留原计划' : '候选计划'}}</strong></template>
+          <el-descriptions :column="3" border size="small">
             <el-descriptions-item label="求解状态">{{cpSatAudit.worker?.status || cpSatAudit.status}}</el-descriptions-item>
             <el-descriptions-item label="独立约束复核">{{cpSatAudit.verified ? '通过' : '未通过，不可发布'}}</el-descriptions-item>
             <el-descriptions-item label="统一业务成本">{{cpSatAudit.exactCost ?? '—'}}</el-descriptions-item>
-            <el-descriptions-item label="目标下界">{{cpSatAudit.worker?.objectiveBound ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="含调整成本的目标下界">{{cpSatAudit.worker?.objectiveBound ?? '—'}}</el-descriptions-item>
             <el-descriptions-item label="可行基线保护">{{cpSatAudit.baselineAccepted ? '已验证并约束不劣化' : '未取得完整可行基线'}}</el-descriptions-item>
             <el-descriptions-item label="总耗时">{{cpSatAudit.totalMillis}} ms</el-descriptions-item>
             <el-descriptions-item label="逾期末工序">{{cpSatAudit.businessMetrics?.lateTerminalTasks ?? '—'}}</el-descriptions-item>
             <el-descriptions-item label="总逾期分钟">{{cpSatAudit.businessMetrics?.tardinessMinutes ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="进程复用">{{cpSatAudit.workerReused ? '已复用' : '新进程'}}</el-descriptions-item>
+            <el-descriptions-item label="模型缓存">{{cpSatAudit.worker?.performance?.modelCacheHit ? '命中' : '重新建模'}}</el-descriptions-item>
+            <el-descriptions-item label="原生加载 / 建模">{{cpSatAudit.worker?.performance?.nativeLoadMillis ?? '—'}} / {{cpSatAudit.worker?.performance?.modelBuildMillis ?? '—'}} ms</el-descriptions-item>
+            <el-descriptions-item label="优化范围">{{cpSatAudit.optimizationScope === 'LOCAL' ? '局部' : '全量'}} · {{cpSatAudit.movableTasks}} 项可调</el-descriptions-item>
+            <el-descriptions-item label="候选调整任务">{{cpSatAudit.adoption?.changedTasks ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="候选调整成本">{{cpSatAudit.adoptionExact?.adjustmentCost ?? cpSatAudit.adoption?.adjustmentCost ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="候选净收益">{{cpSatAudit.adoptionExact?.netGain ?? cpSatAudit.adoption?.netGain ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="方案决策">{{cpSatAudit.adoption?.accepted ? '采用候选' : '保留原计划'}}</el-descriptions-item>
+            <el-descriptions-item label="决策原因">{{adoptionReason[cpSatAudit.adoption?.reason] || cpSatAudit.adoption?.reason || '—'}}</el-descriptions-item>
           </el-descriptions>
           <p v-if="cpSatAudit.executionMode === 'SHADOW'">影子结果仅用于验算与比较，不进入待确认计划。</p>
           <p v-if="cpSatAudit.message">{{cpSatAudit.message}}</p>
@@ -166,8 +175,10 @@ const timer = ref(null)
 const processInfo = ref(null)
 const cpSatAudit = ref(null)
 const auditId = ref('')
-const isShadow = computed(() => cpSatAudit.value?.executionMode === 'SHADOW'
-  || processInfo.value?.contents?.some(line => line.includes('影子验算')))
+const adoptionReason = {FIRST_FEASIBLE_PLAN:'首次可行计划',ACCEPTED:'达到采用门槛',UNCHANGED_BASELINE:'方案未发生变化',INSUFFICIENT_NET_BENEFIT:'净收益不足',CHANGE_LIMIT_EXCEEDED:'调整比例超过限制',TARDINESS_THRESHOLD_NOT_MET:'逾期改善未达门槛'}
+const isShadow = computed(() => cpSatAudit.value?.adoption?.accepted === false
+  || cpSatAudit.value?.executionMode === 'SHADOW'
+  || processInfo.value?.contents?.some(line => line.includes('影子验算') || line.includes('保留原计划')))
 const processVisible = ref(false)
 const confirmLoading = ref(false)
 const abandonLoading = ref(false)

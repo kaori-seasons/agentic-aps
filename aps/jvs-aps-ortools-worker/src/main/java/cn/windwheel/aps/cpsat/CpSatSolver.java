@@ -11,6 +11,8 @@ public final class CpSatSolver {
     private final Map<String,Vars> vars=new LinkedHashMap<>();
     private final LinearExprBuilder objective=LinearExpr.newBuilder();
     private Request request;
+    private boolean built;
+    private Long baselineCost;
     private record Vars(IntVar start,IntVar end,Map<String,BoolVar> presence) {}
     private IntVar integer(long max,String name) { return model.newIntVar(0,max,name); }
     private static LinearExpr plus(LinearArgument a,long c) { return LinearExpr.newBuilder().add(a).add(c).build(); }
@@ -27,72 +29,80 @@ public final class CpSatSolver {
         if(r.version()!=VERSION || r.tasks().isEmpty() || r.tasks().size()>500 || r.horizon()<=0
                 || r.horizon()>180L*86400000 || r.seconds()<0.1 || r.seconds()>3600 || r.workers()<1 || r.workers()>8)
             throw new IllegalArgumentException("Invalid/budget-exceeding CP-SAT request");
-        Loader.loadNativeLibraries();
-        Map<String,List<IntervalVar>> occupancy=new LinkedHashMap<>();
-        for(var resource:r.resources()) {
-            var intervals=new ArrayList<IntervalVar>(); occupancy.put(resource.id(),intervals);
-            // Merge is performed by the adapter; overlapping downtime intervals must not make the model infeasible.
-            for(var w:resource.downtime()) intervals.add(model.newFixedInterval(w.start(),w.end()-w.start(),"downtime"));
-        }
-        for(var t:r.tasks()) {
-            if(vars.containsKey(t.id())) throw new IllegalArgumentException("Duplicate task id");
-            IntVar s=model.newIntVar(Math.max(0,t.release()),r.horizon(),t.id()+"/start"), e=integer(r.horizon(),t.id()+"/end");
-            var ps=new LinkedHashMap<String,BoolVar>();
-            for(var o:t.options()) {
-                if(o.processing()<=0 || !occupancy.containsKey(o.resource()) || ps.containsKey(o.resource()))
-                    throw new IllegalArgumentException("Invalid machine option");
-                BoolVar p=model.newBoolVar(t.id()+"/"+o.resource()); ps.put(o.resource(),p);
-                IntVar size=model.newIntVar(1,r.horizon(),"elapsed");
-                occupancy.get(o.resource()).add(model.newOptionalIntervalVar(s,size,e,p,t.id()));
-                if(t.frozen()!=null) {
-                    model.addEquality(p,o.resource().equals(t.frozen().resource())?1:0);
-                    model.addEquality(s,t.frozen().start()); model.addEquality(e,t.frozen().end());
-                } else {
-                    var segments=new ArrayList<BoolVar>();
-                    for(var segment:o.segments()) {
-                        BoolVar b=model.newBoolVar("calendarSegment"); segments.add(b);
-                        model.addGreaterOrEqual(s,segment.firstStart()).onlyEnforceIf(b);
-                        model.addLessOrEqual(s,segment.lastStart()).onlyEnforceIf(b);
-                        model.addEquality(e,plus(s,segment.elapsed())).onlyEnforceIf(b);
+        long nativeStart=System.nanoTime(); Loader.loadNativeLibraries();
+        long nativeMillis=(System.nanoTime()-nativeStart)/1000000;
+        boolean cacheHit=built;
+        long modelStart=System.nanoTime();
+        if(!built) {
+            Map<String,List<IntervalVar>> occupancy=new LinkedHashMap<>();
+            for(var resource:r.resources()) {
+                var intervals=new ArrayList<IntervalVar>(); occupancy.put(resource.id(),intervals);
+                // Merge is performed by the adapter; overlapping downtime intervals must not make the model infeasible.
+                for(var w:resource.downtime()) intervals.add(model.newFixedInterval(w.start(),w.end()-w.start(),"downtime"));
+            }
+            for(var t:r.tasks()) {
+                if(vars.containsKey(t.id())) throw new IllegalArgumentException("Duplicate task id");
+                IntVar s=model.newIntVar(Math.max(0,t.release()),r.horizon(),t.id()+"/start"), e=integer(r.horizon(),t.id()+"/end");
+                var ps=new LinkedHashMap<String,BoolVar>();
+                for(var o:t.options()) {
+                    if(o.processing()<=0 || !occupancy.containsKey(o.resource()) || ps.containsKey(o.resource()))
+                        throw new IllegalArgumentException("Invalid machine option");
+                    BoolVar p=model.newBoolVar(t.id()+"/"+o.resource()); ps.put(o.resource(),p);
+                    IntVar size=model.newIntVar(1,r.horizon(),"elapsed");
+                    occupancy.get(o.resource()).add(model.newOptionalIntervalVar(s,size,e,p,t.id()));
+                    if(t.frozen()!=null) {
+                        model.addEquality(p,o.resource().equals(t.frozen().resource())?1:0);
+                        model.addEquality(s,t.frozen().start()); model.addEquality(e,t.frozen().end());
+                    } else {
+                        var segments=new ArrayList<BoolVar>();
+                        for(var segment:o.segments()) {
+                            BoolVar b=model.newBoolVar("calendarSegment"); segments.add(b);
+                            model.addGreaterOrEqual(s,segment.firstStart()).onlyEnforceIf(b);
+                            model.addLessOrEqual(s,segment.lastStart()).onlyEnforceIf(b);
+                            model.addEquality(e,plus(s,segment.elapsed())).onlyEnforceIf(b);
+                        }
+                        model.addEquality(LinearExpr.sum(segments.toArray(BoolVar[]::new)),p);
                     }
-                    model.addEquality(LinearExpr.sum(segments.toArray(BoolVar[]::new)),p);
+                }
+                model.addExactlyOne(ps.values().toArray(BoolVar[]::new));
+                vars.put(t.id(),new Vars(s,e,ps));
+                if(t.due()!=null) term(minutes(plus(e,-t.due()),Math.addExact(r.horizon(),Math.max(0,-t.due())),"tardiness"),r.weights().tardiness());
+            }
+            occupancy.values().forEach(model::addNoOverlap);
+            for(var t:r.tasks()) {
+                Vars v=vars.get(t.id()); var ends=new ArrayList<IntVar>();
+                for(var d:t.dependencies()) {
+                    Vars f=vars.get(d.predecessor()); if(f==null) throw new IllegalArgumentException("Missing predecessor");
+                    model.addGreaterOrEqual(v.start(),plus(d.endEnd()?f.start():f.end(),d.startLag()));
+                    if(d.endEnd()) model.addGreaterOrEqual(v.end(),plus(f.end(),d.endLag()));
+                    ends.add(f.end());
+                }
+                if(!ends.isEmpty() && r.weights().gap()>0) {
+                    IntVar last=integer(r.horizon(),"lastPredecessor"); model.addMaxEquality(last,ends);
+                    term(minutes(minus(v.start(),last),r.horizon(),"dependencyGap"),r.weights().gap());
                 }
             }
-            model.addExactlyOne(ps.values().toArray(BoolVar[]::new));
-            vars.put(t.id(),new Vars(s,e,ps));
-            if(t.due()!=null) term(minutes(plus(e,-t.due()),Math.addExact(r.horizon(),Math.max(0,-t.due())),"tardiness"),r.weights().tardiness());
-        }
-        occupancy.values().forEach(model::addNoOverlap);
-        for(var t:r.tasks()) {
-            Vars v=vars.get(t.id()); var ends=new ArrayList<IntVar>();
-            for(var d:t.dependencies()) {
-                Vars f=vars.get(d.predecessor()); if(f==null) throw new IllegalArgumentException("Missing predecessor");
-                model.addGreaterOrEqual(v.start(),plus(d.endEnd()?f.start():f.end(),d.startLag()));
-                if(d.endEnd()) model.addGreaterOrEqual(v.end(),plus(f.end(),d.endLag()));
-                ends.add(f.end());
+            IntVar maxEnd=integer(r.horizon(),"makespan");
+            model.addMaxEquality(maxEnd,vars.values().stream().map(Vars::end).toList());
+            IntVar epochSeconds=integer(Math.addExact(r.originEpochMillis(),r.horizon())/1000,"finishEpochSeconds");
+            model.addDivisionEquality(epochSeconds,plus(maxEnd,r.originEpochMillis()),LinearExpr.constant(1000));
+            term(epochSeconds,r.weights().finish());
+            for(var resource:r.resources()) machine(resource);
+            baselineCost=null;
+            adjustmentAndScope(r);
+            if(r.baseline()!=null && !r.baseline().isEmpty()) {
+                baselineCost=Protocol.verify(r,r.baseline());
+                model.addLessOrEqual(objective,baselineCost);
+                for(var a:r.baseline()) {
+                    var v=vars.get(a.task()); model.addHint(v.start(),a.start()); model.addHint(v.end(),a.end());
+                    v.presence().forEach((id,p)->model.addHint(p,id.equals(a.resource())));
+                }
             }
-            if(!ends.isEmpty() && r.weights().gap()>0) {
-                IntVar last=integer(r.horizon(),"lastPredecessor"); model.addMaxEquality(last,ends);
-                term(minutes(minus(v.start(),last),r.horizon(),"dependencyGap"),r.weights().gap());
-            }
+            model.minimize(objective);
+            String invalid=model.validate(); if(!invalid.isEmpty()) throw new IllegalArgumentException("CP-SAT model invalid: "+invalid);
+            built=true;
         }
-        IntVar maxEnd=integer(r.horizon(),"makespan");
-        model.addMaxEquality(maxEnd,vars.values().stream().map(Vars::end).toList());
-        IntVar epochSeconds=integer(Math.addExact(r.originEpochMillis(),r.horizon())/1000,"finishEpochSeconds");
-        model.addDivisionEquality(epochSeconds,plus(maxEnd,r.originEpochMillis()),LinearExpr.constant(1000));
-        term(epochSeconds,r.weights().finish());
-        for(var resource:r.resources()) machine(resource);
-        Long baselineCost=null;
-        if(r.baseline()!=null && !r.baseline().isEmpty()) {
-            baselineCost=Protocol.verify(r,r.baseline());
-            model.addLessOrEqual(objective,baselineCost);
-            for(var a:r.baseline()) {
-                var v=vars.get(a.task()); model.addHint(v.start(),a.start()); model.addHint(v.end(),a.end());
-                v.presence().forEach((id,p)->model.addHint(p,id.equals(a.resource())));
-            }
-        }
-        model.minimize(objective);
-        String invalid=model.validate(); if(!invalid.isEmpty()) throw new IllegalArgumentException("CP-SAT model invalid: "+invalid);
+        long modelMillis=(System.nanoTime()-modelStart)/1000000;
         long buildMillis=(System.nanoTime()-begin)/1000000;
         CpSolver solver=new CpSolver();
         solver.getParameters().setNumWorkers(r.workers()).setRandomSeed(r.seed())
@@ -107,14 +117,48 @@ public final class CpSatSolver {
             }
             cost=Protocol.verify(r,assignments);
             // Integral business score is authoritative; a rounded double is never used for acceptance.
-            if(Math.abs(solver.objectiveValue()-cost)>Math.max(1e-5,Math.ulp((double)cost)*2))
+            if(Math.abs(solver.objectiveValue()-Protocol.objective(r,assignments))>Math.max(1e-5,Math.ulp((double)Protocol.objective(r,assignments))*2))
                 throw new IllegalStateException("Objective/evaluator mismatch");
         } else if(status==CpSolverStatus.UNKNOWN && baselineCost!=null) {
             assignments.addAll(r.baseline()); cost=baselineCost; baselineUsed=true;
         }
         if(baselineCost!=null && cost!=null && cost>baselineCost) throw new IllegalStateException("Baseline regression");
         return new Response(VERSION,r.attempt(),status.name(),solver.solutionInfo(),assignments,cost,
-                solver.bestObjectiveBound(),solver.wallTime(),buildMillis,solver.numBranches(),solver.numConflicts(),baselineUsed);
+                solver.bestObjectiveBound(),solver.wallTime(),buildMillis,solver.numBranches(),solver.numConflicts(),baselineUsed,
+                new Performance(cacheHit,nativeMillis,modelMillis,cost==null?null:Protocol.objective(r,assignments),
+                    cost==null?0:Protocol.adjustment(r,assignments).cost()));
+    }
+
+
+    /** Cached models are only reused by the exact semantic-key cache, never across changed constraints. */
+    public int modelBytes() {return model.model().getSerializedSize();}
+    private void adjustmentAndScope(Request r) {
+        var o=r.optimization();
+        if(r.baseline().isEmpty()) {
+            if(o.movableTasks()!=null) throw new IllegalArgumentException("Local search requires a complete feasible baseline");
+            return;
+        }
+        Protocol.verify(r,r.baseline());
+        Set<String> movable=o.movableTasks()==null?null:new HashSet<>(o.movableTasks());
+        for(var a:r.baseline()) {
+            var v=vars.get(a.task());
+            if(movable!=null && !movable.contains(a.task())) {
+                model.addEquality(v.start(),a.start());model.addEquality(v.end(),a.end());
+                model.addEquality(v.presence().get(a.resource()),1);
+            }
+            BoolVar sameStart=model.newBoolVar("sameStart"),sameEnd=model.newBoolVar("sameEnd");
+            model.addEquality(v.start(),a.start()).onlyEnforceIf(sameStart);
+            model.addDifferent(v.start(),a.start()).onlyEnforceIf(sameStart.not());
+            model.addEquality(v.end(),a.end()).onlyEnforceIf(sameEnd);
+            model.addDifferent(v.end(),a.end()).onlyEnforceIf(sameEnd.not());
+            BoolVar unchanged=model.newBoolVar("unchanged");
+            model.addMultiplicationEquality(unchanged,new LinearArgument[]{sameStart,sameEnd,v.presence().get(a.resource())});
+            term(plus(LinearExpr.term(unchanged,-1),1),o.changedWeight());
+            term(plus(LinearExpr.term(v.presence().get(a.resource()),-1),1),o.resourceWeight());
+            IntVar delta=integer(r.horizon(),"startShift");model.addAbsEquality(delta,plus(v.start(),-a.start()));
+            IntVar rounded=integer((r.horizon()+59999)/60000,"shiftMinutes");
+            model.addDivisionEquality(rounded,plus(delta,59999),LinearExpr.constant(60000));term(rounded,o.shiftMinuteWeight());
+        }
     }
 
     private void machine(Resource resource) {
