@@ -17,6 +17,9 @@ import java.util.Map;
 @Data
 @Accessors(chain = true)
 public class BasicData {
+    /** Latest actually allocated inbound supply per root order. Never inferred from purchasing lead time. */
+    private Map<String, java.time.LocalDateTime> reservedMaterialAvailableAt = new java.util.HashMap<>();
+    private java.util.Set<String> unreservedPurchasedMaterials = new java.util.TreeSet<>();
     private String sourceSignature;
     private java.util.List<cn.windwheel.aps.entity.PlanTaskAdjustPO> baselineTasks = new java.util.ArrayList<>();
     private cn.windwheel.aps.solve.presolve.DynamicSchedulingRequest dynamicRequest;

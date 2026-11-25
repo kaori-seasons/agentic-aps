@@ -221,7 +221,8 @@ const formOption = ref({
       type: 'select',
       dicData: [
         {label: 'OptaPlanner', value: 'OPTAPLANNER'},
-        {label: 'Timefold', value: 'TIMEFOLD'}
+        {label: 'Timefold', value: 'TIMEFOLD'},
+        {label: 'OR-Tools CP-SAT', value: 'ORTOOLS_CP_SAT'}
       ],
       defaultValue: 'OPTAPLANNER',
       span: 12,
@@ -238,6 +239,11 @@ const formOption = ref({
       defaultValue: 'DEFAULT',
       span: 12,
     },
+    { label: 'CP-SAT运行方式', prop: 'cpSatMode', type: 'select', span: 12,
+      defaultValue: 'SHADOW', dicData: [{label: '影子验算（仅审计）',value: 'SHADOW'}, {label: '生成候选（需服务端授权）',value: 'CANDIDATE'}] },
+    { label: 'CP-SAT计划窗口（天）', prop: 'cpSatHorizon', type: 'inputNumber', span: 12, min: 1, max: 180, precision: 0, defaultValue: 30 },
+    { label: 'CP-SAT计算线程', prop: 'cpSatWorkers', type: 'inputNumber', span: 12, min: 1, max: 8, precision: 0, defaultValue: 1 },
+    { label: 'CP-SAT可行基线保护', prop: 'cpSatBaseline', type: 'switch', span: 12, defaultValue: true },
     {
       label: '求解上限(秒)',
       prop: 'solveTimeSeconds',
@@ -401,6 +407,10 @@ function addEditRow (row) {
       }
       delete rowData.value['config']
       rowData.value.adaptiveEnabled = !!row.config?.adaptive?.enabled
+      rowData.value.cpSatMode = row.config?.cpSat?.executionMode || 'SHADOW'
+      rowData.value.cpSatHorizon = row.config?.cpSat?.horizonDays || 30
+      rowData.value.cpSatWorkers = row.config?.cpSat?.numWorkers || 1
+      rowData.value.cpSatBaseline = row.config?.cpSat?.useBaselineHint ?? true
       rowData.value.adaptiveTotalSeconds = row.config?.adaptive?.totalSeconds || 180
       rowData.value.adaptiveWarmStartEnabled = row.config?.adaptive?.warmStartEnabled ?? true
       rowData.value.adaptiveBudgetMode = row.config?.adaptive?.budgetMode || 'SCALE_AWARE'
@@ -430,7 +440,7 @@ function submitHandle (form) {
     'direction', 'materialConstrained', 'maxNoImprovementTime',
     'solverEngine', 'solverProfile', 'solveTimeSeconds', 'randomSeed',
     'entityTabuSize', 'lateAcceptanceSize', 'acceptedCountLimit',
-    'scoreCalculationCountLimit', 'constraintWeightConfig', 'adaptive'
+    'scoreCalculationCountLimit', 'constraintWeightConfig', 'adaptive', 'cpSat'
   ]
   for (const key of configKeys) {
     if (rowData.value[key] !== undefined && rowData.value[key] !== null) {
@@ -439,6 +449,17 @@ function submitHandle (form) {
     delete temp[key]
   }
   temp.config.materialConstrained = rowData.value['materialConstrained'] || false
+  temp.config.cpSat = { executionMode: rowData.value.cpSatMode || 'SHADOW', horizonDays: rowData.value.cpSatHorizon || 30,
+    numWorkers: rowData.value.cpSatWorkers || 1, useBaselineHint: rowData.value.cpSatBaseline ?? true }
+  for (const key of ['cpSatMode','cpSatHorizon','cpSatWorkers','cpSatBaseline']) delete temp[key]
+  if (temp.config.solverEngine === 'ORTOOLS_CP_SAT') {
+    if (temp.config.direction !== 'FORWARD' || !temp.config.materialConstrained || temp.config.solverProfile !== 'DEFAULT'
+        || rowData.value.adaptiveEnabled || (temp.config.maxNoImprovementTime || 0) > 0) {
+      ElNotification({type: 'warning', message: 'CP-SAT需要正排、物料约束、默认优化策略，关闭自适应组合与无改进预算'})
+      return
+    }
+    temp.config.scoreCalculationCountLimit = null
+  }
   temp.config.adaptive = {
     ...(temp.config.adaptive || {}),
     enabled: !!rowData.value.adaptiveEnabled,

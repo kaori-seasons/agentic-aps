@@ -56,10 +56,13 @@ public class MrpUtils {
             MrpMaterial mrpMaterial = stack.getMrpMaterial();
             Material material = materialMap.get(mrpMaterial.getId());
             // 扣减库存，得到缺料数量
-            BigDecimal lackQuantity = InventoryUtils.deductInventory(order, material, mrpMaterial.getQuantity(), incomingMaterialOrderMap);
+            BigDecimal lackQuantity = InventoryUtils.deductInventory(order, material, mrpMaterial.getQuantity(), incomingMaterialOrderMap,
+                    at -> basicData.getReservedMaterialAvailableAt().merge(order.getId(), at, (a,b) -> a.isAfter(b)?a:b));
             mrpMaterial.setQuantity(lackQuantity);
             // 库存不足
             if (lackQuantity.compareTo(BigDecimal.ZERO) > 0) {
+                if(material.getSource()!=cn.windwheel.aps.entity.enums.MaterialSourceEnum.PRODUCED)
+                    basicData.getUnreservedPurchasedMaterials().add(material.getCode());
                 // 添加当前物料MRP计算结果
                 addMrpMaterial(mrpGraph, stack, stack.getParentId());
                 // 将下层物料入栈

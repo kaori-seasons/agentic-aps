@@ -16,6 +16,8 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>jvs-aps-scheduling-contract</module>
+        <module>jvs-aps-ortools-worker</module>
         <module>jvs-aps-common</module>
         <module>jvs-aps-mgr</module>
     </modules>

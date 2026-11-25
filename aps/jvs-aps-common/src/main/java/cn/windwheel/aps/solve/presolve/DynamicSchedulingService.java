@@ -16,8 +16,11 @@ import java.util.stream.Collectors;
 public class DynamicSchedulingService {
     public void prepare(BasicData data, PlanningStrategy strategy, DynamicSchedulingRequest request) {
         if (request == null) { return; }
-        if (strategy.getConfig().getSolverEngine() != SolverEngineEnum.TIMEFOLD) {
-            throw new BusinessException("动态局部重排需要选择TIMEFOLD引擎");
+        if(strategy.getConfig().getSolverEngine()==SolverEngineEnum.ORTOOLS_CP_SAT
+                && request.getSeeds()!=null && !request.getSeeds().isEmpty())
+            throw new BusinessException("CP-SAT使用完整可行时间基线，不接受资源队列排序种子");
+        if (strategy.getConfig().getSolverEngine() != SolverEngineEnum.TIMEFOLD && strategy.getConfig().getSolverEngine() != SolverEngineEnum.ORTOOLS_CP_SAT) {
+            throw new BusinessException("动态局部重排需要选择TIMEFOLD或CP-SAT引擎");
         }
         if (request.getFreezeUntil() == null || request.getEvents() == null || request.getEvents().isEmpty()
                 || request.getEvents().size() > 100 || request.getSeeds() == null || request.getSeeds().size() > 1000) {
@@ -122,12 +125,18 @@ public class DynamicSchedulingService {
     public void apply(SchedulingSolution solution, BasicData data) {
         var request = data.getDynamicRequest();
         Set<String> taskCodes = solution.getTasks().stream().map(ProductionTask::getCode).collect(Collectors.toSet());
+        Map<String,ProductionTask> canonical = solution.getTasks().stream()
+                .collect(Collectors.toMap(ProductionTask::getCode,task->task));
         for (ProductionTask task : solution.getTasks()) {
             if (task.getFrontTaskCodes() != null && !taskCodes.containsAll(task.getFrontTaskCodes())) {
                 Set<String> missing = new TreeSet<>(task.getFrontTaskCodes());
                 missing.removeAll(taskCodes);
                 throw new BusinessException("任务" + task.getCode() + "缺少前置任务：" + String.join(",",missing));
             }
+            // Frozen-task replacement may leave an old generated object with the same code in the set.
+            // All engines must score and schedule the actual retained predecessor, exactly once.
+            if(task.getFrontTaskCodes()!=null) task.setFrontTasks(task.getFrontTaskCodes().stream().sorted()
+                    .map(canonical::get).collect(Collectors.toCollection(LinkedHashSet::new)));
         }
         for (ProductionTask task : solution.getTasks()) {
             task.setWeights(solution.getStrategy().getConfig().getConstraintWeightConfig());
@@ -154,7 +163,7 @@ public class DynamicSchedulingService {
                 }
             }
         }
-        if (solution.getStrategy().getConfig().getSolverEngine() == SolverEngineEnum.TIMEFOLD) {
+        if (solution.getStrategy().getConfig().getSolverEngine() != SolverEngineEnum.OPTAPLANNER) {
             for (MainProductionResource resource : solution.getMainResources()) {
                 List<ProductionTask> pinned = solution.getTasks().stream()
                         .filter(task -> SchedulingRules.active(task) && Boolean.TRUE.equals(task.getPinned())

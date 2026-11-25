@@ -30,7 +30,7 @@
     <el-dialog
       class="drawer-popup-dialog"
       v-model="processVisible"
-      :title="t(`aps.programOfProduction.productionSchedulingPlan.genTitle`)"
+      title="排程进度与验收"
       width="57%"
       append-to-body
       :close-on-click-modal="false"
@@ -47,14 +47,29 @@
         <el-scrollbar class="body-box">
           <div class="process-text">
             <div v-for="(it, ix) in processInfo.contents" :key="'process-content-item'+ix" class="process-text-item">
-              <div v-html="it"></div>
+              <div>{{it}}</div>
             </div>
           </div>
         </el-scrollbar>
+        <el-card v-if="cpSatAudit" shadow="never" style="margin:12px 0" aria-label="CP-SAT求解验收">
+          <template #header><strong>OR-Tools CP-SAT · {{cpSatAudit.executionMode === 'SHADOW' ? '影子验算' : '候选计划'}}</strong></template>
+          <el-descriptions :column="2" border size="small">
+            <el-descriptions-item label="求解状态">{{cpSatAudit.worker?.status || cpSatAudit.status}}</el-descriptions-item>
+            <el-descriptions-item label="独立约束复核">{{cpSatAudit.verified ? '通过' : '未通过，不可发布'}}</el-descriptions-item>
+            <el-descriptions-item label="统一业务成本">{{cpSatAudit.exactCost ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="目标下界">{{cpSatAudit.worker?.objectiveBound ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="可行基线保护">{{cpSatAudit.baselineAccepted ? '已验证并约束不劣化' : '未取得完整可行基线'}}</el-descriptions-item>
+            <el-descriptions-item label="总耗时">{{cpSatAudit.totalMillis}} ms</el-descriptions-item>
+            <el-descriptions-item label="逾期末工序">{{cpSatAudit.businessMetrics?.lateTerminalTasks ?? '—'}}</el-descriptions-item>
+            <el-descriptions-item label="总逾期分钟">{{cpSatAudit.businessMetrics?.tardinessMinutes ?? '—'}}</el-descriptions-item>
+          </el-descriptions>
+          <p v-if="cpSatAudit.executionMode === 'SHADOW'">影子结果仅用于验算与比较，不进入待确认计划。</p>
+          <p v-if="cpSatAudit.message">{{cpSatAudit.message}}</p>
+        </el-card>
         <div class="footer-box">
-          <el-button v-if="processInfo && ['SUCCESS', 'NO_SCHEDULED'].indexOf(processInfo.status) > -1" v-permission="'aps:schedule:confirm'" type="primary" :loading="confirmLoading" @click="confirmHandle">{{t(`form.submit`)}}</el-button>
+          <el-button v-if="!isShadow && processInfo && ['SUCCESS', 'NO_SCHEDULED'].indexOf(processInfo.status) > -1" v-permission="'aps:schedule:confirm'" type="primary" :loading="confirmLoading" @click="confirmHandle">{{t(`form.submit`)}}</el-button>
           <el-button v-permission="'aps:schedule:cancel'" :loading="abandonLoading" @click="abandonHandle">{{t(`aps.programOfProduction.productionSchedulingPlan.abandon`)}}</el-button>
-          <el-button v-if="processInfo && ['SUCCESS'].indexOf(processInfo.status) > -1" v-permission="'aps:schedule:preview'" plain @click="openPreview">预览</el-button>
+          <el-button v-if="!isShadow && processInfo && ['SUCCESS'].indexOf(processInfo.status) > -1" v-permission="'aps:schedule:preview'" plain @click="openPreview">预览</el-button>
         </div>
       </div>
     </el-dialog>
@@ -129,7 +144,7 @@ const componentList = shallowRef({
 import productionSchedulingStrategy from '../productionSchedulingStrategy/index.vue'
 import previewInfo from './preview.vue'
 
-import { getProgress, generate, cancel, confirm } from './api'
+import { getProgress, generate, cancel, confirm, getSolveAudit } from './api'
 
 const { proxy } = getCurrentInstance()
 const emit = defineEmits([])
@@ -149,6 +164,10 @@ const tabList = ref([
 ])
 const timer = ref(null)
 const processInfo = ref(null)
+const cpSatAudit = ref(null)
+const auditId = ref('')
+const isShadow = computed(() => cpSatAudit.value?.executionMode === 'SHADOW'
+  || processInfo.value?.contents?.some(line => line.includes('影子验算')))
 const processVisible = ref(false)
 const confirmLoading = ref(false)
 const abandonLoading = ref(false)
@@ -180,6 +199,21 @@ function getProgressHandle () {
   getProgress().then(res => {
     if(res.data && res.data.code == 0) {
       processInfo.value = res.data.data
+      const line = [...(res.data.data?.contents || [])].reverse().find(text => text.includes('审计ID'))
+      const id = line?.match(/[a-f0-9-]{36}/)?.[0]
+      if (!id || id !== auditId.value) cpSatAudit.value = null
+      if (id && id !== auditId.value && hasPermission('aps:schedule:preview') && ['SUCCESS','FAILURE'].includes(res.data.data.status)) {
+        auditId.value = id
+        cpSatAudit.value = null
+        getSolveAudit(id).then(response => {
+          const report = JSON.parse(response.data?.data?.resultJson || '{}')
+          if (auditId.value === id) cpSatAudit.value = report.cpSat ? {
+            ...report.cpSat,
+            // Preserve the decimal string; a Long business score may exceed JavaScript's safe integer range.
+            exactCost: report.score?.split('/')[1]?.replace(/soft$/, '').replace(/^-/, '')
+          } : null
+        }).catch(() => { if (auditId.value === id) auditId.value = '' })
+      }
     }else{
       if(timer.value) {
         clearInterval(timer.value)
@@ -441,9 +475,13 @@ function previewClose () {
 }
 .process-detail-box{
   height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  > .el-card { flex-shrink: 0; }
   .prcess-ratio{
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     padding: 16px 24px;
     .label{
@@ -465,7 +503,9 @@ function previewClose () {
     }
   }
   .body-box{
-    height: calc(100% - 126px);
+    flex: 1;
+    height: auto;
+    min-height: 0;
     .process-text{
       margin: 0 24px;
       background: #F5F6F7;
@@ -486,6 +526,7 @@ function previewClose () {
     }
   }
   .footer-box{
+    flex-shrink: 0;
     height: 72px;
     box-sizing: border-box;
     border-top: 1px solid #EEEFF0;

@@ -143,7 +143,7 @@ class HybridSchedulingTest {
 
     @Test
     void bothEnginesSolveBothDirectionsWithBothProfiles() throws Exception {
-        for (SolverEngineEnum engine : SolverEngineEnum.values()) {
+        for (SolverEngineEnum engine : new SolverEngineEnum[]{SolverEngineEnum.OPTAPLANNER, SolverEngineEnum.TIMEFOLD}) {
             for (PlanningDirectionEnum direction : PlanningDirectionEnum.values()) {
                 for (SolverProfileEnum profile : List.of(SolverProfileEnum.FFD_TABU, SolverProfileEnum.FFD_LATE_ACCEPTANCE)) {
                     var problem = problem(engine,direction,profile);
@@ -180,7 +180,7 @@ class HybridSchedulingTest {
 
     @Test
     void frozenFutureTaskLeavesEarlierCapacityUsable() throws Exception {
-        for (SolverEngineEnum engine : SolverEngineEnum.values()) {
+        for (SolverEngineEnum engine : new SolverEngineEnum[]{SolverEngineEnum.OPTAPLANNER, SolverEngineEnum.TIMEFOLD}) {
             var problem = problem(engine,PlanningDirectionEnum.FORWARD,SolverProfileEnum.FFD_LATE_ACCEPTANCE);
             problem.getStrategy().getConfig().setScoreCalculationCountLimit(null).setSolveTimeSeconds(1L)
                     .setMaxNoImprovementTime(1L);
@@ -200,7 +200,7 @@ class HybridSchedulingTest {
 
     @Test
     void redisCancellationMonitorTerminatesBothEngines() throws Exception {
-        for (SolverEngineEnum engine : SolverEngineEnum.values()) {
+        for (SolverEngineEnum engine : new SolverEngineEnum[]{SolverEngineEnum.OPTAPLANNER, SolverEngineEnum.TIMEFOLD}) {
             var problem = problem(engine,PlanningDirectionEnum.FORWARD,SolverProfileEnum.FFD_LATE_ACCEPTANCE);
             problem.getStrategy().getConfig().setScoreCalculationCountLimit(null).setSolveTimeSeconds(5L);
             var checks = new java.util.concurrent.atomic.AtomicInteger();
@@ -251,7 +251,7 @@ class HybridSchedulingTest {
 
     @Test
     void fullAssertDetectsNoScoreCorruptionAcrossResourcesAndDependencies() {
-        for (SolverEngineEnum engine : SolverEngineEnum.values()) {
+        for (SolverEngineEnum engine : new SolverEngineEnum[]{SolverEngineEnum.OPTAPLANNER, SolverEngineEnum.TIMEFOLD}) {
             for (PlanningDirectionEnum direction : PlanningDirectionEnum.values()) {
                 var problem = problem(engine,direction,SolverProfileEnum.DEFAULT);
                 var other = new MainProductionResource().setId("R2").setWorkCalendars(List.of());

@@ -1,0 +1,90 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "planStart": "2026-11-26T08:00:00",
+  "cases": [
+    {
+      "name": "existing Timefold HTTP regression",
+      "status": "PASS",
+      "score": "0hard/-1798675928soft",
+      "seconds": 45.149
+    },
+    {
+      "name": "shadow independently verified without candidate publication",
+      "status": "PASS",
+      "auditId": "f8499b2c-a5fa-49cc-afe1-d482145d48ac",
+      "score": "0hard/-1798671904soft",
+      "seconds": 45.743
+    },
+    {
+      "name": "CP-SAT candidate and four real previews",
+      "status": "PASS",
+      "auditId": "d7aa33f6-524f-4bd6-b081-66127709adfe",
+      "seconds": 45.901,
+      "score": "0hard/-1798442901soft",
+      "tasks": 36,
+      "precedence": 30,
+      "release": 0,
+      "frozen": 0,
+      "capability": 36,
+      "calendar": 36,
+      "duration": 36
+    },
+    {
+      "name": "tenant isolation and run permission gate",
+      "status": "PASS"
+    },
+    {
+      "name": "stale source blocks confirmation; unchanged source confirms atomically",
+      "status": "PASS"
+    },
+    {
+      "name": "confirmed feasible baseline is independently revalidated and cannot regress",
+      "status": "PASS",
+      "auditId": "32472fb0-1eee-4855-af76-eae609f42e43"
+    },
+    {
+      "name": "dynamic frozen WIP, downtime, material release and priority insertion",
+      "status": "PASS",
+      "auditId": "6a2f502c-d68e-435c-9f25-1f4285037417",
+      "seconds": 45.842,
+      "tasks": 36,
+      "precedence": 30,
+      "release": 6,
+      "frozen": 1,
+      "capability": 36,
+      "calendar": 36,
+      "duration": 35
+    },
+    {
+      "name": "infeasible frozen outage never publishes",
+      "status": "PASS",
+      "auditId": "fdff7cd6-72e4-4913-af21-e06275995769"
+    },
+    {
+      "name": "native worker cancellation leaves no candidate",
+      "status": "PASS"
+    },
+    {
+      "name": "quantity-reserved inbound arrival becomes hard release",
+      "status": "PASS",
+      "auditId": "26660984-355a-43f4-be31-2546a402cedc",
+      "releasedTasks": 36
+    },
+    {
+      "name": "uncovered purchased supply fails closed",
+      "status": "PASS",
+      "auditId": "9328ae85-ac5a-4c83-9c9e-3608681b14b0"
+    },
+    {
+      "name": "confirmed Timefold baseline transfers to CP-SAT with identical cost and non-regression",
+      "status": "PASS",
+      "auditId": "3c9f254b-f1d7-417a-8717-929c5ae550f6",
+      "timefoldCost": 1798674512,
+      "cpSatCost": 1798671687
+    }
+  ],
+  "candidateAudit": "3c9f254b-f1d7-417a-8717-929c5ae550f6",
+  "timefoldScore": "0hard/-1798674512soft",
+  "cpSatScore": "0hard/-1798671687soft"
+}

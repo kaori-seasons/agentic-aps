@@ -1,0 +1,18 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
+  <parent><groupId>cn.windwheel</groupId><artifactId>jvs-aps</artifactId><version>1.0</version></parent>
+  <artifactId>jvs-aps-ortools-worker</artifactId>
+  <dependencies>
+    <dependency><groupId>cn.windwheel</groupId><artifactId>jvs-aps-scheduling-contract</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.google.ortools</groupId><artifactId>ortools-java</artifactId><version>9.15.6755</version></dependency>
+    <dependency><groupId>com.google.protobuf</groupId><artifactId>protobuf-java</artifactId><version>4.33.1</version></dependency>
+    <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId></dependency>
+    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+  </dependencies>
+  <build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-shade-plugin</artifactId><version>3.5.3</version>
+    <executions><execution><phase>package</phase><goals><goal>shade</goal></goals><configuration>
+      <createDependencyReducedPom>false</createDependencyReducedPom>
+      <filters><filter><artifact>*:*</artifact><excludes><exclude>META-INF/*.SF</exclude><exclude>META-INF/*.RSA</exclude><exclude>META-INF/*.DSA</exclude></excludes></filter></filters>
+      <transformers combine.self="override"><transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"><mainClass>cn.windwheel.aps.cpsat.WorkerMain</mainClass></transformer></transformers>
+    </configuration></execution></executions>
+  </plugin></plugins></build>
+</project>

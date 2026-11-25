@@ -7,3 +7,5 @@
 /aps-ui/docker/dist/
 /aps/jvs-aps-common/target/
 /aps/jvs-aps-mgr/target/
+/aps/jvs-aps-scheduling-contract/target/
+/aps/jvs-aps-ortools-worker/target/

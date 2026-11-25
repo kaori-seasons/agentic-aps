@@ -157,6 +157,17 @@ public class SolveManageConfigurator {
             throw new IllegalArgumentException("求解参数超出允许范围");
         }
         cn.windwheel.aps.entity.dto.planning.ConstraintWeightConfigDTO weights = config.getConstraintWeightConfig();
+        if (config.getSolverEngine() == cn.windwheel.aps.entity.enums.SolverEngineEnum.ORTOOLS_CP_SAT) {
+            if(config.getCpSat()==null) throw new IllegalArgumentException("CP-SAT配置不能为空");
+            config.getCpSat().validate();
+            if(config.getDirection()!=cn.windwheel.aps.entity.enums.PlanningDirectionEnum.FORWARD
+                    || config.getScoreCalculationCountLimit()!=null
+                    || config.getSolverProfile()!=cn.windwheel.aps.entity.enums.SolverProfileEnum.DEFAULT
+                    || config.getMaxNoImprovementTime()!=null && config.getMaxNoImprovementTime()>0)
+                throw new IllegalArgumentException("CP-SAT使用正排、默认策略和秒级预算，不接受评分次数/禁忌搜索/无改进预算");
+            if(!Boolean.TRUE.equals(config.getMaterialConstrained()))
+                throw new IllegalArgumentException("CP-SAT要求启用物料约束以校验BOM与来料预约");
+        }
         if (config.getAdaptive() != null && config.getAdaptive().isEnabled()) {
             config.getAdaptive().validate();
             if (config.getSolverEngine() != cn.windwheel.aps.entity.enums.SolverEngineEnum.TIMEFOLD

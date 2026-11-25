@@ -9,10 +9,19 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 @Component
-@RequiredArgsConstructor
 public class SchedulingEngineRouter {
     private final SolveManageConfigurator legacy;
     private final TimefoldManageConfigurator timefold;
+    private final cn.windwheel.aps.solve.cpsat.CpSatEngine cpSat;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public SchedulingEngineRouter(SolveManageConfigurator legacy, TimefoldManageConfigurator timefold,
+            cn.windwheel.aps.solve.cpsat.CpSatEngine cpSat) {
+        this.legacy=legacy; this.timefold=timefold; this.cpSat=cpSat;
+    }
+    public SchedulingEngineRouter(SolveManageConfigurator legacy, TimefoldManageConfigurator timefold) {
+        this(legacy,timefold,null);
+    }
 
     public SchedulingSolution solve(UUID planId, SchedulingSolution problem) throws InterruptedException, ExecutionException {
         return solve(planId,problem,null);
@@ -27,6 +36,11 @@ public class SchedulingEngineRouter {
             java.util.function.Consumer<cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.Report> audit)
             throws InterruptedException, ExecutionException {
         if (cancelled != null && cancelled.getAsBoolean()) { return null; }
+        SolveManageConfigurator.validate(problem.getStrategy().getConfig());
+        if(problem.getStrategy().getConfig().getSolverEngine()==SolverEngineEnum.ORTOOLS_CP_SAT) {
+            if(cpSat==null) throw new IllegalStateException("CP-SAT engine not configured");
+            return cpSat.solve(planId,problem,cancelled);
+        }
         var adaptive = problem.getStrategy().getConfig().getAdaptive();
         if (adaptive != null && adaptive.isEnabled()) {
             return cn.windwheel.aps.solve.adaptive.AdaptiveScheduling.solve(problem,cancelled,audit);

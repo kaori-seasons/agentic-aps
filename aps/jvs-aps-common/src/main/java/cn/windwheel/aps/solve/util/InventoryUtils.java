@@ -33,13 +33,19 @@ public class InventoryUtils {
      */
     public static BigDecimal deductInventory(ProductionOrder order, Material material, BigDecimal quantity,
                                              Map<String, List<IncomingMaterialOrder>> incomingMaterialOrderMap) {
+        return deductInventory(order, material, quantity, incomingMaterialOrderMap, at -> {});
+    }
+
+    public static BigDecimal deductInventory(ProductionOrder order, Material material, BigDecimal quantity,
+            Map<String, List<IncomingMaterialOrder>> incomingMaterialOrderMap,
+            java.util.function.Consumer<LocalDateTime> reservation) {
         if (ObjectNull.isNull(material)) {
             throw new BusinessException("物料不存在", order.getMaterialCode());
         }
         // 优先扣减在库库存
         BigDecimal lackQuantity = deductInStockInventory(material, quantity);
         // 在库库存不够，扣减在途库存（来料订单）
-        return deductInTransitInventory(lackQuantity, order, material, incomingMaterialOrderMap);
+        return deductInTransitInventory(lackQuantity, order, material, incomingMaterialOrderMap, reservation);
     }
 
     /**
@@ -68,7 +74,8 @@ public class InventoryUtils {
      * @return 缺料数量
      */
     private static BigDecimal deductInTransitInventory(BigDecimal requiredQuantity, ProductionOrder order, Material material,
-                                                       Map<String, List<IncomingMaterialOrder>> incomingMaterialOrderMap) {
+                                                       Map<String, List<IncomingMaterialOrder>> incomingMaterialOrderMap,
+                                                       java.util.function.Consumer<LocalDateTime> reservation) {
         // 缺料数量
         BigDecimal lackQuantity = requiredQuantity;
         if (lackQuantity.compareTo(BigDecimal.ZERO) <= 0) {
@@ -102,6 +109,7 @@ public class InventoryUtils {
             }
             // 计算库存
             CalculationInventoryResult result = calculationInventory(incomingMaterialOrder.getQuantity(), lackQuantity);
+            reservation.accept(availableAt);
             incomingMaterialOrder.setQuantity(result.getDeductQuantity());
             lackQuantity = result.getLackQuantity();
         }

@@ -132,8 +132,9 @@ def validate(audit, result, count):
                     continue
                 if not calendar['workDaySetting'].get(instant.strftime('%A').upper()):
                     continue
-                clock = instant.strftime('%H:%M:%S')
-                valid |= any(w['start'] < clock <= w['end'] if is_end else w['start'] <= clock < w['end']
+                clock = instant.time()
+                valid |= any(datetime.fromisoformat('2000-01-01T'+w['start']).time() < clock <= datetime.fromisoformat('2000-01-01T'+w['end']).time() if is_end
+                             else datetime.fromisoformat('2000-01-01T'+w['start']).time() <= clock < datetime.fromisoformat('2000-01-01T'+w['end']).time()
                              for w in calendar['workModeTimes'])
             assert valid, (row['taskCode'], instant, resource['id'])
         checks['calendar'] += 1

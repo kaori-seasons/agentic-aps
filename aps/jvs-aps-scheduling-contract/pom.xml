@@ -1,0 +1,5 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
+  <parent><groupId>cn.windwheel</groupId><artifactId>jvs-aps</artifactId><version>1.0</version></parent>
+  <artifactId>jvs-aps-scheduling-contract</artifactId>
+  <dependencies><dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency></dependencies>
+</project>

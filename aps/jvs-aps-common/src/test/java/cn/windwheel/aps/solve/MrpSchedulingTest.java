@@ -99,7 +99,7 @@ class MrpSchedulingTest {
     }
 
     private void verifyScheduling(ShipmentCase scenario, int componentShortage) throws Exception {
-        for (SolverEngineEnum engine : SolverEngineEnum.values()) {
+        for (SolverEngineEnum engine : new SolverEngineEnum[]{SolverEngineEnum.OPTAPLANNER, SolverEngineEnum.TIMEFOLD}) {
             for (PlanningDirectionEnum direction : PlanningDirectionEnum.values()) {
                 var data = data(scenario);
                 var order = order();

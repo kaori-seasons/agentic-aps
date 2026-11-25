@@ -73,6 +73,7 @@ public class SolveServiceImpl implements SolveService {
             // 构造规划解决方案
             SchedulingSolution solution = buildSolution(strategy, basicData);
             dynamicSchedulingService.apply(solution, basicData);
+            cn.windwheel.aps.solve.cpsat.CpSatProblemMapper.prepare(solution,basicData);
             solveAuditService.recordProblem(planId, solution);
             // 执行规划求解计算
             if (ObjectNull.isNull(solution.getTasks())) {
@@ -104,6 +105,12 @@ public class SolveServiceImpl implements SolveService {
             // 校验排程结果是否合规
             validateSchedulingSolution(apsSolutionResult);
             Map<String,Object> report = solveAuditService.report(apsSolutionResult,basicData);
+            if(strategy.getConfig().getSolverEngine()==cn.windwheel.aps.entity.enums.SolverEngineEnum.ORTOOLS_CP_SAT
+                    && strategy.getConfig().getCpSat().getExecutionMode()==cn.windwheel.aps.entity.dto.planning.CpSatConfig.ExecutionMode.SHADOW) {
+                solveAuditService.finish(planId,"SHADOW_FEASIBLE",report);
+                solveProgressService.addProgressLog(SolveProgressStatusEnum.SUCCESS,"CP-SAT影子验算完成，结果仅记录审计，未生成待确认计划");
+                return;
+            }
             String lockKey = SysConstant.redisKey("smart:planning:generate:lock", TenantContextHolder.getTenantId());
             if (!redisUtils.tryLock(lockKey, 60)) { throw new BusinessException("计划正在被确认或取消，请重试"); }
             try {
@@ -215,6 +222,8 @@ public class SolveServiceImpl implements SolveService {
         }
         // 若计划开始时间在当前时间之前，则以当前时间作为计划开始时间
         if (strategy.getBeginTime().isBefore(LocalDateTime.now())) {
+            if(strategy.getConfig().getSolverEngine()==cn.windwheel.aps.entity.enums.SolverEngineEnum.ORTOOLS_CP_SAT)
+                return LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
             return LocalDateTime.now();
         }
         return strategy.getBeginTime();
@@ -258,7 +267,7 @@ public class SolveServiceImpl implements SolveService {
      */
     private void processAndAllocateProductionOrders(SchedulingSolution solution, BasicData basicData) {
         // 已锁定的生产任务转换为排产任务数据结构
-        List<ProductionTask> pinnedProductionTaskList = convertPinnedTask(solution.getMainResources(), basicData.getPinnedTasks(), basicData.getProductionOrders());
+        List<ProductionTask> pinnedProductionTaskList = convertPinnedTask(solution.getMainResources(), basicData.getPinnedTasks(), basicData.getProductionOrders(),basicData.getMaterialMap());
         // 生产任务
         List<ProductionTask> productionTaskList = new ArrayList<>();
         // 生产订单按规则排序
@@ -324,7 +333,7 @@ public class SolveServiceImpl implements SolveService {
      * @param pinnedTasks   已锁定的任务
      * @return 转换后排产任务数据结构
      */
-    private List<ProductionTask> convertPinnedTask(List<MainProductionResource> mainResources, List<PlanTaskAdjustPO> pinnedTasks, List<ProductionOrder> productionOrders) {
+    private List<ProductionTask> convertPinnedTask(List<MainProductionResource> mainResources, List<PlanTaskAdjustPO> pinnedTasks, List<ProductionOrder> productionOrders,Map<String,Material> materials) {
         if (ObjectNull.isNull(pinnedTasks)) {
             return Collections.emptyList();
         }
@@ -345,6 +354,7 @@ public class SolveServiceImpl implements SolveService {
                                 .findFirst()
                                 .orElse(null);
                         productionTask.setOrder(productionOrder);
+                        if(productionOrder!=null) productionTask.setMaterial(materials.get(productionOrder.getMaterialId()));
                     }
                     return productionTask;
                 })

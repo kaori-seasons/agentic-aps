@@ -1,4 +1,7 @@
 import request from '@/api/request'
+export function getSolveAudit(id) {
+  return request({url: `/mgr/jvs-aps/smart-scheduling/audit/${encodeURIComponent(id)}`, method: 'get'})
+}
 
 // 获取排产进度
 export function getProgress () {

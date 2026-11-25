@@ -1,0 +1,97 @@
+{
+  "dateRange": [
+    "2026-11-25 16:00:00",
+    "2027-03-25 23:59:59"
+  ],
+  "materials": [
+    {
+      "id": "m-fg-fan-a",
+      "code": "FG-FAN-A",
+      "name": "合成叉车 E20"
+    },
+    {
+      "id": "m-fg-fan-b",
+      "code": "FG-FAN-B",
+      "name": "合成叉车 E30"
+    },
+    {
+      "id": "m-rm-bearing",
+      "code": "RM-BEARING",
+      "name": "静音轮系轴承"
+    },
+    {
+      "id": "m-rm-copper",
+      "code": "RM-COPPER",
+      "name": "合成液压关键件"
+    },
+    {
+      "id": "m-rm-powder",
+      "code": "RM-POWDER",
+      "name": "环氧粉末涂料"
+    },
+    {
+      "id": "m-rm-steel",
+      "code": "RM-STEEL",
+      "name": "冷轧钢板"
+    },
+    {
+      "id": "m-sf-housing",
+      "code": "SF-HOUSING",
+      "name": "合成叉车车架"
+    },
+    {
+      "id": "m-sf-rotor",
+      "code": "SF-ROTOR",
+      "name": "合成液压模块"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "m-rm-copper",
+      "totalQuantity": 108,
+      "dailyDemand": {
+        "2026-11-26": 93.6,
+        "2026-11-27": 14.4
+      }
+    },
+    {
+      "id": "m-sf-rotor",
+      "totalQuantity": 90,
+      "dailyDemand": {
+        "2026-11-26": 42.0,
+        "2026-11-27": 48.0
+      }
+    },
+    {
+      "id": "m-sf-housing",
+      "totalQuantity": 90,
+      "dailyDemand": {
+        "2026-11-26": 42.0,
+        "2026-11-27": 48.0
+      }
+    },
+    {
+      "id": "m-rm-powder",
+      "totalQuantity": 13.5,
+      "dailyDemand": {
+        "2026-11-26": 11.1,
+        "2026-11-27": 2.4
+      }
+    },
+    {
+      "id": "m-rm-bearing",
+      "totalQuantity": 180,
+      "dailyDemand": {
+        "2026-11-26": 84.0,
+        "2026-11-27": 96.0
+      }
+    },
+    {
+      "id": "m-rm-steel",
+      "totalQuantity": 225,
+      "dailyDemand": {
+        "2026-11-26": 225.0
+      }
+    }
+  ]
+}

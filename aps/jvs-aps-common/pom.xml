@@ -19,6 +19,9 @@
 
     <dependencies>
         <dependency>
+            <groupId>cn.windwheel</groupId><artifactId>jvs-aps-scheduling-contract</artifactId><version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>ai.timefold.solver</groupId>
             <artifactId>timefold-solver-core</artifactId>
             <version>${timefold.version}</version>
