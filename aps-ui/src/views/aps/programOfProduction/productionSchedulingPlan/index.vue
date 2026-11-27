@@ -51,6 +51,14 @@
             </div>
           </div>
         </el-scrollbar>
+        <el-alert v-if="shortageEntry" type="warning" show-icon :closable="false" class="shortage-entry">
+          <template #title>{{ shortageEntry }}</template>
+          <el-link v-if="hasShortageView" type="primary" :underline="false" @click="goShortage">前往缺料预警，查看缺口明细与催料线索</el-link>
+        </el-alert>
+        <el-alert v-if="confirmBlockedMsg" type="error" show-icon :closable="false" class="shortage-entry">
+          <template #title>确认被阻断：{{ confirmBlockedMsg }}</template>
+          <el-link v-if="hasShortageView" type="primary" :underline="false" @click="goShortage">该阻断已生成预警，前往台账查看</el-link>
+        </el-alert>
         <el-card v-if="cpSatAudit" shadow="never" style="margin:12px 0" aria-label="CP-SAT求解验收">
           <template #header><strong>OR-Tools CP-SAT · {{cpSatAudit.executionMode === 'SHADOW' ? '影子验算' : cpSatAudit.adoption?.accepted === false ? '保留原计划' : '候选计划'}}</strong></template>
           <el-descriptions :column="3" border size="small">
@@ -158,7 +166,8 @@ const componentList = shallowRef({
 import productionSchedulingStrategy from '../productionSchedulingStrategy/index.vue'
 import previewInfo from './preview.vue'
 
-import { getProgress, generate, cancel, confirm, getSolveAudit } from './api'
+import { getProgress, generate, cancel, confirm, getSolveAudit, getShortageSummary } from './api'
+import { useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
 const emit = defineEmits([])
@@ -193,6 +202,43 @@ const chooseRow = ref(null)
 const freshRandom = ref(-1)
 const previewVisible = ref(false)
 const canScheduleRun = computed(() => hasPermission('aps:schedule:run'))
+const router = useRouter()
+// 缺料入口：求解终态后取一次齐套线汇总；确认被阻断时提示去台账。无查看权限则整块不出现。
+const hasShortageView = hasPermission('aps:shortage:view')
+const shortageSummary = ref(null)
+const shortageFetchedFor = ref('')
+const confirmBlockedMsg = ref('')
+const cpSatRejected = computed(() => (processInfo.value?.contents || []).some(text => String(text).includes('外购物料')))
+const shortageEntry = computed(() => {
+  const status = processInfo.value?.status
+  if (!['SUCCESS', 'FAILURE', 'NO_SCHEDULED'].includes(status)) return ''
+  if (cpSatRejected.value) return '排程因外购物料缺口被拒绝——缺料预警给出了每张订单的缺口与在途明细'
+  const summary = shortageSummary.value
+  if (status === 'FAILURE') return summary && summary.active > 0 ? failureText(summary) : ''
+  if (summary && summary.active > 0) {
+    return `本轮发现 ${summary.active} 条齐套缺料（P1 ${summary.P1 || 0} / P2 ${summary.P2 || 0}）`
+  }
+  return ''
+})
+const failureText = summary => `排程失败，当前有 ${summary.active} 条齐套缺料（P1 ${summary.P1 || 0} / P2 ${summary.P2 || 0}）待处理`
+function trackShortage (id, status) {
+  if (!['SUCCESS', 'FAILURE', 'NO_SCHEDULED'].includes(status) || !hasShortageView) {
+    shortageSummary.value = null
+    shortageFetchedFor.value = ''
+    return
+  }
+  const stamp = id || ('status:' + status)
+  if (shortageFetchedFor.value === stamp) return
+  shortageFetchedFor.value = stamp
+  shortageSummary.value = null
+  getShortageSummary().then(res => {
+    if (res.data && res.data.code == 0) shortageSummary.value = (res.data.data && res.data.data.summary && res.data.data.summary.ORDER) || null
+  }).catch(() => { shortageSummary.value = null })
+}
+function goShortage () {
+  processVisible.value = false
+  router.push('/shortageCenter')
+}
 
 getgetProgressInfo()
 
@@ -217,6 +263,7 @@ function getProgressHandle () {
       processInfo.value = res.data.data
       const line = [...(res.data.data?.contents || [])].reverse().find(text => text.includes('审计ID'))
       const id = line?.match(/[a-f0-9-]{36}/)?.[0]
+      trackShortage(id, res.data.data.status)
       if (!id || id !== auditId.value) cpSatAudit.value = null
       if (id && id !== auditId.value && hasPermission('aps:schedule:preview') && ['SUCCESS','FAILURE'].includes(res.data.data.status)) {
         auditId.value = id
@@ -289,6 +336,7 @@ function abandonHandle () {
 
 function confirmHandle () {
   confirmLoading.value = true
+  confirmBlockedMsg.value = ''
   confirm().then(res => {
     if(res.data && res.data.code == 0) {
       ElNotification.closeAll()
@@ -304,6 +352,8 @@ function confirmHandle () {
     }
     confirmLoading.value = false
   }).catch(e => {
+    const msg = e?.response?.data?.msg
+    if(msg && hasShortageView) confirmBlockedMsg.value = msg
     confirmLoading.value = false
   })
 }
@@ -490,6 +540,11 @@ function previewClose () {
   overflow: hidden;
 }
 .process-detail-box{
+  .shortage-entry{
+    flex-shrink: 0;
+    margin: 8px 24px 0;
+    .el-link{ font-size: 13px; }
+  }
   height: 100%;
   display: flex;
   flex-direction: column;

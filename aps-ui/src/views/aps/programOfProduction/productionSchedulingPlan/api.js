@@ -71,3 +71,13 @@ export function del (id) {
     method: 'delete'
   })
 }
+
+// 缺料汇总（齐套线）：进度完成后给计划员一个“本轮缺了多少”的入口。
+// 403/无权限时由调用方忽略，不打断排产动线。
+export function getShortageSummary () {
+  return request({
+    url: `/mgr/jvs-aps/shortage/items?dimension=ORDER&limit=1`,
+    method: 'get',
+    skipServerErrorRedirect: true
+  })
+}

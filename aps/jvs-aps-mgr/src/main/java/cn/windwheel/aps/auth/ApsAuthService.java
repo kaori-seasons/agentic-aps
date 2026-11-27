@@ -176,7 +176,8 @@ public class ApsAuthService {
         groups.add(buildMenuGroup("生产计划", "jvs-aps-icon-shengchanjihua", "programOfProduction", List.of(
                 buildMenuItem("/jvs-aps-ui/productionSchedulingStrategy", "排产策略", "aps:strategy:view", "productionSchedulingStrategy"),
                 buildMenuItem("/jvs-aps-ui/productionSchedulingPlan", "排产计划", "aps:schedule:view", "productionSchedulingPlan"),
-                buildMenuItem("/jvs-aps-ui/demandPlanning", "需求预测与补货", "aps:demand:view", "demandPlanning")
+                buildMenuItem("/jvs-aps-ui/demandPlanning", "需求预测与补货", "aps:demand:view", "demandPlanning"),
+                buildMenuItem("/jvs-aps-ui/shortageCenter", "缺料预警", "aps:shortage:view", "shortageCenter")
         ), permissions));
 
         groups.add(buildMenuGroup("系统治理", "jvs-aps-icon-jichushuju", "systemGovernance", List.of(

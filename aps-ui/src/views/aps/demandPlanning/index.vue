@@ -63,6 +63,9 @@
           </el-table>
         </el-tab-pane>
         <el-tab-pane label="异常与回测" name="issues">
+          <div v-permission="'aps:shortage:view'" style="margin-bottom:8px">
+            <el-link type="primary" @click="goShortage">水位线缺口已生成缺料预警（低于安全库存/承诺过期），前往缺料预警查看 →</el-link>
+          </div>
           <el-table :data="visible(plan.result.exceptions)" max-height="400">
             <el-table-column label="异常"><template #default="{row}">{{ findings[row.reason] || row.reason }}</template></el-table-column><el-table-column prop="reference" label="来源"/>
             <el-table-column prop="at" label="时刻 (UTC)"/><el-table-column prop="quantity" label="数量"/>
@@ -128,10 +131,13 @@
 </template>
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/api/request'
 import LaunchReview from './LaunchReview.vue'
 const series=ref([]), selected=ref(null), offset=ref(0), plan=ref(null), busy=ref(false), error=ref('')
+const router=useRouter()
+function goShortage(){router.push('/shortageCenter')}
 const scope=computed(()=>series.value[selected.value]), tab=ref('forecast'), editing=ref(false)
 const detailPage=ref(1)
 const detailCount=computed(()=>{

@@ -116,6 +116,17 @@ export default [
 		}
 	},
 	{
+		path: "/shortageCenter",
+		name: "缺料预警",
+		component: () => import(/* webpackChunkName: "views" */ "./programOfProduction/shortageCenter/index.vue"),
+		meta: {
+			keepAlive: false,
+			isTab: false,
+			isAuth: false,
+			permission: 'aps:shortage:view'
+		}
+	},
+	{
 		path: "/operationAudit",
 		name: "操作审计",
 		component: () => import(/* webpackChunkName: "views" */ "./system/operationAudit/index.vue"),

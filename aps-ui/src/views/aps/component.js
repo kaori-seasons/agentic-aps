@@ -12,4 +12,5 @@ export default {
   productionCalendar: defineAsyncComponent(() => import('@/views/aps/productionEngineering/productionCalendar/index.vue')),
   productionSchedulingStrategy: defineAsyncComponent(() => import('@/views/aps/programOfProduction/productionSchedulingStrategy/index.vue')),
   productionSchedulingPlan: defineAsyncComponent(() => import('@/views/aps/programOfProduction/productionSchedulingPlan/index.vue')),
+  shortageCenter: defineAsyncComponent(() => import('@/views/aps/programOfProduction/shortageCenter/index.vue')),
 }
