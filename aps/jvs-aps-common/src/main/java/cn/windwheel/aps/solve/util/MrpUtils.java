@@ -35,6 +35,19 @@ public class MrpUtils {
      * @return 物料齐套计算结果（若启用约束物料，则计算结果为欠料信息；否则为生产订单物料需求信息）
      */
     public static Graph<MrpMaterial> calculateMaterialAvailability(boolean materialConstrained, ProductionOrder order, BasicData basicData) {
+        return calculateMaterialAvailability(materialConstrained, order, basicData,
+                (o, material, root, demand, lack, deduction) -> {});
+    }
+
+    /**
+     * 物料齐套计算，并把每个物料的扣减过程值交给 observer。
+     * 展开与扣减逻辑同上，observer 只读，不影响返回的欠料图。
+     *
+     * @param observer 逐物料的扣减观察点。root 为 true 表示该节点是订单产品本身，其缺口是生产需求而非缺料
+     * @return 物料齐套计算结果
+     */
+    public static Graph<MrpMaterial> calculateMaterialAvailability(boolean materialConstrained, ProductionOrder order, BasicData basicData,
+                                                                   MrpObserver observer) {
         Graph<MrpMaterial> mrpGraph = new Graph<>();
         MaterialStack orderMaterial = buildMaterialStack(order.getMaterialId(), order.getQuantity(), null);
 
@@ -55,10 +68,16 @@ public class MrpUtils {
             MaterialStack stack = materialStack.pop();
             MrpMaterial mrpMaterial = stack.getMrpMaterial();
             Material material = materialMap.get(mrpMaterial.getId());
+            // 需求数量先留一份，下面的扣减会把 mrpMaterial.quantity 覆写成缺料数量
+            BigDecimal demandQuantity = mrpMaterial.getQuantity();
             // 扣减库存，得到缺料数量
-            BigDecimal lackQuantity = InventoryUtils.deductInventory(order, material, mrpMaterial.getQuantity(), incomingMaterialOrderMap,
-                    at -> basicData.getReservedMaterialAvailableAt().merge(order.getId(), at, (a,b) -> a.isAfter(b)?a:b));
+            InventoryUtils.Deduction[] observed = new InventoryUtils.Deduction[1];
+            BigDecimal lackQuantity = InventoryUtils.deductInventory(order, material, demandQuantity, incomingMaterialOrderMap,
+                    at -> basicData.getReservedMaterialAvailableAt().merge(order.getId(), at, (a,b) -> a.isAfter(b)?a:b),
+                    deduction -> observed[0] = deduction);
             mrpMaterial.setQuantity(lackQuantity);
+            observer.observed(order, material, ObjectNull.isNull(stack.getParentId()), demandQuantity, lackQuantity,
+                    observed[0] == null ? null : observed[0]);
             // 库存不足
             if (lackQuantity.compareTo(BigDecimal.ZERO) > 0) {
                 if(material.getSource()!=cn.windwheel.aps.entity.enums.MaterialSourceEnum.PRODUCED)
@@ -99,6 +118,23 @@ public class MrpUtils {
         }
     }
 
+
+    /**
+     * MRP 逐物料扣减结果的只读观察点。缺料预警靠它拿到缺口数量与在途明细，不参与展开与扣减决策。
+     */
+    @FunctionalInterface
+    public interface MrpObserver {
+        /**
+         * @param order          正在做 MRP 的订单
+         * @param material       被扣减的物料
+         * @param root           true 表示该物料就是订单产品本身
+         * @param demandQuantity  本次扣减的毛需求
+         * @param lackQuantity   扣减后的缺口
+         * @param deduction      扣减过程值，物料不存在时扣减会先抛出异常，不会走到这里
+         */
+        void observed(ProductionOrder order, Material material, boolean root, BigDecimal demandQuantity,
+                      BigDecimal lackQuantity, InventoryUtils.Deduction deduction);
+    }
 
     /**
      * 构造物料栈数据

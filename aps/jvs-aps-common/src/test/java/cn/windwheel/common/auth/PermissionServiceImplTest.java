@@ -54,6 +54,38 @@ class PermissionServiceImplTest {
         assertFalse(permissionService.hasPermission("aps:task-adjust:edit"));
     }
 
+    /** 缺料预警的四个权限码按处理人分工：看、处理、配置、对外投递。 */
+    @Test
+    void shortagePermissionsFollowWhoHandlesTheAlert() {
+        setRoles("APS_PURCHASER");
+        assertTrue(permissionService.hasPermission("aps:shortage:view"));
+        assertTrue(permissionService.hasPermission("aps:shortage:handle"));
+        assertFalse(permissionService.hasPermission("aps:shortage:config"));
+        assertFalse(permissionService.hasPermission("aps:shortage:dispatch"));
+
+        setRoles("APS_SCHEDULER");
+        assertTrue(permissionService.hasPermission("aps:shortage:handle"));
+        assertFalse(permissionService.hasPermission("aps:shortage:config"));
+
+        setRoles("APS_DISPATCHER");
+        assertTrue(permissionService.hasPermission("aps:shortage:view"));
+        assertFalse(permissionService.hasPermission("aps:shortage:handle"));
+
+        setRoles("APS_PLAN_MANAGER");
+        assertTrue(permissionService.hasPermission("aps:shortage:config"));
+        assertFalse(permissionService.hasPermission("aps:shortage:dispatch"));
+
+        // 服务账号只做拉取出站与回执，不能替人确认或静默预警。
+        setRoles("APS_ALERT_CONNECTOR");
+        assertTrue(permissionService.hasPermission("aps:shortage:dispatch"));
+        assertFalse(permissionService.hasPermission("aps:shortage:handle"));
+        assertFalse(permissionService.hasPermission("aps:schedule:confirm"));
+
+        setRoles("APS_OPS");
+        assertTrue(permissionService.hasPermission("aps:shortage:config"));
+        assertFalse(permissionService.hasPermission("aps:schedule:confirm"));
+    }
+
     @Test
     void explicitWildcardPermissionCodeShouldMatchByPrefix() {
         setRoles("aps:resource:*");

@@ -42,7 +42,7 @@ class CpSatIntegrationTest {
     }
     @Test void serverGeneratedCurrentTimeUsesThePersistedMillisecondClock() throws Exception {
         var p=problem();p.getStrategy().setBeginTime(LocalDateTime.now().minusDays(1));
-        var service=new cn.windwheel.aps.solve.impl.SolveServiceImpl(null,null,null,null,null,null);
+        var service=new cn.windwheel.aps.solve.impl.SolveServiceImpl(null,null,null,null,null,null,null);
         var method=service.getClass().getDeclaredMethod("calculatePlanTime",PlanningStrategy.class,List.class);
         method.setAccessible(true);
         LocalDateTime captured=(LocalDateTime)method.invoke(service,p.getStrategy(),List.of());
@@ -65,7 +65,7 @@ class CpSatIntegrationTest {
         var frozen=new cn.windwheel.aps.entity.PlanTaskAdjustPO().setCode("frozen")
             .setProductionOrderId("order").setMainResourceId("R").setScheduledQuantity(java.math.BigDecimal.ONE)
             .setStartTime(HybridSchedulingTest.START).setEndTime(HybridSchedulingTest.START.plusHours(1));
-        var service=new cn.windwheel.aps.solve.impl.SolveServiceImpl(null,null,null,null,null,null);
+        var service=new cn.windwheel.aps.solve.impl.SolveServiceImpl(null,null,null,null,null,null,null);
         var method=service.getClass().getDeclaredMethod("convertPinnedTask",List.class,List.class,List.class,Map.class);
         method.setAccessible(true);
         @SuppressWarnings("unchecked")

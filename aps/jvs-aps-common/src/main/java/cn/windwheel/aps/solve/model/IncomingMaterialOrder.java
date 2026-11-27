@@ -15,6 +15,9 @@ public class IncomingMaterialOrder {
     @Comment("物料id")
     private String materialId;
 
+    @Comment("来料订单号")
+    private String code;
+
     @Comment("物料编码")
     private String materialCode;
 

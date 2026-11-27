@@ -16,6 +16,7 @@ import cn.windwheel.aps.solve.component.InitSchedulingRuleDataComponent;
 import cn.windwheel.aps.solve.component.RuleField;
 import cn.windwheel.aps.solve.enums.SolveProgressStatusEnum;
 import cn.windwheel.aps.solve.model.*;
+import cn.windwheel.aps.solve.util.MaterialShortageCollector;
 import cn.windwheel.aps.solve.util.MrpUtils;
 import cn.windwheel.aps.solve.util.ProductionTaskUtils;
 import cn.windwheel.aps.solve.util.TaskValidatorUtils;
@@ -50,6 +51,7 @@ public class SolveServiceImpl implements SolveService {
     private final PlanSolutionFacadeService planSolutionFacadeService;
     private final cn.windwheel.aps.solve.config.SchedulingEngineRouter engineRouter;
     private final cn.windwheel.aps.solve.presolve.DynamicSchedulingService dynamicSchedulingService;
+    private final cn.windwheel.aps.shortage.ShortageItemService shortageItemService;
 
     /**
      * 排产任务id缓存
@@ -70,8 +72,9 @@ public class SolveServiceImpl implements SolveService {
                 solveAuditService.finish(planId,"CANCELLED",Map.of("message","用户已取消求解"));
                 return;
             }
-            // 构造规划解决方案
-            SchedulingSolution solution = buildSolution(strategy, basicData);
+            // 构造规划解决方案。基础数据在进入本方法前刚从库里读出，求解开始时刻即欠料清单的数据截止时间。
+            LocalDateTime dataCutoff = LocalDateTime.now();
+            SchedulingSolution solution = buildSolution(planId, strategy, basicData, dataCutoff);
             dynamicSchedulingService.apply(solution, basicData);
             cn.windwheel.aps.solve.cpsat.CpSatProblemMapper.prepare(solution,basicData);
             solveAuditService.recordProblem(planId, solution);
@@ -104,6 +107,8 @@ public class SolveServiceImpl implements SolveService {
 
             // 校验排程结果是否合规
             validateSchedulingSolution(apsSolutionResult);
+            // 把欠料清单与实际排定的开工时间关联，只补信息，失败不影响求解
+            shortageItemService.attachSchedule(planId, apsSolutionResult);
             Map<String,Object> report = solveAuditService.report(apsSolutionResult,basicData);
             if(strategy.getConfig().getSolverEngine()==cn.windwheel.aps.entity.enums.SolverEngineEnum.ORTOOLS_CP_SAT
                     && strategy.getConfig().getCpSat().getExecutionMode()==cn.windwheel.aps.entity.dto.planning.CpSatConfig.ExecutionMode.SHADOW) {
@@ -175,11 +180,13 @@ public class SolveServiceImpl implements SolveService {
     /**
      * 构造规划解决方案
      *
-     * @param strategy  排产策略
-     * @param basicData 基础数据
+     * @param planId     求解审计ID，同时是欠料清单的运行ID
+     * @param dataCutoff 基础数据的截止时间
      * @return 规划解决方案
      */
-    private SchedulingSolution buildSolution(PlanningStrategy strategy, BasicData basicData) {
+    private SchedulingSolution buildSolution(UUID planId, PlanningStrategy strategy, BasicData basicData,
+                                             LocalDateTime dataCutoff) {
+
         SchedulingSolution solution = new SchedulingSolution()
                 .setStrategy(strategy)
                 .setProductionOrders(basicData.getProductionOrders());
@@ -191,7 +198,7 @@ public class SolveServiceImpl implements SolveService {
         fillMainProductionResources(solution, basicData.getProductionResources(), basicData.getWorkCalendarMap());
 
         // 处理和分派生产订单
-        processAndAllocateProductionOrders(solution, basicData);
+        processAndAllocateProductionOrders(solution, basicData, planId, dataCutoff);
 
         // 将已锁定的任务保存到主资源的任务集合
         solution.getMainResources().forEach(resource -> {
@@ -269,8 +276,11 @@ public class SolveServiceImpl implements SolveService {
      *
      * @param solution  规划解决方案
      * @param basicData 基础数据
+     * @param planId    求解审计ID，同时是欠料清单的运行ID
+     * @param dataCutoff 基础数据的截止时间
      */
-    private void processAndAllocateProductionOrders(SchedulingSolution solution, BasicData basicData) {
+    private void processAndAllocateProductionOrders(SchedulingSolution solution, BasicData basicData, UUID planId,
+                                                    LocalDateTime dataCutoff) {
         // 已锁定的生产任务转换为排产任务数据结构
         List<ProductionTask> pinnedProductionTaskList = convertPinnedTask(solution.getMainResources(), basicData.getPinnedTasks(), basicData.getProductionOrders(),basicData.getMaterialMap());
         // 生产任务
@@ -289,29 +299,43 @@ public class SolveServiceImpl implements SolveService {
         // 更新排产进度
         solveProgressService.saveProgressSolveStep(orderSize);
         solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING,"排产订单总数：" + orderSize);
-        // 遍历生产订单，分配库存或生成生产任务
-        int step = 0;
-        for (ProductionOrder order : orders) {
-            long timeMillis = System.currentTimeMillis();
-            OrderSchedulingStatusEnum schedulingStatus = OrderSchedulingStatusEnum.NO_SCHEDULED;
-            // 执行MRP计算
-            Graph<MrpMaterial> mrp = MrpUtils.calculateMaterialAvailability(materialConstrained, order, basicData);
-            if (!GraphUtils.isEmpty(mrp)) {
-                schedulingStatus = OrderSchedulingStatusEnum.SCHEDULED;
-                // 生成制造任务
-                List<ProductionTask> tasks = ProductionTaskUtils.generateTask(order, basicData, mrp, pinnedProductionTaskList);
-                tasks.removeIf(orderTask -> productionTaskList.stream().anyMatch(task -> task.getCode().equals(orderTask.getCode())));
-                for (ProductionTask task : tasks) {
-                    task.setPriority(step);
+        // 欠料清单只读 MRP 的过程值，MRP 展开完立即落库，不等求解结束。
+        // 缺口归属依赖订单处理顺序，所以把排序规则一起留档。
+        MaterialShortageCollector shortageCollector = new MaterialShortageCollector();
+        String sortRule = describeSortRules(solution.getStrategy().getOrderSchedulingRules());
+        boolean complete = false;
+        try {
+            // 遍历生产订单，分配库存或生成生产任务
+            int step = 0;
+            for (ProductionOrder order : orders) {
+                long timeMillis = System.currentTimeMillis();
+                OrderSchedulingStatusEnum schedulingStatus = OrderSchedulingStatusEnum.NO_SCHEDULED;
+                // 执行MRP计算
+                Graph<MrpMaterial> mrp = MrpUtils.calculateMaterialAvailability(materialConstrained, order, basicData, shortageCollector);
+                if (!GraphUtils.isEmpty(mrp)) {
+                    schedulingStatus = OrderSchedulingStatusEnum.SCHEDULED;
+                    // 生成制造任务
+                    List<ProductionTask> tasks = ProductionTaskUtils.generateTask(order, basicData, mrp, pinnedProductionTaskList);
+                    tasks.removeIf(orderTask -> productionTaskList.stream().anyMatch(task -> task.getCode().equals(orderTask.getCode())));
+                    for (ProductionTask task : tasks) {
+                        task.setPriority(step);
+                    }
+                    productionTaskList.addAll(tasks);
                 }
-                productionTaskList.addAll(tasks);
+                order.setSchedulingStatus(schedulingStatus);
+                // 更新排程进度
+                step++;
+                String logStatus = OrderSchedulingStatusEnum.NO_SCHEDULED.equals(schedulingStatus) ? "库存充足无需排产" : "待分派";
+                String progressLog = String.format("拆解订单【%s/%s-%s】, %s", step, orderSize, order.getCode(), logStatus);
+                solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, progressLog, System.currentTimeMillis() - timeMillis, step);
             }
-            order.setSchedulingStatus(schedulingStatus);
-            // 更新排程进度
-            step++;
-            String logStatus = OrderSchedulingStatusEnum.NO_SCHEDULED.equals(schedulingStatus) ? "库存充足无需排产" : "待分派";
-            String progressLog = String.format("拆解订单【%s/%s-%s】, %s", step, orderSize, order.getCode(), logStatus);
-            solveProgressService.addProgressLog(SolveProgressStatusEnum.SCHEDULING, progressLog, System.currentTimeMillis() - timeMillis, step);
+            complete = true;
+        } finally {
+            // 放在 finally：任务生成中途抛异常时，已观测到的缺口仍然要落库。
+            // 不约束物料时没有做 MRP，不能把“没观测到”当成“缺口已消失”。
+            if (materialConstrained) {
+                shortageItemService.recordSolveGaps(planId, shortageCollector.snapshot(), complete, dataCutoff, sortRule);
+            }
         }
         // 冻结任务同样参与冲突判定，即使本次MRP没有生成它所属的工序。
         Set<String> generated = productionTaskList.stream().map(ProductionTask::getCode).collect(Collectors.toSet());
@@ -319,6 +343,19 @@ public class SolveServiceImpl implements SolveService {
         solution.setTasks(productionTaskList);
         // 提取自动创建的补充生产订单，加入生产订单集合
         addSupplementOrders(orders, productionTaskList);
+    }
+
+    /**
+     * 订单排序规则的可读描述，与 defaultOrderSortRule 的缺省口径一致
+     *
+     * @param rules 排序规则
+     * @return 形如 priority DESC, deliveryTime ASC
+     */
+    private static String describeSortRules(List<StrategyOrderSchedulingRuleDTO> rules) {
+        if (ObjectNull.isNull(rules) || rules.isEmpty()) {
+            return "priority DESC, deliveryTime ASC";
+        }
+        return rules.stream().map(rule -> rule.getFieldKey() + " " + rule.getSortRule()).collect(Collectors.joining(", "));
     }
 
     /**

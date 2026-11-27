@@ -55,6 +55,7 @@ public class PlanningSmartServiceImpl implements PlanningSmartService {
     private final SolveProgressService solveProgressService;
     private final PlanSolutionFacadeService planSolutionFacadeService;
     private final PlanInfoService planInfoService;
+    private final cn.windwheel.aps.shortage.ShortageAlertService shortageAlertService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -157,7 +158,13 @@ public class PlanningSmartServiceImpl implements PlanningSmartService {
         if (!redisUtils.tryLock(lockKey, 60)) { throw new BusinessException("计划正在被更新，请稍后重试"); }
         try {
             if (solveService.existsSolving()) { throw new BusinessException("求解尚未结束，不能确认计划"); }
-            solveAuditService.validateBeforeConfirm(basicDataComponent.getBasicDataForConfirmation());
+            try {
+                solveAuditService.validateBeforeConfirm(basicDataComponent.getBasicDataForConfirmation());
+            } catch (BusinessException blocked) {
+                // 发布被阻断要留痕。确认事务会随异常回滚，所以预警走独立事务写入。
+                shortageAlertService.raiseReleaseBlocked(TenantContextHolder.getTenantId(), blocked.getMessage(), LocalDateTime.now());
+                throw blocked;
+            }
             planSolutionFacadeService.saveSolution();
             solveAuditService.markReviewed("CONFIRMED");
             solveProgressService.removeProgress();

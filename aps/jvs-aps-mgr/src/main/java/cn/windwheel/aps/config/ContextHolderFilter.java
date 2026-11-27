@@ -9,10 +9,12 @@ import cn.windwheel.common.model.AuthContext;
 import cn.windwheel.common.utils.AuthContextHolder;
 import cn.windwheel.common.utils.R;
 import cn.windwheel.common.utils.SystemThreadLocal;
+import cn.windwheel.aps.security.ServiceRequestAuthenticator;
 import com.alibaba.fastjson2.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -50,6 +52,7 @@ public class ContextHolderFilter extends GenericFilterBean {
 
     private final ApsAuthService authService;
     private final ApsAuthProperties authProperties;
+    private final ObjectProvider<ServiceRequestAuthenticator> serviceAuthenticators;
 
     @Override
     @SneakyThrows
@@ -62,16 +65,56 @@ public class ContextHolderFilter extends GenericFilterBean {
         }
         try {
             AuthContext authContext = resolveAuthContext(request);
+            ServletRequest effectiveRequest = request;
             if (!isValid(authContext)) {
-                writeUnauthorizedResponse(response, "缺少必需的租户或用户上下文");
-                return;
+                // 登录会话缺失时才尝试服务账号签名认证，已有的会话身份不会被替换或降级。
+                try {
+                    ServiceRequestAuthenticator.ServiceAuthentication service = authenticateServiceRequest(request);
+                    if (service != null) {
+                        authContext = service.context();
+                        effectiveRequest = service.request();
+                    }
+                } catch (ServiceRequestAuthenticator.ServiceAuthException rejected) {
+                    writeRejectedResponse(response, rejected.getStatus(), rejected.getMessage());
+                    return;
+                }
+                if (!isValid(authContext)) {
+                    writeUnauthorizedResponse(response, "缺少必需的租户或用户上下文");
+                    return;
+                }
+                request.setAttribute(AuthSessionKeys.REQUEST_AUTH_CONTEXT_SOURCE, "service");
             }
             AuthContextHolder.setAuthContext(authContext);
-            filterChain.doFilter(request, response);
+            filterChain.doFilter(effectiveRequest, response);
         } finally {
             AuthContextHolder.clear();
             SystemThreadLocal.clear();
         }
+    }
+
+    /**
+     * 只在请求没有会话身份时调用。认证器只认领自己声明支持的方法与路径，其余一律放行到“未认证”。
+     */
+    private ServiceRequestAuthenticator.ServiceAuthentication authenticateServiceRequest(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        for (ServiceRequestAuthenticator authenticator : serviceAuthenticators) {
+            if (!authenticator.supports(request.getMethod(), path)) {
+                continue;
+            }
+            ServiceRequestAuthenticator.ServiceAuthentication authentication = authenticator.authenticate(request);
+            if (authentication != null) {
+                return authentication;
+            }
+        }
+        return null;
+    }
+
+    private void writeRejectedResponse(HttpServletResponse response, int status, String message) throws Exception {
+        response.setStatus(status);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(JSON.toJSONString(R.failed(status, message)));
+        response.getWriter().flush();
     }
 
     private boolean isPublicPath(HttpServletRequest request) {

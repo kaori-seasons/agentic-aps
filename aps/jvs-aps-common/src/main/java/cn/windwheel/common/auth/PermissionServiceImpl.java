@@ -22,8 +22,10 @@ public class PermissionServiceImpl implements PermissionService {
     static {
         Map<String, Set<String>> rolePermissionMap = new HashMap<>();
         rolePermissionMap.put("APS_DEMAND_CONNECTOR", Set.of("aps:demand:view","aps:demand:import","aps:demand:receipt","aps:demand:run"));
-        rolePermissionMap.put("APS_PURCHASER", Set.of("aps:demand:view","aps:demand:approve"));
-        rolePermissionMap.put("APS_DEMAND_PLANNER", Set.of("aps:demand:view","aps:demand:run","aps:demand:edit"));
+        rolePermissionMap.put("APS_PURCHASER", Set.of("aps:demand:view","aps:demand:approve",
+                "aps:shortage:view","aps:shortage:handle"));
+        rolePermissionMap.put("APS_DEMAND_PLANNER", Set.of("aps:demand:view","aps:demand:run","aps:demand:edit",
+                "aps:shortage:view","aps:shortage:handle"));
         rolePermissionMap.put(ROLE_APS_ADMIN, Set.of("*"));
         rolePermissionMap.put(ROLE_APS_PLAN_MANAGER, Set.of(
                 "aps:demand:view", "aps:demand:import", "aps:demand:run", "aps:demand:edit", "aps:demand:override", "aps:demand:approve",
@@ -43,7 +45,8 @@ public class PermissionServiceImpl implements PermissionService {
                 "aps:task-assignment:export",
                 "aps:task-report:edit", "aps:task-report:import",
                 "aps:report-field:view", "aps:report-field:edit",
-                "aps:audit:view"
+                "aps:audit:view",
+                "aps:shortage:view", "aps:shortage:handle", "aps:shortage:config"
         ));
         rolePermissionMap.put(ROLE_APS_SCHEDULER, Set.of(
                 "aps:demand:view",
@@ -62,7 +65,8 @@ public class PermissionServiceImpl implements PermissionService {
                 "aps:task-adjust:edit", "aps:task-adjust:view",
                 "aps:task-assignment:export",
                 "aps:task-report:edit", "aps:task-report:import",
-                "aps:report-field:view"
+                "aps:report-field:view",
+                "aps:shortage:view", "aps:shortage:handle"
         ));
         rolePermissionMap.put(ROLE_APS_DISPATCHER, Set.of(
                 "aps:demand:view",
@@ -79,8 +83,13 @@ public class PermissionServiceImpl implements PermissionService {
                 "aps:schedule-result:view",
                 "aps:task-adjust:view",
                 "aps:task-assignment:export",
-                "aps:task-report:edit", "aps:task-report:import"
+                "aps:task-report:edit", "aps:task-report:import",
+                "aps:shortage:view"
         ));
+        // 运维：数据质量与推送失败类预警的处理人。
+        rolePermissionMap.put("APS_OPS", Set.of("aps:shortage:view","aps:shortage:handle","aps:shortage:config"));
+        // 预警连接器：ERP、SRM 与渠道回调使用的服务账号，拉取出站、回执绑定与签名回执。
+        rolePermissionMap.put("APS_ALERT_CONNECTOR", Set.of("aps:shortage:view","aps:shortage:dispatch"));
         ROLE_PERMISSION_MAP = Collections.unmodifiableMap(rolePermissionMap);
     }
 

@@ -1,0 +1,173 @@
+{
+  "synthetic": true,
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "solve with late in-transit completes",
+      "status": "PASS",
+      "solve": "SUCCESS",
+      "seconds": 8.2
+    },
+    {
+      "name": "shortage items are persisted with skipped in-transit detail",
+      "status": "PASS",
+      "items": 6,
+      "partial": {
+        "orderCode": "SYN-FL-004",
+        "gapQuantity": "16.000000",
+        "inTransitConsumed": "20.000000",
+        "inTransitSkipped": "500.000000",
+        "expectedEta": "2026-11-29T09:00:00+08:00"
+      },
+      "allLate": {
+        "orderCode": "SYN-FL-003",
+        "gapQuantity": "32.000000",
+        "supplyMode": "IN_TRANSIT_LATE",
+        "delayDuration": "PT120H"
+      }
+    },
+    {
+      "name": "rules raise the right severity and keep only the highest window rule",
+      "status": "PASS",
+      "alerts": 12,
+      "titles": [
+        "订单 SYN-FL-001 物料 RM-BEARING 的在途全部晚于交期 2026-11-29 18:00，最早 2026-12-04 09:00 可用，缺 24 个",
+        "订单 SYN-FL-001 缺料 RM-BEARING（静音轮系轴承），缺 24 个，交期 2026-11-29 18:00",
+        "订单 SYN-FL-002 物料 RM-BEARING 的在途全部晚于交期 2026-11-29 18:00，最早 2026-12-04 09:00 可用，缺 28 个"
+      ]
+    },
+    {
+      "name": "rescanning the same bucket creates no duplicate ledger rows",
+      "status": "PASS",
+      "alerts": 12,
+      "observedDelta": 1,
+      "dataQuality": {
+        "DATA_SNAPSHOT_EXPIRED:ORDER": "正常",
+        "DATA_SNAPSHOT_EXPIRED:WEEK": "正常",
+        "DATA_GAP_UNATTRIBUTABLE": "正常",
+        "SYNC_DEAD_LETTER": "已禁用",
+        "DATA_STALE": "已禁用"
+      }
+    },
+    {
+      "name": "webhook envelopes are signed with HMAC(secret, body) and delivered once per alert",
+      "status": "PASS",
+      "delivered": 12,
+      "sample": {
+        "envelopeVersion": "1.0",
+        "messageId": "fce62ca7-cfb5-4457-8914-aa539e2637f6",
+        "messageType": "ALERT",
+        "sourceSystem": "APS",
+        "sourceInstance": "192.168.2.50",
+        "tenantId": "demo",
+        "alertKey": "MRP_LEADTIME_VIOLATION:ORDER:SYN-FL-001:RM-BEARING:20261127T18",
+        "alertId": "2f7fa85f-bd27-4408-90e3-b5db6cd43ba0",
+        "occurredAt": "2026-11-27T18:57:02+08:00",
+        "payload": {
+          "ruleCode": "MRP_LEADTIME_VIOLATION",
+          "severity": "P1",
+          "dimension": "ORDER",
+          "title": "订单 SYN-FL-001 物料 RM-BEARING 的在途全部晚于交期 2026-11-29 18:00，最早 2026-12-04 09:00 可用，缺 24 个",
+          "actionHint": "在途全部晚于交期，加急或改期",
+          "responseMinutes": 30,
+          "receivers": [
+            "APS_PURCHASER"
+          ],
+          "source": "MRP",
+          "runId": "982d058a-8cd7-4bb4-a15c-a1d9b9bf0480",
+          "materialCode": "RM-BEARING",
+          "materialName": "静音轮系轴承",
+          "unit": "个",
+          "gapQuantity": "24.000000",
+          "requiredQuantity": "24.000000",
+          "requiredAt": "2026-11-29T18:00:00+08:00",
+          "weekAt": null,
+          "orderCode": "SYN-FL-001",
+          "locationCode": null,
+          "reference": null,
+          "sourceReason": null,
+          "onHandConsumed": "0.000000",
+          "onHandAvailable": "0.000000",
+          "inTransitConsumed": "0.000000",
+          "inTransitSkipped": "500.000000",
+          "skippedLines": [
+            {
+              "lineCode": "IMO-E2E-LATE",
+              "quantity": "500.000000",
+              "usedQuantity": "0.000000",
+              "deliveryTime": "2026-12-03T09:00",
+              "availableAt": "2026-12-04T09:00"
+            }
+          ],
+          "availableInTransit": [],
+          "supplyMode": "IN_TRANSIT_LATE",
+          "supplyPlan": "有到货计划",
+          "expectedEta": "2026-12-04T09:00:00+08:00",
+          "supplierCode": null,
+          "earliestStart": null,
+          "delayDuration": null,
+          "downstreamTasks": [],
+          "safetyStock": null,
+          "scenarioBalance": null,
+          "dataCutoff": "2026-11-27T18:57:02+08:00",
+          "firstDetectedAt": "2026-11-27T18:57:02+08:00",
+          "observedCount": 1,
+          "ackUrl": "http://127.0.0.1:31820/mgr/jvs-aps/shortage/alerts/2f7fa85f-bd27-4408-90e3-b5db6cd43ba0/ack"
+        }
+      }
+    },
+    {
+      "name": "a receiver returning 500 exhausts three backoff retries, turns DEAD and raises ledger-only meta alerts",
+      "status": "PASS",
+      "dead": 12,
+      "attempts": 4,
+      "receiverFailures": 48
+    },
+    {
+      "name": "receipts are authenticated by HMAC over timestamp, method, path and body; replays and forgeries get 401",
+      "status": "PASS",
+      "alertId": "22fa207c-254d-4383-8b31-da8efa79330d"
+    },
+    {
+      "name": "P1 cannot be muted while P2 can with a reason; resolve and ack move items, alerts and receipts",
+      "status": "PASS",
+      "p1": "ORDER:SYN-FL-003:RM-BEARING",
+      "mutedP2": "ORDER:SYN-FL-004:RM-BEARING"
+    },
+    {
+      "name": "tenant rule overrides change only the submitted fields",
+      "status": "PASS",
+      "rule": "MRP_GAP_14D",
+      "thresholdValue": 20
+    },
+    {
+      "name": "outbox pull does not change state; ack delivers and reject ends the entry",
+      "status": "PASS",
+      "pending": 4
+    },
+    {
+      "name": "a new solve that no longer sees the gap closes the items, their alerts and undelivered pushes",
+      "status": "PASS",
+      "seconds": 8.2
+    },
+    {
+      "name": "demand findings map to WEEK items and alerts without recomputation",
+      "status": "PASS",
+      "reasons": [
+        "BELOW_SAFETY",
+        "SHORTAGE",
+        "STALE_ETA"
+      ],
+      "sku": "SHORT-825202584b73"
+    },
+    {
+      "name": "a later replenishment run that no longer reports the findings closes the WEEK items",
+      "status": "PASS",
+      "sku": "SHORT-825202584b73"
+    },
+    {
+      "name": "permissions and tenant isolation hold for the shortage endpoints",
+      "status": "PASS"
+    }
+  ]
+}

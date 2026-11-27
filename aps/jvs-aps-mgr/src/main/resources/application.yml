@@ -44,6 +44,24 @@ aps:
     api-key: ${APS_SMALL_MODEL_API_KEY:}
     timeout-seconds: ${APS_SMALL_MODEL_TIMEOUT_SECONDS:20}
     max-context-tasks: ${APS_SMALL_MODEL_MAX_CONTEXT_TASKS:200}
+  # 缺料预警：投递推送与周期复评的后台任务。关掉后仍可 POST /shortage/scan 手工触发。
+  shortage:
+    worker-enabled: ${APS_SHORTAGE_WORKER_ENABLED:true}
+    poll-ms: 2000
+    sweep-ms: 300000
+    # 生成回执链接 ackUrl 用的对外基地址。不配置就不下发，绝不把内网或本机地址发给外部渠道。
+    public-base-url: ${APS_SHORTAGE_PUBLIC_BASE_URL:}
+    # 拉取出站通道（给 ERP、SRM）。没人拉取时条目会堆在待投递，默认关闭。
+    outbox-enabled: false
+    # 邮件通道只对 P1、P2 生效，需另配 spring.mail.*。
+    mail:
+      enabled: ${APS_SHORTAGE_MAIL_ENABLED:false}
+      from: ${APS_SHORTAGE_MAIL_FROM:}
+    # 通用 webhook 接收端，每项含 name、tenant-id、url、secret、enabled。
+    # secret 只从环境变量注入，不要写进仓库；tenant-id 留空表示全部租户。
+    webhooks: []
+    # 角色编码到邮箱列表。规则上的接收角色是编码，邮箱在这里静态维护，RBAC 落地前只能如此。
+    role-recipients: {}
   auth:
     system-name: 智能APS
     allow-header-auth: false

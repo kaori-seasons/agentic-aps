@@ -34,6 +34,10 @@ public class PlanningStore {
     @org.springframework.beans.factory.annotation.Value("${aps.demand.max-approval-age-hours:24}")
     private long maxApprovalAgeHours;
 
+    /** 补货运行到缺料预警的挂接点。字段注入是为了不改本类的构造器，需求模块的既有装配保持原样。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private cn.windwheel.aps.shortage.ShortageDemandHook shortageHook;
+
     private static final String SCOPE = " tenant_id=? and location_id=? and material_id=? ";
 
     public record Scope(String location, String material) {}
@@ -486,6 +490,10 @@ public class PlanningStore {
                 encode(overrides),
                 actor());
         db.update("update jvs_demand_series set current_run=? where " + SCOPE, id, tenant(), l, m);
+        // 缺料预警只读本次计算的结果，挂在事务提交之后执行；挂接点自身失败不影响补货。
+        if (shortageHook != null) {
+            shortageHook.runCompleted(tenant(), id, l, m, s.unit(), result, s.asOf(), s.zone());
+        }
         return new Run(id, l, m, h.revision(), h.generation(), result);
     }
 

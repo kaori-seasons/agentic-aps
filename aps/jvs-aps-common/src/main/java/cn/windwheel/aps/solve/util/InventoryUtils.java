@@ -10,9 +10,11 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author jvs
@@ -20,6 +22,27 @@ import java.util.Map;
  */
 public class InventoryUtils {
     private InventoryUtils() {
+    }
+
+    /**
+     * 在途行的使用明细。quantity 是该行当时的余量，usedQuantity 是本次实际分配量。
+     */
+    public record LineUse(String lineCode, BigDecimal quantity, BigDecimal usedQuantity,
+                          LocalDateTime deliveryTime, LocalDateTime availableAt) {
+    }
+
+    /**
+     * 一次扣减的过程明细。全部是只读观察值，不参与任何分配决策。
+     * onHandAvailable 是轮到本订单时的在库量，与 onHandStart 的差额即此前订单已占用的部分。
+     */
+    public record Deduction(String orderId, String materialId, String materialCode, BigDecimal requiredQuantity,
+                            BigDecimal onHandAvailable, BigDecimal onHandConsumed, BigDecimal inTransitConsumed,
+                            BigDecimal lackQuantity, List<LineUse> allocated, List<LineUse> skipped) {
+    }
+
+    @FunctionalInterface
+    public interface DeductionObserver {
+        void observe(Deduction deduction);
     }
 
     /**
@@ -38,14 +61,35 @@ public class InventoryUtils {
 
     public static BigDecimal deductInventory(ProductionOrder order, Material material, BigDecimal quantity,
             Map<String, List<IncomingMaterialOrder>> incomingMaterialOrderMap,
-            java.util.function.Consumer<LocalDateTime> reservation) {
+            Consumer<LocalDateTime> reservation) {
+        return deductInventory(order, material, quantity, incomingMaterialOrderMap, reservation, deduction -> {});
+    }
+
+    /**
+     * 扣减库存，并把扣减过程值交给 observer。分配结果与不传 observer 时完全一致。
+     *
+     * @param observer 扣减过程观察点，只读
+     * @return 缺料数量
+     */
+    public static BigDecimal deductInventory(ProductionOrder order, Material material, BigDecimal quantity,
+            Map<String, List<IncomingMaterialOrder>> incomingMaterialOrderMap,
+            Consumer<LocalDateTime> reservation, DeductionObserver observer) {
         if (ObjectNull.isNull(material)) {
             throw new BusinessException("物料不存在", order.getMaterialCode());
         }
+        BigDecimal onHandAvailable = material.getQuantity();
         // 优先扣减在库库存
         BigDecimal lackQuantity = deductInStockInventory(material, quantity);
         // 在库库存不够，扣减在途库存（来料订单）
-        return deductInTransitInventory(lackQuantity, order, material, incomingMaterialOrderMap, reservation);
+        List<LineUse> allocated = new ArrayList<>();
+        List<LineUse> skipped = new ArrayList<>();
+        BigDecimal remaining = deductInTransitInventory(lackQuantity, order, material, incomingMaterialOrderMap,
+                reservation, allocated, skipped);
+        observer.observe(new Deduction(order.getId(), material.getId(), material.getCode(), quantity, onHandAvailable,
+                onHandAvailable.subtract(material.getQuantity()), allocated.stream().map(LineUse::usedQuantity)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add), remaining, List.copyOf(allocated),
+                List.copyOf(skipped)));
+        return remaining;
     }
 
     /**
@@ -71,11 +115,14 @@ public class InventoryUtils {
      * @param order                    订单
      * @param material                 物料
      * @param incomingMaterialOrderMap 按物料id分组的在途库存
+     * @param allocated                出参：实际参与分配的在途行
+     * @param skipped                  出参：因晚于交期被跳过的在途行
      * @return 缺料数量
      */
     private static BigDecimal deductInTransitInventory(BigDecimal requiredQuantity, ProductionOrder order, Material material,
                                                        Map<String, List<IncomingMaterialOrder>> incomingMaterialOrderMap,
-                                                       java.util.function.Consumer<LocalDateTime> reservation) {
+                                                       Consumer<LocalDateTime> reservation,
+                                                       List<LineUse> allocated, List<LineUse> skipped) {
         // 缺料数量
         BigDecimal lackQuantity = requiredQuantity;
         if (lackQuantity.compareTo(BigDecimal.ZERO) <= 0) {
@@ -105,15 +152,22 @@ public class InventoryUtils {
                 availableAt = availableAt.plus(material.getBufferTimeDuration());
             }
             if (availableAt.isAfter(order.getDeliveryTime())) {
+                // 只做记录，不改变跳过行为：这种“有货但到得太晚”的缺口过去不留任何痕迹。
+                skipped.add(lineUse(incomingMaterialOrder, availableAt, BigDecimal.ZERO));
                 continue;
             }
             // 计算库存
             CalculationInventoryResult result = calculationInventory(incomingMaterialOrder.getQuantity(), lackQuantity);
             reservation.accept(availableAt);
+            allocated.add(lineUse(incomingMaterialOrder, availableAt, lackQuantity.subtract(result.getLackQuantity())));
             incomingMaterialOrder.setQuantity(result.getDeductQuantity());
             lackQuantity = result.getLackQuantity();
         }
         return lackQuantity;
+    }
+
+    private static LineUse lineUse(IncomingMaterialOrder line, LocalDateTime availableAt, BigDecimal usedQuantity) {
+        return new LineUse(line.getCode(), line.getQuantity(), usedQuantity, line.getDeliveryTime(), availableAt);
     }
 
     /**
@@ -146,7 +200,7 @@ public class InventoryUtils {
     @Getter
     @Setter
     static class CalculationInventoryResult {
-        // 扣减后的库存数量
+        // 扣减后的库存量
         private BigDecimal deductQuantity;
         // 缺料数量
         private BigDecimal lackQuantity;
