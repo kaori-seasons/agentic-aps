@@ -278,7 +278,105 @@
           <template #empty><el-empty description="没有符合条件的预警。" :image-size="60" /></template>
         </el-table>
       </el-tab-pane>
+      <!-- 规则配置：默认值灰显，覆盖只提交改动字段；计划经理与运维 -->
+      <el-tab-pane v-if="canConfig" label="规则配置" name="rules">
+        <el-alert type="warning" show-icon :closable="false" class="lines-hint"
+          title="默认阈值来自通用生产节奏，非本厂事实数据，上线前须按实际节奏标定。" />
+        <el-table :data="rules" v-loading="busy" size="small" @row-click="editRule">
+          <el-table-column label="规则" min-width="180">
+            <template #default="{ row }">
+              <div class="material-cell">
+                <span>{{ ruleName(row.ruleCode) }}<el-tag v-if="row.overridden" size="small" effect="plain" style="margin-left:6px">已覆盖</el-tag></span>
+                <span class="muted mono">{{ row.ruleCode }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="维度" width="80">
+            <template #default="{ row }"><span>{{ dimensionName(row.dimension) }}</span></template>
+          </el-table-column>
+          <el-table-column label="等级（默认）" width="120">
+            <template #default="{ row }">
+              <el-tag :type="severityMeta(row.severity).type" :effect="row.overridden && row.override && row.override.severity ? 'dark' : 'light'" size="small">{{ row.severity }}</el-tag>
+              <span class="muted"> {{ row.defaultSeverity }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="阈值（默认）" width="150">
+            <template #default="{ row }">
+              <span>{{ row.thresholdValue === null ? '—' : row.thresholdValue + ' ' + row.thresholdUnit }}</span>
+              <span class="muted"> {{ row.defaultThresholdValue === null ? '—' : row.defaultThresholdValue + ' ' + row.defaultThresholdUnit }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="冷却（默认）" width="120">
+            <template #default="{ row }"><span>{{ row.cooldownMinutes }} 分</span><span class="muted"> {{ row.defaultCooldownMinutes }} 分</span></template>
+          </el-table-column>
+          <el-table-column label="接收角色（默认）" min-width="170">
+            <template #default="{ row }"><span>{{ roleNames(row.receivers) }}</span><span class="muted"> {{ roleNames(row.defaultReceivers) }}</span></template>
+          </el-table-column>
+          <el-table-column label="通道" width="130">
+            <template #default="{ row }"><span>{{ channelNames(row.channels) }}</span></template>
+          </el-table-column>
+          <el-table-column label="状态" width="70">
+            <template #default="{ row }">
+              <el-tag :type="row.enabled ? 'success' : 'info'" size="small" effect="plain">{{ row.enabled ? '启用' : '停用' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="70" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" :disabled="pendingRules.includes(row.ruleCode)" @click.stop="editRule(row)">
+                {{ pendingRules.includes(row.ruleCode) ? '待启用' : '覆盖' }}
+              </el-button>
+            </template>
+          </el-table-column>
+          <template #empty><el-empty description="规则目录为空。" :image-size="60" /></template>
+        </el-table>
+        <div class="muted form-note" style="margin-top:8px">
+          覆盖只提交被修改的字段，其余沿用默认；站内台账为必选通道不可去除；当前接口不支持恢复默认，覆盖前请确认。
+        </div>
+      </el-tab-pane>
     </el-tabs>
+
+    <!-- 规则覆盖弹窗 -->
+    <el-dialog v-model="ruleVisible" :title="'覆盖规则：' + (ruleEdit.code ? ruleName(ruleEdit.code) : '')" width="560px" :close-on-click-modal="false">
+      <el-form label-width="110px" v-if="ruleEdit.code">
+        <el-form-item label="启用">
+          <el-switch v-model="ruleEdit.enabled" />
+        </el-form-item>
+        <el-form-item label="等级">
+          <el-select v-model="ruleEdit.severity" style="width:160px">
+            <el-option v-for="sev in ['P1','P2','P3','P4']" :key="sev" :label="sev + ' · ' + severityMeta(sev).label" :value="sev" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="ruleEdit.thresholdTouched !== undefined" label="阈值">
+          <el-input-number v-model="ruleEdit.thresholdValue" :min="0" style="width:130px" />
+          <el-select v-model="ruleEdit.thresholdUnit" style="width:110px;margin-left:8px">
+            <el-option label="天" value="DAYS" /><el-option label="小时" value="HOURS" /><el-option label="分钟" value="MINUTES" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="冷却期（分）">
+          <el-input-number v-model="ruleEdit.cooldownMinutes" :min="0" :max="10080" style="width:160px" />
+        </el-form-item>
+        <el-form-item label="接收角色">
+          <el-select v-model="ruleEdit.receivers" multiple style="width:100%">
+            <el-option v-for="(label, code) in roleOptions" :key="code" :label="label" :value="code" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="通道">
+          <el-checkbox-group v-model="ruleEdit.channels">
+            <el-checkbox label="LEDGER" disabled>站内台账（必选）</el-checkbox>
+            <el-checkbox label="WEBHOOK">Webhook</el-checkbox>
+            <el-checkbox label="OUTBOX">拉取出站</el-checkbox>
+            <el-checkbox label="EMAIL">邮件</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="建议动作">
+          <el-input v-model="ruleEdit.actionHint" maxlength="200" show-word-limit placeholder="留空沿用默认" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="ruleVisible = false">取消</el-button>
+        <el-button type="primary" :loading="busy" @click="submitRule">保存覆盖</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 条目详情抽屉：五区，自上而下按计划员的追问顺序 -->
     <el-drawer v-model="detailVisible" :title="detailTitle" size="56%" destroy-on-close>
@@ -483,8 +581,10 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  alertDetail, handleItem, itemDetail, listAlerts, listItems, listNotifies, scan
+  alertDetail, handleItem, itemDetail, listAlerts, listItems, listNotifies, listRules, saveRule, scan
 } from './api'
+import { useRoute } from 'vue-router'
+import { hasPermission } from '@/util/permission'
 import {
   ALERT_STATUS, CHANNEL_NAMES, ITEM_STATUS, NOTIFY_STATUS, RECEIPT_NAMES, RULE_NAMES,
   etaHint, formatIsoDuration, formatQuantity, formatTimeFull, formatTimeShort,
@@ -493,6 +593,14 @@ import {
 
 const PAGE_SIZE = 50
 const HINT_KEY = 'shortage.linesHint.dismissed'
+const route = useRoute()
+const canConfig = hasPermission('aps:shortage:config')
+// 依赖外部同步通道的两条规则：通道未落地前不允许通过界面启用。
+const pendingRules = ['DATA_STALE', 'SYNC_DEAD_LETTER']
+const roleOptions = {
+  APS_SCHEDULER: '计划员', APS_PURCHASER: '采购', APS_DEMAND_PLANNER: '物控',
+  APS_PLAN_MANAGER: '计划经理', APS_OPS: '运维'
+}
 
 const busy = ref(false)
 const error = ref('')
@@ -526,6 +634,12 @@ const detail = ref(null)
 const alertVisible = ref(false)
 const alert = ref(null)
 const alertNotifies = ref([])
+
+// 规则配置
+const rules = ref([])
+const ruleVisible = ref(false)
+const ruleEdit = reactive({ code: '', enabled: true, severity: '', thresholdValue: null, thresholdUnit: 'DAYS', thresholdTouched: undefined, cooldownMinutes: null, receivers: [], channels: [], actionHint: '' })
+const ruleBefore = ref(null)
 
 // 处理动作与扫描
 const actionVisible = ref(false)
@@ -598,6 +712,12 @@ function receiptName(state) { return state ? RECEIPT_NAMES[state] || state : '' 
 function channelName(channel) { return CHANNEL_NAMES[channel] || channel }
 function dimensionName(dimension) {
   return { ORDER: '齐套线', WEEK: '水位线', SYSTEM: '系统' }[dimension] || dimension
+}
+function roleNames(codes) {
+  return (codes || []).map(code => roleOptions[code] || code).join('、') || '—'
+}
+function channelNames(codes) {
+  return (codes || []).map(code => CHANNEL_NAMES[code] || code).join('、')
 }
 function shortRun(runId) { return runId ? String(runId).slice(0, 8) : '—' }
 function isOverdue(time) { return time ? etaHint(time).startsWith('已过期') : false }
@@ -765,6 +885,66 @@ async function afterAction(row) {
   await Promise.all([loadItems(), loadSystem()])
 }
 
+async function loadRules() {
+  await quiet(async () => {
+    rules.value = await unwrap(listRules()) || []
+  })
+}
+
+function editRule(row) {
+  if (pendingRules.includes(row.ruleCode)) {
+    ElMessage.info('该规则依赖外部同步通道，通道落地前不可配置')
+    return
+  }
+  ruleEdit.code = row.ruleCode
+  ruleEdit.enabled = row.enabled
+  ruleEdit.severity = row.severity
+  ruleEdit.thresholdValue = row.thresholdValue
+  ruleEdit.thresholdUnit = row.thresholdUnit || 'DAYS'
+  // 原本无阈值的规则也可以新设阈值，编辑时直接给 0 起步。
+  ruleEdit.thresholdTouched = row.thresholdValue !== null && row.thresholdValue !== undefined
+    ? row.thresholdValue : (row.defaultThresholdValue !== null && row.defaultThresholdValue !== undefined ? row.defaultThresholdValue : 0)
+  ruleEdit.cooldownMinutes = row.cooldownMinutes
+  ruleEdit.receivers = [...row.receivers]
+  ruleEdit.channels = [...row.channels]
+  ruleEdit.actionHint = row.actionHint
+  ruleBefore.value = JSON.parse(JSON.stringify({
+    enabled: ruleEdit.enabled, severity: ruleEdit.severity, thresholdValue: ruleEdit.thresholdValue,
+    thresholdUnit: ruleEdit.thresholdUnit, cooldownMinutes: ruleEdit.cooldownMinutes,
+    receivers: ruleEdit.receivers, channels: ruleEdit.channels, actionHint: ruleEdit.actionHint
+  }))
+  ruleVisible.value = true
+}
+
+function submitRule() {
+  quiet(async () => {
+    // 只提交相对当前生效值变化的字段；空字符串与提示语按“未改”处理。
+    const body = {}
+    if (ruleEdit.enabled !== ruleBefore.value.enabled) body.enabled = ruleEdit.enabled
+    if (ruleEdit.severity !== ruleBefore.value.severity) body.severity = ruleEdit.severity
+    if (ruleEdit.cooldownMinutes !== ruleBefore.value.cooldownMinutes) body.cooldownMinutes = ruleEdit.cooldownMinutes
+    const hint = (ruleEdit.actionHint || '').trim()
+    if (hint && hint !== (ruleBefore.value.actionHint || '')) body.actionHint = hint
+    if (JSON.stringify(ruleEdit.receivers) !== JSON.stringify(ruleBefore.value.receivers)) body.receivers = ruleEdit.receivers.join(',')
+    const channels = ruleEdit.channels.includes('LEDGER') ? ruleEdit.channels : ['LEDGER', ...ruleEdit.channels]
+    if (JSON.stringify(channels) !== JSON.stringify(ruleBefore.value.channels)) body.channels = channels.join(',')
+    const hadThreshold = ruleBefore.value.thresholdValue !== null && ruleBefore.value.thresholdValue !== undefined
+    if (!hadThreshold || ruleEdit.thresholdValue !== ruleBefore.value.thresholdValue
+      || ruleEdit.thresholdUnit !== ruleBefore.value.thresholdUnit) {
+      body.thresholdValue = ruleEdit.thresholdValue
+      body.thresholdUnit = ruleEdit.thresholdUnit
+    }
+    if (!Object.keys(body).length) {
+      ElMessage.info('没有字段被修改')
+      return
+    }
+    await unwrap(saveRule(ruleEdit.code, body))
+    ruleVisible.value = false
+    ElMessage.success('规则覆盖已保存')
+    await loadRules()
+  })
+}
+
 function runScan() {
   api(async () => {
     scanReport.value = await unwrap(scan())
@@ -776,6 +956,7 @@ function runScan() {
 function refreshAll() {
   const jobs = [loadItems(), loadSystem()]
   if (mainTab.value === 'alerts') jobs.push(loadAlerts())
+  if (mainTab.value === 'rules' && canConfig) jobs.push(loadRules())
   return Promise.all(jobs)
 }
 
@@ -784,12 +965,16 @@ function dismissHint() {
   localStorage.setItem(HINT_KEY, '1')
 }
 
-// 台账数据首次切到该 tab 时才拉取，之后再切回不重复请求。
+// 台账与规则首次切到该 tab 时才拉取，之后再切回不重复请求。
 watch(mainTab, (name) => {
   if (name === 'alerts' && !alerts.value.length) loadAlerts()
+  if (name === 'rules' && !rules.value.length) loadRules()
 })
 
 onMounted(() => {
+  // 甘特角标等外部入口带筛选跳转进来：预填后加载。
+  if (typeof route.query.orderCode === 'string' && route.query.orderCode) filters.orderCode = route.query.orderCode
+  if (typeof route.query.materialCode === 'string' && route.query.materialCode) filters.materialCode = route.query.materialCode
   loadItems()
   loadSystem()
 })

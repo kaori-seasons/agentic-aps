@@ -45,3 +45,12 @@ export function listNotifies(alertId) {
 export function scan() {
   return call('/scan', 'post', {})
 }
+
+// 生效规则：默认值与租户覆盖同回；保存只提交被改的字段（后端按字段 coalesce）。
+export function listRules() {
+  return call('/rules')
+}
+
+export function saveRule(ruleCode, data) {
+  return call('/rules/' + encodeURIComponent(ruleCode), 'put', data)
+}

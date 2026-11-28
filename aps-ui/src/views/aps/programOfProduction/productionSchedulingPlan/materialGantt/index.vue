@@ -25,7 +25,9 @@ import { ElNotification } from 'element-plus'
 import type { UploadInstance } from 'element-plus'
 import  * as VTableGantt  from '@visactor/vtable-gantt'
 
-import { getList } from './api'
+import { getList, listShortageItems } from './api'
+import { useRouter } from 'vue-router'
+import { hasPermission } from '@/util/permission'
 
 const props = defineProps({
   freshRandom: {
@@ -156,6 +158,17 @@ const columns = ref([
     editor: 'input',
     tree: true,
   },
+  {
+    field: 'shortageMark',
+    title: '缺料',
+    width: '70px',
+    sort: false,
+    style: {
+      color: '#F56C6C',
+      fontWeight: 'bold',
+      textAlign: 'center'
+    }
+  },
 ])
 const option = ref({
   overscrollBehavior: 'none',
@@ -166,9 +179,10 @@ const option = ref({
   maxDate: maxDateTime.value,
   taskListTable: {
     columns: columns.value,
-    tableWidth: 380,
-    minTableWidth: 180,
-    maxTableWidth: 380,
+    // 列宽总和 450（130+150+100+缺料70），容器宽度必须容纳。
+    tableWidth: 460,
+    minTableWidth: 300,
+    maxTableWidth: 520,
     theme: {
       headerStyle: {
         borderColor: '#EEEFF0',
@@ -293,6 +307,10 @@ const option = ref({
 })
 const ganttInstance = ref(null)
 
+// E3 缺料角标：物料行的“缺料”列（缺口跨订单聚合）+ 点击跳缺料工作台（带物料筛选）。
+const router = useRouter()
+const canSeeShortage = hasPermission('aps:shortage:view')
+
 if(props.disableHandle) {
   ganttId.value = 'materialGanttPreview'
 }
@@ -307,7 +325,39 @@ function init () {
     ganttInstance.value.updateDateRange(minDateTime.value, maxDateTime.value)
   }else{
     ganttInstance.value = new VTableGantt.Gantt(document.getElementById(ganttId.value), option.value)
+    ganttInstance.value.taskListTableInstance.on('click_cell', args => {
+      const record = (args.table && args.table.getCellOriginRecord)
+        ? args.table.getCellOriginRecord(args.col, args.row)
+        : args.row
+      const field = args.col && args.col.field
+      if(field === 'shortageMark' && record && record.shortageMark && record.code) {
+        router.push({ path: '/shortageCenter', query: { materialCode: record.code } })
+      }
+    })
   }
+}
+
+// 拉齐套线欠料并按物料聚合（同一物料的缺口跨订单累计），给物料行打角标。
+function markShortage (materials) {
+  materials.forEach(m => { delete m.shortageMark })
+  if(!canSeeShortage || !materials.length) return Promise.resolve()
+  return listShortageItems({ dimension: 'ORDER', limit: 500 }).then(res => {
+    if(res.data && res.data.code == 0) {
+      const agg = {}
+      ;((res.data.data && res.data.data.records) || []).forEach(r => {
+        const key = r.materialCode
+        if(!agg[key]) agg[key] = { count: 0, gap: 0, severity: '' }
+        agg[key].count += 1
+        agg[key].gap += Number(r.gapQuantity || 0)
+        const rank = { P1: 1, P2: 2, P3: 3, P4: 4 }
+        if((rank[r.severity] || 9) < (rank[agg[key].severity] || 9)) agg[key].severity = r.severity
+      })
+      materials.forEach(m => {
+        const hit = agg[m.code]
+        if(hit) m.shortageMark = `${hit.severity || 'P?'}×${hit.count}`
+      })
+    }
+  }).catch(() => {})
 }
 
 function getListHandle () {
@@ -375,9 +425,11 @@ function getListHandle () {
           }
         }
       }
-      tableData.value = materials
-      option.value.records = tableData.value
       // --- end 数据
+      // 先补缺料角标，再赋值渲染（角标字段在行数据上）
+      markShortage(materials).then(() => {
+        tableData.value = materials
+        option.value.records = tableData.value
       // 日期范围
       if(res.data.data.dateRange && res.data.data.dateRange.length > 0) {
         minDateTime.value = res.data.data.dateRange[0]
@@ -396,7 +448,8 @@ function getListHandle () {
         }
       }
       // --- end 日期范围
-      init()
+        init()
+      })
     }
     tableLoading.value = false
   }).catch(e => {

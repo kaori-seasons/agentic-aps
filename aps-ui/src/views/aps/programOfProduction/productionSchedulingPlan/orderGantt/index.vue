@@ -78,7 +78,9 @@ import { ElNotification } from 'element-plus'
 import type { UploadInstance } from 'element-plus'
 import  * as VTableGantt  from '@visactor/vtable-gantt'
 
-import { getList, getFieldOption, getFieldSetting, saveFieldSetting, getPlanSetting } from './api'
+import { getList, getFieldOption, getFieldSetting, saveFieldSetting, getPlanSetting, listShortageItems } from './api'
+import { useRouter } from 'vue-router'
+import { hasPermission } from '@/util/permission'
 
 const { proxy } = getCurrentInstance()
 const emit = defineEmits([])
@@ -97,6 +99,11 @@ const props = defineProps({
     type: Boolean
   }
 })
+
+// E2 缺料角标：订单行的“缺料”列 + 点击跳缺料工作台（带订单筛选）。
+const router = useRouter()
+const canSeeShortage = hasPermission('aps:shortage:view')
+const shortageMark = ref({}) // orderCode -> 'P1×2' 形式的角标文案
 
 const ganttId = ref('orderGantt')
 
@@ -421,6 +428,17 @@ const columns = ref([
     editor: 'input',
     tree: true,
   },
+  {
+    field: 'shortageMark',
+    title: '缺料',
+    width: '70px',
+    sort: false,
+    style: {
+      color: '#F56C6C',
+      fontWeight: 'bold',
+      textAlign: 'center'
+    }
+  },
 ])
 const option = ref({
   overscrollBehavior: 'none',
@@ -431,9 +449,10 @@ const option = ref({
   maxDate: maxDateTime.value,
   taskListTable: {
     columns: columns.value,
-    tableWidth: 150,
-    minTableWidth: 100,
-    maxTableWidth: 200,
+    // 列宽总和 220（订单号150+缺料70），容器宽度必须容纳，否则整表渲染异常。
+    tableWidth: 230,
+    minTableWidth: 160,
+    maxTableWidth: 320,
     theme: {
       headerStyle: {
         borderColor: '#EEEFF0',
@@ -623,10 +642,57 @@ function init () {
     })
     ganttInstance.value.taskListTableInstance.on('click_cell', args => {
       hideTooltip()
+      jumpShortage(args)
     })
     ganttInstance.value.canvas.onclick = function (e) {
       hideTooltip()
     }
+  }
+}
+
+// 拉齐套线欠料并给订单行打角标文案；接口失败或无权限时静默跳过，不影响甘特。
+function markShortage (orders) {
+  shortageMark.value = {}
+  orders.forEach(o => { delete o.shortageMark })
+  if(!canSeeShortage || !orders.length) return
+  listShortageItems({ dimension: 'ORDER', limit: 500 }).then(res => {
+    if(res.data && res.data.code == 0) {
+      const rows = (res.data.data && res.data.data.records) || []
+      const order = res.data.data && res.data.data.summary && res.data.data.summary.ORDER
+      const worst = {}
+      rows.forEach(r => {
+        worst[r.orderCode] = worst[r.orderCode]
+          ? (severityRank(worst[r.orderCode].severity) <= severityRank(r.severity) ? worst[r.orderCode] : r)
+          : r
+        worst[r.orderCode].count = (worst[r.orderCode].count || 0) + 1
+      })
+      for(let code in worst) {
+        shortageMark.value[code] = `${worst[code].severity || 'P?'}×${worst[code].count}`
+      }
+      orders.forEach(o => {
+        if(shortageMark.value[o.code]) {
+          o.shortageMark = shortageMark.value[o.code]
+        }
+      })
+      if(ganttInstance.value) {
+        ganttInstance.value.taskListTableInstance.setRecords(tableData.value)
+      }
+    }
+  }).catch(() => {})
+}
+
+function severityRank (severity) {
+  return { P1: 1, P2: 2, P3: 3, P4: 4 }[severity] || 9
+}
+
+// 点“缺料”列跳缺料工作台，带上该订单的筛选。
+function jumpShortage (args) {
+  const record = (args.table && args.table.getCellOriginRecord)
+    ? args.table.getCellOriginRecord(args.col, args.row)
+    : args.row
+  const field = args.col && args.col.field
+  if(field === 'shortageMark' && record && record.shortageMark && record.code) {
+    router.push({ path: '/shortageCenter', query: { orderCode: record.code } })
   }
 }
 
@@ -686,6 +752,7 @@ function getListHandle () {
           }
         }
       }
+      markShortage(orders)
       tableData.value = orders
       option.value.records = tableData.value
       // --- end 数据
