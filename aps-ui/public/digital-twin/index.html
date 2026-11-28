@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APS 数字孪生排程 · 柔性车间</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/decisions.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }
+</script>
+</head>
+<body>
+<div id="viewport">
+<!-- 嵌入宿主时，等到真实快照注入、建厂完成才隐藏 -->
+<div id="wait" hidden>读取当前租户的计划数据…</div>
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <div id="labels"></div>
+</div>
+<!-- UI 覆盖层：视口级 grid，与 #stage 缩放解耦，保证任意尺寸不重叠 -->
+<div id="ui">
+<header id="header">
+    <div class="hd-left">
+      <div class="plc-group">
+        <div class="plc" id="plc1"><b>ERP</b><i class="dot"></i><span>通信失败</span></div>
+        <div class="plc cpu"><b>MES</b><span class="cpu-bar"><i></i></span></div>
+      </div>
+      <span class="hd-sep"></span>
+      <span class="hd-time" id="clock-text">2026/04/16&nbsp;&nbsp;08:00:00</span>
+      <span class="hd-chip" id="plan-clock" hidden title="虚拟时钟沿计划时间轴推演，不是当前时刻"></span>
+    </div>
+    <div class="hd-right"><span class="hd-user">计划员</span></div>
+  </header>
+
+  <nav id="nav">
+    <button type="button" class="navitem active" data-view="plan">排程计划</button><button type="button" class="navitem" data-view="gantt" title="排程甘特（全屏）">甘特</button><button type="button" class="navitem" data-view="lineage">数据血缘</button><button type="button" class="navitem" data-view="process">工艺流程</button><button type="button" class="navitem" data-view="alarms">报警查询</button><button type="button" class="navitem" data-view="params">参数设置</button>
+    <div class="nav-tools">
+      <label class="switch" id="demo-switch"><input type="checkbox" id="demo-toggle"><i></i><span>数据链路</span></label>
+      <button id="btn-fault" class="tool-btn">模拟异常</button>
+      <button id="btn-reset-fault" class="tool-btn">故障复位</button>
+      <button id="btn-reset" class="tool-btn">复位视角</button>
+      <button id="btn-fullscreen" class="tool-btn" title="全屏：只显示模型场景 (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5"/></svg><span>全屏</span></button>
+      <button id="btn-export" class="tool-btn primary">导出PNG</button>
+    </div>
+  </nav>
+
+  <section id="legend" class="glass">
+    <span class="lg-title">工件（订单）</span>
+    <span><i style="--c:#8EC5FC"></i>PO-001 A</span><span><i style="--c:#A8E6CF"></i>PO-002 A</span><span><i style="--c:#FFD3B6"></i>PO-003 B</span><span><i style="--c:#D0BFFF"></i>PO-004 A</span><span><i style="--c:#FFAAA5"></i>PO-005 B</span><span><i style="--c:#B5EAD7"></i>PO-006 A</span>
+  </section>
+  <section id="state-legend" class="glass">
+    <span class="lg-title">设备状态</span>
+    <span><i class="sd ok"></i>正常</span><span><i class="sd fault"></i>异常</span><span><i class="sd off"></i>离线</span>
+  </section>
+
+  <!-- 排产决策侧栏：算法在本车间真正做的三件事，每张卡自带可验证的量化依据 -->
+  <section id="decision-panel" class="glass" aria-label="排产决策">
+    <div class="dec-hd"><span class="dec-title">排产决策</span><span class="dec-sub" id="dec-sub">优化候选 vs 当前计划</span></div>
+    <div class="dec-list" id="dec-list"></div>
+    <div class="dec-detail" id="dec-detail"></div>
+  </section>
+
+  <!-- 左侧：排程候选计划（甘特图 + KPI 对比） -->
+  <section id="plan-panel" class="glass">
+    <div class="plan-hd">
+      <span class="hd-ico"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3z M8 4v16 M13 4v16"/></svg></span>
+      <span class="plan-title">排程候选计划</span>
+      <div class="plan-tabs">
+        <button data-plan="current">当前计划</button>
+        <button data-plan="candidate" class="on">优化候选</button>
+      </div>
+      <div class="plan-views">
+        <button data-v="all" class="on">全景</button><button data-v="cut">切割</button><button data-v="shell">机壳</button><button data-v="wind">绕线</button><button data-v="assy">总装</button>
+      </div>
+    </div>
+    <div class="plan-kpi" id="plan-kpi"></div>
+    <div class="gantt" id="gantt">
+      <div class="gantt-axis" id="gantt-axis"></div>
+      <div class="gantt-lanes" id="gantt-lanes"></div>
+      <div class="gantt-now" id="gantt-now"></div>
+    </div>
+  </section>
+
+  <!-- 任务 / 设备详情：点工位或甘特条弹出，覆盖左栏；点场景空白处或 ✕ 关闭 -->
+  <div class="plan-detail glass" id="plan-detail" role="dialog" aria-label="详情"></div>
+
+  <section id="param-card" class="glass">
+    <div class="card-hd"><span class="hd-ico"><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0 M12 18l4-6"/></svg></span>排程运行参数
+      <button class="fold" id="fold" title="收起 / 展开"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div>
+    <table class="ptable" id="ptable"><tbody id="prows"></tbody></table>
+  </section>
+
+  <!-- 来料计划时间线：在途物料的到货时刻就是被门禁挡住订单的最早开工时刻 -->
+  <section id="supply-rail" class="glass" aria-label="来料计划">
+    <div class="sr-hd"><span class="sr-title">来料计划 · 齐套门禁</span><span class="sr-sub" id="sr-sub"></span></div>
+    <div class="sr-track" id="sr-track"></div>
+    <div class="sr-axis" id="sr-axis"></div>
+  </section>
+
+  <footer id="footer" hidden>
+    <section class="panel glass alarm">
+      <div class="card-hd"><span class="hd-ico red"><svg viewBox="0 0 24 24"><path d="M12 3l9 17H3z M12 10v4 M12 17v.5"/></svg></span>排程报警 · 事件 <span class="badge" id="alarm-count">0</span></div>
+      <table class="atable"><thead><tr><th style="width:110px">日期</th><th style="width:100px">时间</th><th>消息文本</th><th style="width:96px">确认状态</th><th style="width:70px">状态</th></tr></thead>
+        <tbody id="alarm-rows"><tr><td colspan="5" class="empty">暂无报警信息</td></tr></tbody></table>
+      <div class="statusbar"><span class="sb-warn"><i class="dot"></i><span>所有服务器连接失败。</span></span><span>虚拟时间加速 6×</span><span id="sb-time"></span></div>
+    </section>
+    <section class="panel glass quick">
+      <div class="card-hd"><span class="hd-ico"><svg viewBox="0 0 24 24"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></span>数字孪生闭环</div>
+      <div class="loop">
+        <div class="loop-step"><b>① 需求</b><span>工厂产生一批订单</span></div>
+        <div class="loop-arr">↓</div>
+        <div class="loop-step"><b>② ERP / MES 数据</b><span>订单·物料·BOM·库存·报工</span></div>
+        <div class="loop-arr">↓</div>
+        <div class="loop-step"><b>③ 排程计算</b><span>MRP齐套 → 任务 → CP-SAT</span></div>
+        <div class="loop-arr">↓</div>
+        <div class="loop-step"><b>④ 回写执行</b><span>排程结果 → MES 执行 → 报工</span></div>
+      </div>
+    </section>
+    <section class="panel glass user">
+      <div class="aclock">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#fff" stroke="#12346b" stroke-width="2"/><circle cx="50" cy="50" r="3" fill="#12346b"/><g id="ticks"></g><g id="h-hand"><line x1="50" y1="50" x2="50" y2="30" stroke="#12346b" stroke-width="3" stroke-linecap="round"/></g><g id="m-hand"><line x1="50" y1="50" x2="50" y2="22" stroke="#1d6ee6" stroke-width="2" stroke-linecap="round"/></g><g id="s-hand"><line x1="50" y1="50" x2="50" y2="18" stroke="#e0383e" stroke-width="1.5" stroke-linecap="round"/></g></svg>
+        <span id="clock-date">2026/04/16</span>
+      </div>
+      <div class="user-info">
+        <div class="u-row"><b>柔性作业车间 · 机械装配</b></div>
+        <div class="u-row sub">排程引擎：OR-Tools CP-SAT / Timefold</div>
+        <div class="u-row sub">工件 = 订单 · 工序 = 工艺节点 · 流水线 = 资源</div>
+      </div>
+    </section>
+  </footer>
+
+  <!-- 视图覆盖层（导航切换） -->
+  <div id="view-layer">
+    <section class="view" data-view="gantt">
+      <div class="view-hd"><h2>排程甘特图</h2><div class="view-sub">工件（订单）× 工序 × 流水线（资源）</div>
+        <div class="view-tabs"><button data-gt="res" class="on">资源甘特</button><button data-gt="order">订单甘特</button></div>
+        <button class="view-close" data-close>✕</button></div>
+      <div class="view-body" id="gantt-full"></div>
+    </section>
+    <section class="view" data-view="lineage">
+      <div class="view-hd"><h2>数据血缘</h2><div class="view-sub">上游数据源 → 排程计算 → 结果回写</div><button class="view-close" data-close>✕</button></div>
+      <div class="view-body" id="lineage-body"></div>
+    </section>
+    <section class="view" data-view="process">
+      <div class="view-hd"><h2>工艺流程与 BOM</h2><div class="view-sub">机壳支路 + 转子支路 → 总装 → 测试</div><button class="view-close" data-close>✕</button></div>
+      <div class="view-body" id="process-body"></div>
+    </section>
+    <section class="view" data-view="alarms">
+      <div class="view-hd"><h2>报警查询</h2><div class="view-sub">齐套不足 · 设备停机 · 逾期</div><button class="view-close" data-close>✕</button></div>
+      <div class="view-body" id="alarms-body"></div>
+    </section>
+    <section class="view" data-view="params">
+      <div class="view-hd"><h2>参数设置</h2><div class="view-sub">排程策略 · 约束权重 · 求解配置</div><button class="view-close" data-close>✕</button></div>
+      <div class="view-body" id="params-body"></div>
+    </section>
+  </div>
+
+  <button id="fs-exit"><svg viewBox="0 0 24 24"><path d="M9 4v5H4 M15 4v5h5 M9 20v-5H4 M15 20v-5h5"/></svg>退出全屏</button>
+  <div id="tooltip"></div>
+  <div id="toast"></div>
+
+</div>
+
+
+  </div>
+</div>
+<script src="vendor/html-to-image/html-to-image.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

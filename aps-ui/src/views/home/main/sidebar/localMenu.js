@@ -114,6 +114,12 @@ export const localMenuData =  {
           langKey: 'demandPlanning'
         },
         {
+          extend: { newWindow: false, icon: "", url: "/jvs-aps-ui/digitalTwin", name: "数字孪生" },
+          name: "数字孪生",
+          permisionFlag: "aps:schedule:view",
+          langKey: 'digitalTwin'
+        },
+        {
           extend: {
             newWindow: false,
             icon: "",

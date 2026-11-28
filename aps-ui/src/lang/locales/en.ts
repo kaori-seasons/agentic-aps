@@ -221,6 +221,7 @@ const lang_en = {
     programOfProduction: 'program of production',
     productionSchedulingStrategy: 'Production scheduling strategy',
     demandPlanning: 'Demand and replenishment',
+    digitalTwin: 'Digital Twin',
     productionSchedulingPlan: 'Production scheduling plan',
     systemGovernance: 'System governance',
     operationAudit: 'Operation audit',

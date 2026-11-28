@@ -1,0 +1,250 @@
+/* ============================================================
+   UI 覆盖层（视口级，与 #stage 的 1920×1080 等比缩放完全解耦）
+   ------------------------------------------------------------
+   布局：CSS Grid，面板按真实像素排布，任意窗口尺寸都不重叠。
+   ┌───────────────────────────────────────────────────────┐
+   │ header（通信灯 · 时钟）                     nav（视图） │  行1 auto
+   │ ├─────────────┬─────────────────────────┬─────────────┤ │
+   │ │ legend      │        （三维场景）        │ state-legend│ │  行2 auto
+   │ ├─────────────┤                         ├─────────────┤ │
+   │ │ 决策证据     │                         │  （留空）    │ │  行3 1fr
+   │ │ 排程甘特     │                         │             │ │
+   │ ├─────────────┴─────────────────────────┴─────────────┤ │
+   │ │ 来料计划时间线                                      │ │  行4 auto
+   │ └─────────────────────────────────────────────────────┘ │
+   三维场景在 grid 下层铺满（#stage 仍由 engine 缩放），面板浮在其上。
+   ============================================================ */
+
+#ui {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) 1fr minmax(200px, 260px);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  padding: 6px 12px 10px;
+  box-sizing: border-box;
+}
+#ui > * { pointer-events: auto; min-height: 0; min-width: 0; }
+
+/* ── 行1：header 占左+中，nav 在右 ── */
+/* 原样式（为 1920 舞台写的）用 ID 选择器设了 absolute/宽度，这里必须用同等权重逐项覆盖 */
+#ui #header {
+  grid-column: 1 / 3; grid-row: 1; position: static; left: auto; right: auto; top: auto; bottom: auto;
+  width: auto; height: 36px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 6px; background: rgba(255,255,255,.72); border-radius: 8px;
+}
+#ui #header .hd-left { width: auto; padding-left: 6px; gap: 10px; }
+#ui #header .hd-right { width: auto; padding-right: 4px; gap: 8px; }
+#ui #header .hd-time { font-size: 13px; margin-left: 0; }
+#ui #header .hd-user { font-size: 12px; padding: 2px 8px; }
+#ui #nav {
+  grid-column: 3; grid-row: 1; position: static; left: auto; right: auto; top: auto; bottom: auto;
+  width: auto; height: 36px; justify-content: flex-end; flex-wrap: nowrap; overflow: hidden;
+}
+#ui #nav .navitem { padding: 0 8px; font-size: 12px; white-space: nowrap; }
+#ui #nav .nav-tools { margin-left: 4px; gap: 4px; }
+#ui #nav .tool-btn { padding: 3px 8px; font-size: 12px; }
+
+/* ── 行2：图例 ── */
+#ui #legend { grid-column: 1 / 3; grid-row: 2; position: static; width: auto; height: 26px; padding: 0 10px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+  font-size: 12px; gap: 8px; border-radius: 8px; flex-wrap: nowrap; white-space: nowrap; }
+#ui #legend span { flex: 0 0 auto; }
+#ui #legend .lg-title { flex: 0 0 auto; }
+#ui #state-legend { grid-column: 3; grid-row: 2; position: static; width: auto; height: 26px; padding: 0 10px; justify-content: flex-end; font-size: 12px; gap: 8px; border-radius: 8px; }
+
+/* ── 行3：左栏（决策证据在上、甘特在下）叠放，占满剩余高度；中列与右列留给三维主体 ── */
+#ui #decision-panel {
+  grid-column: 1; grid-row: 3; position: static; width: auto;
+  max-height: 42%; overflow: auto; align-self: start;
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 5px;
+}
+#ui #plan-panel {
+  grid-column: 1; grid-row: 3; position: static; width: auto;
+  align-self: end; height: calc(56% - 6px); min-height: 140px;
+  padding: 8px 10px; display: flex; flex-direction: column;
+}
+
+/* ── 行4：来料时间线横跨整行（高度自适应：有未排订单标签时多留一行） ── */
+#ui #supply-rail { grid-column: 1 / 4; grid-row: 4; position: static; width: auto; min-height: 54px; padding: 5px 14px 4px; }
+
+/* ── 详情：覆盖左栏（决策证据 + 甘特），不挤压甘特；带关闭按钮 ── */
+#ui #plan-detail {
+  grid-column: 1; grid-row: 3; position: relative; z-index: 6; display: none;
+  overflow: auto; padding: 10px 12px; margin: 0; max-height: none; background: rgba(255,255,255,.97);
+}
+#ui #plan-detail.show { display: block; }
+#ui #plan-detail.task { align-self: start; z-index: 5; }   /* 与甘特面板同级、DOM 在后：内容短时不盖甘特，长时压住其上半部分 */
+#ui .dt-head { position: relative; padding-right: 22px; }
+#ui .dt-close { position: absolute; right: 0; top: 0; width: 20px; height: 20px; border: none; border-radius: 50%; background: #eef2f7; color: #5c6b80; cursor: pointer; font-size: 12px; line-height: 1; }
+#ui .dt-close:hover { background: #e0383e; color: #fff; }
+#ui .dt-row { flex-wrap: nowrap; gap: 6px; }
+#ui .dt-row .chip { flex: 0 1 auto; min-width: 0; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ui .dt-row .proc { width: auto; flex: 0 0 auto; white-space: nowrap; }
+#ui .dt-row .win { white-space: nowrap; }
+
+/* ── 收起项 ── */
+#footer, #param-card { display: none !important; }
+
+/* ---------- 决策证据 ---------- */
+.dec-hd { display: flex; align-items: baseline; justify-content: space-between; }
+.dec-title { font-weight: 700; font-size: 14px; color: var(--ink); }
+.dec-sub { font-size: 11.5px; color: #8a97ab; }
+
+.dec-list { display: flex; flex-direction: column; gap: 4px; }
+.dec-focus { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.dec-focus .dec-delta i { font-style: normal; font-size: 11px; font-weight: 400; color: #8a97ab; margin-left: 4px; }
+.dec-name { font-weight: 700; font-size: 13px; color: var(--ink); }
+.dec-delta { font-family: var(--num); font-size: 15px; font-weight: 700; color: var(--ink); }
+.dec-delta.good { color: #1a9e62; }
+.dec-delta.flat { color: #8a97ab; }
+.dec-why { font-size: 11.5px; color: #5c6b80; line-height: 1.45; }
+
+.dec-detail { border-top: 1px dashed #d6dfeb; padding-top: 8px; font-size: 12px; color: #4d5a6b; display: none; }
+.dec-detail.show { display: block; }
+.dec-detail .kv { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.dec-detail .kv span { flex-shrink: 0; }
+.dec-detail .kv b { font-family: var(--num); color: var(--ink); text-align: right; }
+.dec-detail .note { margin-top: 6px; color: #8a97ab; font-size: 11.5px; line-height: 1.45; }
+
+/* ---------- 甘特面板瘦身 ---------- */
+#plan-panel .plan-views, #plan-panel .plan-kpi { display: none; }
+#plan-panel .plan-hd { flex-shrink: 0; margin-bottom: 6px; }
+#ui .plan-title { white-space: nowrap; }
+#plan-panel .gantt { min-height: 0; flex: 1; }
+
+/* ---------- 来料计划时间线 ---------- */
+.sr-hd { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.sr-title { font-weight: 700; font-size: 12.5px; color: var(--ink); }
+.sr-sub { font-size: 11.5px; color: #8a97ab; }
+.sr-track { position: relative; height: 20px; margin-top: 14px; }
+.sr-axis { position: relative; height: 12px; font-size: 10px; color: #9aa5b3; font-family: var(--num); }
+.sr-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.sr-axis span.first { transform: translateX(0); }
+.sr-axis span.last { transform: translateX(-100%); }
+
+.sr-eta {
+  position: absolute; top: 3px; width: 12px; height: 12px; border-radius: 50%;
+  background: #fff; border: 2.5px solid #d98a2b; transform: translateX(-50%);
+  cursor: pointer; z-index: 2; transition: transform .15s;
+}
+.sr-eta:hover { transform: translateX(-50%) scale(1.25); }
+.sr-eta.reached { background: #d98a2b; }
+.sr-eta.on { background: #d98a2b; box-shadow: 0 0 0 4px rgba(217,138,43,.28); z-index: 3; }
+.gbar.hit { box-shadow: 0 0 0 2px #d98a2b, 0 1px 3px rgba(10,40,100,.25); }
+.dt-row[data-task] { cursor: pointer; border-radius: 4px; }
+.dt-row[data-task]:hover { background: #f3f7fc; }
+.dt-row .st.bad { color: #d92d20; font-weight: 700; }
+.dt-row .st.stock { color: #b26a00; }
+.sr-eta:focus-visible { outline: 2px solid #1E6FFF; outline-offset: 2px; }
+.sr-now { position: absolute; top: 0; width: 2px; height: 22px; background: #e0383e; transform: translateX(-50%); z-index: 1; }
+.sr-now::after { content: '当前'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 9.5px; color: #e0383e; white-space: nowrap; }
+.sr-line { position: absolute; top: 8px; left: 0; right: 0; height: 2px; background: #dfe6f0; }
+
+.sr-lock {
+  position: absolute; top: -15px; transform: translateX(-50%);
+  font-size: 10.5px; padding: 1px 6px; border-radius: 9px; white-space: nowrap;
+  background: #fde2e2; color: #b42318; border: 1px solid #f5b5b2; cursor: pointer;
+}
+.sr-lock.open { background: #e3f7ee; color: #137a4b; border-color: #a9dfc5; }
+.sr-lock:focus-visible { outline: 2px solid #1E6FFF; outline-offset: 2px; }
+
+/* ---------- 覆盖视图（数据血缘/工艺/甘特全屏） ---------- */
+#view-layer { position: fixed; inset: 0; z-index: 8; display: none; background: linear-gradient(180deg, rgba(228,237,246,.98), rgba(221,232,243,.98)); }
+#view-layer.show { display: block; }
+
+/* ---------- 悬停提示 / toast ---------- */
+#tooltip { position: fixed; z-index: 10; pointer-events: none; display: none; min-width: 150px;
+  background: rgba(255,255,255,.96); border: 1px solid #fff; border-radius: 8px; padding: 8px 10px;
+  box-shadow: 0 10px 28px rgba(20,60,130,.22); font-size: 12px; color: var(--ink-2); }
+#tooltip h4 { margin: 0 0 4px; font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+#tooltip h4::before { content: ""; width: 4px; height: 13px; border-radius: 2px; background: var(--blue); }
+#tooltip .r { display: flex; justify-content: space-between; gap: 10px; line-height: 18px; }
+#tooltip .r b { color: var(--ink); font-family: var(--num); font-weight: 600; }
+#toast { position: fixed; }
+
+/* ---------- 响应式断点 ---------- */
+/* 中屏：左栏收窄、右图例隐藏、nav 只留工具 */
+@media (max-width: 1360px) {
+  #ui { grid-template-columns: minmax(240px, 280px) 1fr minmax(240px, 280px); }
+  #ui #state-legend { display: none; }
+  #ui #nav .navitem { display: none; }   /* 中屏只留工具按钮，视图切换由宿主页决策卡承担 */
+}
+/* 窄屏：单列堆叠，三维场景在上、面板折叠成可滚动列表 */
+@media (max-width: 980px) {
+  #ui { grid-template-columns: 1fr; grid-template-rows: auto auto auto auto auto auto; overflow: auto; pointer-events: auto; }
+  #ui #header { grid-column: 1; grid-row: 1; }
+  #ui #nav { grid-column: 1; grid-row: 2; justify-content: flex-start; overflow-x: auto; }
+  #ui #legend { grid-column: 1; grid-row: 3; }
+  #ui #decision-panel { grid-column: 1; grid-row: 4; max-height: none; }
+  #ui #plan-panel { grid-column: 1; grid-row: 5; height: max(262px, 40vh); }
+  #ui #supply-rail { grid-column: 1; grid-row: 6; }
+  #ui #plan-detail { position: fixed; left: 12px; right: 12px; top: 18%; max-height: 64%; grid-column: auto; grid-row: auto; }
+}
+/* 矮屏（投影常见扁比例）：压缩左栏 */
+@media (max-height: 620px) {
+  #ui #decision-panel { max-height: 36%; }
+  #ui #plan-panel { height: calc(60% - 6px); }
+}
+
+/* ---------- 嵌入等待 / 真实数据态 ---------- */
+#wait {
+  position: fixed; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center;
+  color: #8a97ab; font-size: 13px; letter-spacing: .5px; background: linear-gradient(180deg, #eef4fa, #e2eaf4);
+}
+#wait[hidden] { display: none; }
+.hd-chip {
+  font-size: 12px; font-weight: 600; color: #1d6ee6; background: #e8f1ff; border: 1px solid #c9ddfb; border-radius: 10px;
+  padding: 2px 9px; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.hd-chip[hidden] { display: none; }
+/* 真实态只保留数据驱动的导航与工具：演示专用的讲解视图、模拟开关、故障演练都不出现 */
+#ui.live #nav .navitem:not([data-view="gantt"]),
+#ui.live #demo-switch, #ui.live #btn-fault, #ui.live #btn-reset-fault { display: none; }
+#ui.live #legend { display: flex; }
+#ui.live .plan-tabs, #ui.live .plan-views { display: none; }
+#ui.live .plan-title { white-space: nowrap; }
+#ui.live #plan-panel .plan-hd { margin-bottom: 2px; min-height: 24px; }
+#ui.live #decision-panel { max-height: 36%; }
+#ui.live #plan-panel { height: auto; max-height: calc(62% - 6px); }   /* 按泳道数撑高，多设备时内部滚动 */
+#ui.live .lane { height: 22px; }
+#ui.live .lane-track { background: repeating-linear-gradient(180deg, transparent 0 21px, #f3f7fc 21px 22px); }
+#ui.live .gbar { top: 2px; height: 17px; }
+#ui.live .gantt-axis { height: 18px; }
+#ui.live .gantt-axis span { top: 2px; }
+.lane.nolane .lane-label { opacity: .72; }
+
+/* 来料时间线标记：开工（蓝）/ 当前（红）/ 推演（紫） */
+.sr-mark { position: absolute; top: 0; width: 2px; height: 22px; transform: translateX(-50%); z-index: 1; }
+.sr-mark::after { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 9.5px; white-space: nowrap; }
+.sr-mark.start { background: #1d6ee6; }
+.sr-mark.start::after { content: '开工'; color: #1d6ee6; right: 110%; left: auto; transform: none; }
+.sr-mark.replay { background: #7a5af8; height: 24px; }
+.sr-mark.replay::after { content: '推演'; color: #7a5af8; left: 110%; transform: none; }
+.gantt-axis span.first { transform: translateX(0); }
+.gantt-axis span.last { transform: translateX(-100%); }
+
+/* 窄屏（≤980px）下真实态的覆盖：写在 .live 规则之后，同等特异性后者生效 */
+@media (max-width: 980px) {
+  #ui.live #decision-panel { max-height: none; }
+  #ui.live #plan-panel { height: max(262px, 40vh); }
+  #ui.live #plan-detail.task { max-height: none; }
+}
+
+/* ---------- 来料节点明细：紧凑的键值行 + 工序列表 ---------- */
+.sup-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 1.5px 0; font-size: 12px; color: #4d5a6b; }
+.sup-meta span { flex-shrink: 0; color: #8a97ab; }
+.sup-meta b { font-weight: 600; color: var(--ink); text-align: right; }
+.sup-note { margin: 6px 0 8px; padding-top: 6px; border-top: 1px dashed #d6dfeb; font-size: 11px; line-height: 1.45; color: #9aa5b3; }
+#ui .dt-row .chip { max-width: 60px; font-size: 10px; }
+#ui .dt-row .win { font-size: 9.5px; }
+#ui .dt-row .st { white-space: nowrap; }
+
+#ui .sup-head { white-space: nowrap; }
+#ui .sup-head b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#ui .sup-head .dt-tag, #ui .sup-head .st { flex-shrink: 0; }
+.sup-meta { line-height: 19px; }
+.sup-note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#ui .dt-tasks { padding: 5px 8px; }
+.sup-meta { line-height: 18px; }
+.sup-note { margin: 4px 0 4px; padding-top: 4px; }

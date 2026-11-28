@@ -116,6 +116,17 @@ export default [
 		}
 	},
 	{
+		path: "/digitalTwin",
+		name: "数字孪生",
+		component: () => import(/* webpackChunkName: "views" */ "./programOfProduction/digitalTwin/index.vue"),
+		meta: {
+			keepAlive: false,
+			isTab: false,
+			isAuth: false,
+			permission: 'aps:schedule:view'
+		}
+	},
+	{
 		path: "/operationAudit",
 		name: "操作审计",
 		component: () => import(/* webpackChunkName: "views" */ "./system/operationAudit/index.vue"),

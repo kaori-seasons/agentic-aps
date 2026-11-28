@@ -221,6 +221,7 @@ const lang_zh_CN = {
     programOfProduction: '生产计划',
     productionSchedulingStrategy: '排产策略',
     demandPlanning: '需求预测与补货',
+    digitalTwin: '数字孪生',
     productionSchedulingPlan: '排产计划',
     systemGovernance: '系统治理',
     operationAudit: '操作审计',
